@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useFinancialRecordMutations } from "@/hooks/use-financial-records";
 import {
   FINANCIAL_RECORD_TYPES,
@@ -17,8 +17,21 @@ import Alert from "@/components/ui/alert";
 
 export default function NewFinancialRecordPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const formRef = useRef(null);
   const { create } = useFinancialRecordMutations();
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const onPageShow = (event) => {
+      if (event.persisted) {
+        formRef.current?.reset();
+        setError("");
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   return (
     <div className="page-stack mx-auto max-w-2xl">
@@ -35,13 +48,16 @@ export default function NewFinancialRecordPage() {
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form
+        key={pathname}
+        ref={formRef}
+        autoComplete="off"
         className="surface-card space-y-3"
         onSubmit={async (event) => {
           event.preventDefault();
           setError("");
           const formData = new FormData(event.currentTarget);
           try {
-            const created = await create.mutateAsync({
+            await create.mutateAsync({
               type: formData.get("type"),
               partyName: formData.get("partyName"),
               description: formData.get("description"),
@@ -51,7 +67,8 @@ export default function NewFinancialRecordPage() {
               notes: formData.get("notes"),
               taskId: formData.get("taskId") || null,
             });
-            router.push(`/financial-records/${created._id}`);
+            event.currentTarget.reset();
+            router.push("/financial-records");
           } catch (err) {
             if (Array.isArray(err.details)) {
               setError(err.details.join(", "));
@@ -73,7 +90,7 @@ export default function NewFinancialRecordPage() {
         </label>
         <label className="block space-y-1 text-sm">
           <span>Party name *</span>
-          <Input name="partyName" required />
+          <Input name="partyName" required autoComplete="off" />
         </label>
         <label className="block space-y-1 text-sm">
           <span>Original amount *</span>

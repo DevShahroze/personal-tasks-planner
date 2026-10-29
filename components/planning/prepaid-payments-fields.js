@@ -1,5 +1,7 @@
 import Input from "@/components/ui/input";
 import Textarea from "@/components/ui/textarea";
+import FieldLabel from "@/components/ui/field-label";
+import FieldInfoPopover from "@/components/ui/field-info-popover";
 
 export default function PrepaidPaymentsFields({
   periodAmountLabel = "each period’s amount",
@@ -7,36 +9,50 @@ export default function PrepaidPaymentsFields({
   variableAmounts = false,
 }) {
   return (
-    <fieldset className="space-y-2 rounded-md border border-border p-3">
-      <legend className="px-1 text-xs font-medium">Already paid (optional)</legend>
-      <p className="text-xs text-muted-foreground">
-        Add one payment record per billing period from the start date (
-        {periodAmountLabel}). Use this when you are catching up and do not want to enter
-        many rows by hand.
-      </p>
+    <fieldset className="space-y-3 rounded-md border border-border p-3">
+      <legend className="flex items-center gap-1.5 px-1 text-sm font-medium text-foreground">
+        Already paid (optional)
+        <FieldInfoPopover label="About already paid installments">
+          Add payment history in bulk when you are catching up. Records are created from
+          the start date forward, one period at a time, using {periodAmountLabel}.
+        </FieldInfoPopover>
+      </legend>
+
       {variableAmounts ? (
-        <>
-          <Textarea
-            name="prepaidPaymentAmounts"
-            rows={4}
-            placeholder={
-              "One amount per line when installments vary\n100\n120\n95\n150"
+        <div className="space-y-1">
+          <FieldLabel
+            htmlFor="prepaid-payment-amounts"
+            label="Variable amounts (one per line)"
+            info={
+              <>
+                Enter one amount per billing period, in order from the start date. Use
+                when installments are not all the same size.
+              </>
             }
           />
-          <p className="text-xs text-muted-foreground">
-            Each line is one period, in order from the start date. You can still use the
-            count field below when every installment is the same amount.
-          </p>
-        </>
+          <Textarea
+            id="prepaid-payment-amounts"
+            name="prepaidPaymentAmounts"
+            rows={4}
+          />
+        </div>
       ) : null}
-      <Input
-        name="prepaidPaymentsCount"
-        type="number"
-        min="0"
-        max={String(max)}
-        step="1"
-        placeholder="Same amount each period — how many already paid (e.g. 20)"
-      />
+
+      <div className="space-y-1">
+        <FieldLabel
+          htmlFor="prepaid-payments-count"
+          label="Same amount each period — count already paid"
+          info={`Number of consecutive periods already paid from the start date, each for ${periodAmountLabel}. Ignored if you filled variable amounts above (those take precedence).`}
+        />
+        <Input
+          id="prepaid-payments-count"
+          name="prepaidPaymentsCount"
+          type="number"
+          min="0"
+          max={String(max)}
+          step="1"
+        />
+      </div>
     </fieldset>
   );
 }
