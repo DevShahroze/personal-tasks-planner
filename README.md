@@ -92,6 +92,7 @@ Create flows support **prepaid periods** (count or comma-separated amounts) for 
 ## Subscriptions (planning)
 
 - **Planning → Subscriptions → New**: labeled fields with info popovers, desktop two-row layout on detail, live recurring-charge summary.
+- **Planning → Insurance**: policy number, insurer, premium schedule, **term years**, total payments, due dates on the calendar, edit/delete, premium payment log.
 - **Manual billing**: optional mode when you choose when to pay (not a fixed auto-charge schedule). Optional **started tracking** and **next pay date** (calendar reminder only).
 - **Detail**: edit fields, delete subscription, **log payment** (amount + optional date), **remove** individual payment history rows (`DELETE /api/subscriptions/:id/payments/:paymentId`).
 - After a successful create, the new form remounts empty; opening **New subscription** again also starts fresh (including back/forward cache).

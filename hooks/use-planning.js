@@ -89,3 +89,20 @@ export function useTour(id, enabled = true) {
     ...detailQueryOptions(),
   });
 }
+
+export function useInsurancePolicies(params = defaultListParams) {
+  return useQuery({
+    queryKey: queryKeys.planning.insurance.list(params),
+    queryFn: () => planningApi.insurance.list(params),
+    ...listQueryOptions(),
+  });
+}
+
+export function useInsurancePolicy(id, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.planning.insurance.detail(id),
+    queryFn: () => planningApi.insurance.get(id),
+    enabled: Boolean(id) && enabled,
+    ...detailQueryOptions(),
+  });
+}

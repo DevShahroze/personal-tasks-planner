@@ -2,30 +2,25 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFinancialRecordMutations } from "@/hooks/use-financial-records";
-import {
-  FINANCIAL_RECORD_TYPES,
-  FINANCIAL_TYPE_LABEL,
-  DEFAULT_FINANCIAL_CURRENCY,
-} from "@/lib/finance/constants";
 import Button from "@/components/ui/button";
-import Input from "@/components/ui/input";
-import Textarea from "@/components/ui/textarea";
-import Select from "@/components/ui/select";
 import Alert from "@/components/ui/alert";
+import FinancialRecordFormFields, {
+  financialRecordPayloadFromFormData,
+} from "@/components/finance/financial-record-form-fields";
 
 export default function NewFinancialRecordPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const formRef = useRef(null);
   const { create } = useFinancialRecordMutations();
   const [error, setError] = useState("");
+  const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
     const onPageShow = (event) => {
       if (event.persisted) {
-        formRef.current?.reset();
+        setFormKey((value) => value + 1);
         setError("");
       }
     };
@@ -48,26 +43,19 @@ export default function NewFinancialRecordPage() {
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form
-        key={pathname}
-        ref={formRef}
+        key={`${pathname}-${formKey}`}
         autoComplete="off"
         className="surface-card space-y-3"
         onSubmit={async (event) => {
           event.preventDefault();
           setError("");
-          const formData = new FormData(event.currentTarget);
+          const form = event.currentTarget;
+          const payload = financialRecordPayloadFromFormData(new FormData(form), {
+            forCreate: true,
+          });
           try {
-            await create.mutateAsync({
-              type: formData.get("type"),
-              partyName: formData.get("partyName"),
-              description: formData.get("description"),
-              originalAmount: Number(formData.get("originalAmount")),
-              currency: formData.get("currency") || DEFAULT_FINANCIAL_CURRENCY,
-              expectedDate: formData.get("expectedDate") || null,
-              notes: formData.get("notes"),
-              taskId: formData.get("taskId") || null,
-            });
-            event.currentTarget.reset();
+            await create.mutateAsync(payload);
+            setFormKey((value) => value + 1);
             router.push("/financial-records");
           } catch (err) {
             if (Array.isArray(err.details)) {
@@ -78,48 +66,7 @@ export default function NewFinancialRecordPage() {
           }
         }}
       >
-        <label className="block space-y-1 text-sm">
-          <span>Type *</span>
-          <Select name="type" required defaultValue="receivable">
-            {FINANCIAL_RECORD_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {FINANCIAL_TYPE_LABEL[type]}
-              </option>
-            ))}
-          </Select>
-        </label>
-        <label className="block space-y-1 text-sm">
-          <span>Party name *</span>
-          <Input name="partyName" required autoComplete="off" />
-        </label>
-        <label className="block space-y-1 text-sm">
-          <span>Original amount *</span>
-          <Input name="originalAmount" type="number" min="0.01" step="0.01" required />
-        </label>
-        <label className="block space-y-1 text-sm">
-          <span>Currency</span>
-          <Input
-            name="currency"
-            defaultValue={DEFAULT_FINANCIAL_CURRENCY}
-            maxLength={8}
-          />
-        </label>
-        <label className="block space-y-1 text-sm">
-          <span>Expected date</span>
-          <Input name="expectedDate" type="date" />
-        </label>
-        <label className="block space-y-1 text-sm">
-          <span>Linked task id (optional)</span>
-          <Input name="taskId" placeholder="MongoDB task id" />
-        </label>
-        <label className="block space-y-1 text-sm">
-          <span>Description</span>
-          <Textarea name="description" rows={3} />
-        </label>
-        <label className="block space-y-1 text-sm">
-          <span>Notes</span>
-          <Textarea name="notes" rows={3} />
-        </label>
+        <FinancialRecordFormFields idPrefix="new-financial" />
         <Button type="submit" disabled={create.isPending}>
           {create.isPending ? "Creating…" : "Create record"}
         </Button>

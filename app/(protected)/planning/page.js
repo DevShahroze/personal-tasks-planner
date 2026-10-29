@@ -20,6 +20,11 @@ const sections = [
     description: "Billing cycles, renewals, and recorded payments.",
   },
   {
+    href: "/planning/insurance",
+    title: "Insurance",
+    description: "Policy numbers, premium schedules, term years, and due dates.",
+  },
+  {
     href: "/planning/applications",
     title: "University applications",
     description: "Deadlines, fees, and application status.",

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useCategories, useCategoryMutations } from "@/hooks/use-categories";
 import { UNASSIGNED_CATEGORY_NAME } from "@/lib/constants";
+import { formatDate } from "@/lib/format";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import Spinner from "@/components/ui/spinner";
@@ -36,12 +37,10 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="page-stack mx-auto max-w-4xl">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Categories</h1>
-        <p className="text-sm text-muted-foreground">
-          Organize tasks with simple categories
-        </p>
+        <h1 className="page-title">Categories</h1>
+        <p className="page-lead">Organize tasks with simple categories</p>
       </div>
 
       {error ? <Alert variant="error">{error}</Alert> : null}
@@ -88,79 +87,97 @@ export default function CategoriesPage() {
           description={`No categories match “${search.trim()}”.`}
         />
       ) : (
-        <ul className="space-y-2">
-          {filteredItems.map((category) => {
-            const isUnassigned = category.name === UNASSIGNED_CATEGORY_NAME;
-            return (
-              <li
-                key={category._id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2"
-              >
-                {editingId === category._id ? (
-                  <form
-                    className="flex flex-1 flex-wrap gap-2"
-                    onSubmit={async (event) => {
-                      event.preventDefault();
-                      setError("");
-                      try {
-                        await update.mutateAsync({
-                          id: category._id,
-                          body: { name: editingName },
-                        });
-                        setEditingId(null);
-                      } catch (err) {
-                        setError(err.message);
-                      }
-                    }}
-                  >
-                    <Input
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      required
-                    />
-                    <Button type="submit" disabled={update.isPending}>
-                      Save
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setEditingId(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </form>
-                ) : (
-                  <>
-                    <div>
-                      <p className="font-medium">{category.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {category.taskCount} task(s)
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="secondary"
-                        onClick={() => {
-                          setEditingId(category._id);
-                          setEditingName(category.name);
-                        }}
-                      >
-                        Rename
-                      </Button>
-                      <Button
-                        variant="danger"
-                        disabled={isUnassigned}
-                        onClick={() => setDeleteTarget(category)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <div className="overflow-x-auto rounded-lg border border-border bg-card">
+          <table className="min-w-full text-sm">
+            <thead className="bg-muted text-left">
+              <tr>
+                <th className="px-3 py-2 font-medium">Name</th>
+                <th className="px-3 py-2 font-medium text-right">Tasks</th>
+                <th className="px-3 py-2 font-medium">Created</th>
+                <th className="px-3 py-2 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredItems.map((category) => {
+                const isUnassigned = category.name === UNASSIGNED_CATEGORY_NAME;
+                const isEditing = editingId === category._id;
+                return (
+                  <tr key={category._id} className="border-t border-border">
+                    <td className="px-3 py-2">
+                      {isEditing ? (
+                        <form
+                          className="flex flex-wrap items-center gap-2"
+                          onSubmit={async (event) => {
+                            event.preventDefault();
+                            setError("");
+                            try {
+                              await update.mutateAsync({
+                                id: category._id,
+                                body: { name: editingName },
+                              });
+                              setEditingId(null);
+                            } catch (err) {
+                              setError(err.message);
+                            }
+                          }}
+                        >
+                          <Input
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            required
+                            className="min-w-[12rem]"
+                          />
+                          <Button type="submit" disabled={update.isPending}>
+                            Save
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setEditingId(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </form>
+                      ) : (
+                        <span className="font-medium">{category.name}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {category.taskCount}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {formatDate(category.createdAt)}
+                    </td>
+                    <td className="px-3 py-2">
+                      {isEditing ? null : (
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => {
+                              setEditingId(category._id);
+                              setEditingName(category.name);
+                            }}
+                          >
+                            Rename
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            disabled={isUnassigned}
+                            onClick={() => setDeleteTarget(category)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <Modal

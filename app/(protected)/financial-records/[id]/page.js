@@ -12,9 +12,11 @@ import { FINANCIAL_STATUS_LABEL, FINANCIAL_TYPE_LABEL } from "@/lib/finance/cons
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
-import Textarea from "@/components/ui/textarea";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
+import FinancialRecordFormFields, {
+  financialRecordPayloadFromFormData,
+} from "@/components/finance/financial-record-form-fields";
 
 export default function FinancialRecordDetailPage() {
   const params = useParams();
@@ -23,8 +25,9 @@ export default function FinancialRecordDetailPage() {
   const todayYmd = clientToday?.ymd || "";
   const recordId = params.id;
   const recordQuery = useFinancialRecord(recordId, todayYmd, Boolean(todayYmd));
-  const { remove, addPayment } = useFinancialRecordMutations();
+  const { remove, addPayment, update } = useFinancialRecordMutations();
   const [error, setError] = useState("");
+  const [editKey, setEditKey] = useState(0);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
@@ -72,6 +75,38 @@ export default function FinancialRecordDetailPage() {
 
       {error ? <Alert variant="error">{error}</Alert> : null}
 
+      <form
+        key={editKey}
+        className="surface-card space-y-3"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          setError("");
+          const body = financialRecordPayloadFromFormData(
+            new FormData(event.currentTarget),
+          );
+          try {
+            await update.mutateAsync({ id: recordId, body });
+            setEditKey((value) => value + 1);
+          } catch (err) {
+            if (Array.isArray(err.details)) {
+              setError(err.details.join(", "));
+            } else {
+              setError(err.message || "Could not save record");
+            }
+          }
+        }}
+      >
+        <h2 className="text-sm font-semibold">Record details</h2>
+        <FinancialRecordFormFields
+          idPrefix="edit-financial"
+          defaults={record}
+          showOriginalAmount={false}
+        />
+        <Button type="submit" disabled={update.isPending}>
+          {update.isPending ? "Saving…" : "Save changes"}
+        </Button>
+      </form>
+
       <div className="surface-card grid gap-3 md:grid-cols-2">
         <Meta
           label="Outstanding"
@@ -81,7 +116,6 @@ export default function FinancialRecordDetailPage() {
           label="Original amount"
           value={formatCurrency(record.originalAmount, record.currency)}
         />
-        <Meta label="Expected date" value={formatDate(record.expectedDate)} />
         <Meta label="Updated" value={formatDateTime(record.updatedAt)} />
         {record.taskId ? (
           <div className="md:col-span-2">
@@ -94,16 +128,6 @@ export default function FinancialRecordDetailPage() {
             >
               {record.taskId.title || "View task"}
             </Link>
-          </div>
-        ) : null}
-        {record.description ? (
-          <div className="md:col-span-2">
-            <Meta label="Description" value={record.description} />
-          </div>
-        ) : null}
-        {record.notes ? (
-          <div className="md:col-span-2">
-            <Meta label="Notes" value={record.notes} />
           </div>
         ) : null}
       </div>

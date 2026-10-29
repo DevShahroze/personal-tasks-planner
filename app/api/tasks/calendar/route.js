@@ -13,6 +13,7 @@ import {
   buildInstallmentCalendarEntries,
   buildKametiCalendarEntries,
   buildSubscriptionCalendarEntries,
+  buildInsuranceCalendarEntries,
   buildApplicationCalendarEntries,
   buildTourCalendarEntries,
 } from "@/lib/calendar/planning-entries.js";
@@ -22,6 +23,7 @@ import FinancialRecord from "@/models/FinancialRecord";
 import InstallmentCommitment from "@/models/InstallmentCommitment";
 import KametiPlan from "@/models/KametiPlan";
 import Subscription from "@/models/Subscription";
+import InsurancePolicy from "@/models/InsurancePolicy";
 import UniversityApplication from "@/models/UniversityApplication";
 import Tour from "@/models/Tour";
 
@@ -83,6 +85,7 @@ export async function GET(request) {
     installments,
     kametiPlans,
     subscriptions,
+    insurancePolicies,
     applications,
     tours,
   ] = await Promise.all([
@@ -126,6 +129,10 @@ export async function GET(request) {
       status: { $in: ["active", "paused"] },
       nextBillingDate: { $gte: rangeStart, $lte: rangeEnd },
     }).lean(),
+    InsurancePolicy.find({
+      status: { $nin: ["cancelled", "completed"] },
+      nextDueDate: { $gte: rangeStart, $lte: rangeEnd },
+    }).lean(),
     UniversityApplication.find({
       applicationDeadline: { $gte: rangeStart, $lte: rangeEnd },
     }).lean(),
@@ -141,6 +148,7 @@ export async function GET(request) {
     indexPlanningEntriesByYmd(installments, buildInstallmentCalendarEntries),
     indexPlanningEntriesByYmd(kametiPlans, buildKametiCalendarEntries),
     indexPlanningEntriesByYmd(subscriptions, buildSubscriptionCalendarEntries),
+    indexPlanningEntriesByYmd(insurancePolicies, buildInsuranceCalendarEntries),
     indexPlanningEntriesByYmd(applications, buildApplicationCalendarEntries),
     indexPlanningEntriesByYmd(tours, buildTourCalendarEntries),
   );
