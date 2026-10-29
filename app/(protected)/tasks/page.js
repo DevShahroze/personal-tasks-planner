@@ -64,91 +64,91 @@ export default function TasksPage() {
       <div className="dashboard-panel">
         <div className="dashboard-panel-header">Filters</div>
         <div className="dashboard-panel-body grid gap-2 md:grid-cols-3 xl:grid-cols-6">
-        <FilterField>
-        <Input
-          placeholder="Search title or description"
-          value={search}
-          onChange={(e) => {
-            setPage(1);
-            setSearch(e.target.value);
-          }}
-        />
-        </FilterField>
-        <FilterField>
-        <Select
-          value={status}
-          onChange={(e) => {
-            setPage(1);
-            setStatus(e.target.value);
-          }}
-        >
-          <option value="">All statuses</option>
-          {TASK_STATUSES.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </Select>
-        </FilterField>
-        <FilterField>
-        <Select
-          value={priority}
-          onChange={(e) => {
-            setPage(1);
-            setPriority(e.target.value);
-          }}
-        >
-          <option value="">All priorities</option>
-          {TASK_PRIORITIES.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </Select>
-        </FilterField>
-        <FilterField>
-        <Select
-          value={category}
-          onChange={(e) => {
-            setPage(1);
-            setCategory(e.target.value);
-          }}
-        >
-          <option value="">All categories</option>
-          {(categoriesQuery.data?.items || []).map((cat) => (
-            <option key={cat._id} value={cat._id}>
-              {cat.name}
-            </option>
-          ))}
-        </Select>
-        </FilterField>
-        <FilterField>
-        <Input
-          type="date"
-          value={taskDate}
-          onChange={(e) => {
-            setPage(1);
-            setTaskDate(e.target.value);
-          }}
-        />
-        </FilterField>
-        <FilterField>
-        <Select
-          value={`${sortBy}:${sortOrder}`}
-          onChange={(e) => {
-            const [field, order] = e.target.value.split(":");
-            setSortBy(field);
-            setSortOrder(order);
-          }}
-        >
-          <option value="updatedAt:desc">Updated (newest)</option>
-          <option value="updatedAt:asc">Updated (oldest)</option>
-          <option value="createdAt:desc">Created (newest)</option>
-          <option value="taskDate:asc">Task date (soonest)</option>
-          <option value="priority:desc">Priority</option>
-          <option value="title:asc">Title (A–Z)</option>
-        </Select>
-        </FilterField>
+          <FilterField>
+            <Input
+              placeholder="Search title or description"
+              value={search}
+              onChange={(e) => {
+                setPage(1);
+                setSearch(e.target.value);
+              }}
+            />
+          </FilterField>
+          <FilterField>
+            <Select
+              value={status}
+              onChange={(e) => {
+                setPage(1);
+                setStatus(e.target.value);
+              }}
+            >
+              <option value="">All statuses</option>
+              {TASK_STATUSES.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </Select>
+          </FilterField>
+          <FilterField>
+            <Select
+              value={priority}
+              onChange={(e) => {
+                setPage(1);
+                setPriority(e.target.value);
+              }}
+            >
+              <option value="">All priorities</option>
+              {TASK_PRIORITIES.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </Select>
+          </FilterField>
+          <FilterField>
+            <Select
+              value={category}
+              onChange={(e) => {
+                setPage(1);
+                setCategory(e.target.value);
+              }}
+            >
+              <option value="">All categories</option>
+              {(categoriesQuery.data?.items || []).map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
+            </Select>
+          </FilterField>
+          <FilterField>
+            <Input
+              type="date"
+              value={taskDate}
+              onChange={(e) => {
+                setPage(1);
+                setTaskDate(e.target.value);
+              }}
+            />
+          </FilterField>
+          <FilterField>
+            <Select
+              value={`${sortBy}:${sortOrder}`}
+              onChange={(e) => {
+                const [field, order] = e.target.value.split(":");
+                setSortBy(field);
+                setSortOrder(order);
+              }}
+            >
+              <option value="updatedAt:desc">Updated (newest)</option>
+              <option value="updatedAt:asc">Updated (oldest)</option>
+              <option value="createdAt:desc">Created (newest)</option>
+              <option value="taskDate:asc">Task date (soonest)</option>
+              <option value="priority:desc">Priority</option>
+              <option value="title:asc">Title (A–Z)</option>
+            </Select>
+          </FilterField>
         </div>
       </div>
 

@@ -24,8 +24,12 @@ export default function ApplicationsPage() {
       <ul className="divide-y divide-border rounded-md border border-border bg-card">
         {(query.data?.items || []).map((item) => (
           <li key={item._id} className="px-3 py-2">
-            <Link href={`/planning/applications/${item._id}`} className="hover:underline">
-              {item.universityName} — {item.programName} · Deadline {formatDate(item.applicationDeadline)}
+            <Link
+              href={`/planning/applications/${item._id}`}
+              className="hover:underline"
+            >
+              {item.universityName} — {item.programName} · Deadline{" "}
+              {formatDate(item.applicationDeadline)}
             </Link>
           </li>
         ))}

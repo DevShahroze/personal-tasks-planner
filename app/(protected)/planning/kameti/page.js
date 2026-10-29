@@ -23,7 +23,10 @@ export default function KametiListPage() {
         / Kameti
       </p>
       <h1 className="page-title">Kameti plans</h1>
-      <Link href="/planning/kameti/new" className="inline-flex rounded-md bg-primary px-2.5 py-1.5 text-xs text-primary-foreground">
+      <Link
+        href="/planning/kameti/new"
+        className="inline-flex rounded-md bg-primary px-2.5 py-1.5 text-xs text-primary-foreground"
+      >
         New plan
       </Link>
       {!items.length ? (
@@ -32,10 +35,14 @@ export default function KametiListPage() {
         <ul className="divide-y divide-border rounded-md border border-border bg-card">
           {items.map((item) => (
             <li key={item._id} className="px-3 py-2">
-              <Link href={`/planning/kameti/${item._id}`} className="block hover:underline">
+              <Link
+                href={`/planning/kameti/${item._id}`}
+                className="block hover:underline"
+              >
                 {item.planName} · {item.status}
                 <span className="block text-xs text-muted-foreground">
-                  Remaining {formatCurrency(item.remainingContributionsOwed, item.currency)}
+                  Remaining{" "}
+                  {formatCurrency(item.remainingContributionsOwed, item.currency)}
                 </span>
               </Link>
             </li>

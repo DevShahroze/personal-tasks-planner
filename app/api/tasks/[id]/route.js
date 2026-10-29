@@ -1,11 +1,19 @@
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/mongodb";
 import { requireAuth } from "@/lib/auth";
-import { jsonError, jsonOk, isValidObjectId, jsonIncompleteSubtasks } from "@/lib/api-response";
+import {
+  jsonError,
+  jsonOk,
+  isValidObjectId,
+  jsonIncompleteSubtasks,
+} from "@/lib/api-response";
 import { validateTaskUpdate } from "@/lib/validations";
 import { validateContentBlocks } from "@/lib/content-blocks";
 import { prepareScheduleForSave } from "@/lib/scheduling/prepare";
-import { prepareRecurrenceForSave, validateRecurrence } from "@/lib/recurrence/validate";
+import {
+  prepareRecurrenceForSave,
+  validateRecurrence,
+} from "@/lib/recurrence/validate";
 import { applyRecurrenceCompletion } from "@/lib/recurrence/calculate";
 import { normalizeRecurrence } from "@/lib/recurrence/defaults";
 import { assertNoScheduleConflicts } from "@/lib/scheduling/conflicts";

@@ -24,7 +24,10 @@ export default function SubscriptionsPage() {
       <ul className="divide-y divide-border rounded-md border border-border bg-card">
         {(query.data?.items || []).map((item) => (
           <li key={item._id} className="px-3 py-2">
-            <Link href={`/planning/subscriptions/${item._id}`} className="hover:underline">
+            <Link
+              href={`/planning/subscriptions/${item._id}`}
+              className="hover:underline"
+            >
               {item.serviceName} · {formatCurrency(item.amount, item.currency)} · Next{" "}
               {formatDate(item.nextBillingDate)}
             </Link>

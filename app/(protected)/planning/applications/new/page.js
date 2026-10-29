@@ -24,14 +24,21 @@ export default function NewApplicationPage() {
             universityName: fd.get("universityName"),
             programName: fd.get("programName"),
             applicationDeadline: fd.get("applicationDeadline") || null,
-            applicationFee: fd.get("applicationFee") ? Number(fd.get("applicationFee")) : null,
+            applicationFee: fd.get("applicationFee")
+              ? Number(fd.get("applicationFee"))
+              : null,
           });
         }}
       >
         <Input name="universityName" required placeholder="University" />
         <Input name="programName" required placeholder="Program" />
         <Input name="applicationDeadline" type="date" />
-        <Input name="applicationFee" type="number" step="0.01" placeholder="Application fee" />
+        <Input
+          name="applicationFee"
+          type="number"
+          step="0.01"
+          placeholder="Application fee"
+        />
         <Button type="submit">Create</Button>
       </form>
     </div>

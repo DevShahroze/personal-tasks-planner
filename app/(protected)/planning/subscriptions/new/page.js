@@ -32,7 +32,14 @@ export default function NewSubscriptionPage() {
         }}
       >
         <Input name="serviceName" required placeholder="Service name" />
-        <Input name="amount" type="number" step="0.01" min="0.01" required placeholder="Amount" />
+        <Input
+          name="amount"
+          type="number"
+          step="0.01"
+          min="0.01"
+          required
+          placeholder="Amount"
+        />
         <Input name="startDate" type="date" required />
         <Button type="submit">Create</Button>
       </form>

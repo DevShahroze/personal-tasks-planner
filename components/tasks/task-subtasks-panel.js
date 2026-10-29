@@ -12,7 +12,8 @@ import Alert from "@/components/ui/alert";
 
 export default function TaskSubtasksPanel({ parentTaskId }) {
   const subtasksQuery = useSubtasks(parentTaskId);
-  const { createSubtask, updateSubtask, deleteSubtask } = useSubtaskMutations(parentTaskId);
+  const { createSubtask, updateSubtask, deleteSubtask } =
+    useSubtaskMutations(parentTaskId);
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
 
@@ -38,7 +39,9 @@ export default function TaskSubtasksPanel({ parentTaskId }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold">Subtasks</h2>
-          <p className="text-xs text-muted-foreground">{formatSubtaskSummary(summary)}</p>
+          <p className="text-xs text-muted-foreground">
+            {formatSubtaskSummary(summary)}
+          </p>
         </div>
       </div>
 
@@ -55,8 +58,14 @@ export default function TaskSubtasksPanel({ parentTaskId }) {
       ) : (
         <ul className="mt-3 divide-y divide-border">
           {items.map((subtask) => (
-            <li key={subtask._id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
-              <Link href={`/tasks/${subtask._id}`} className="min-w-0 flex-1 font-medium hover:underline">
+            <li
+              key={subtask._id}
+              className="flex flex-wrap items-center gap-2 py-2 text-sm"
+            >
+              <Link
+                href={`/tasks/${subtask._id}`}
+                className="min-w-0 flex-1 font-medium hover:underline"
+              >
                 {subtask.title}
               </Link>
               <Select

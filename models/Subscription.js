@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import { PAYMENT_FREQUENCIES } from "@/lib/schedules/frequency";
-import { SUBSCRIPTION_STATUSES, DEFAULT_PLANNING_CURRENCY } from "@/lib/planning/constants";
+import {
+  SUBSCRIPTION_STATUSES,
+  DEFAULT_PLANNING_CURRENCY,
+} from "@/lib/planning/constants";
 import { createPaymentSubschema } from "@/lib/payments/mongoose";
 
 const subscriptionSchema = new mongoose.Schema(

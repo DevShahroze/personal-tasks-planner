@@ -22,7 +22,8 @@ export async function POST(request, { params }) {
     return parsed.error;
   }
 
-  const todayYmd = new URL(request.url).searchParams.get("todayYmd") ||
+  const todayYmd =
+    new URL(request.url).searchParams.get("todayYmd") ||
     new Date().toISOString().slice(0, 10);
 
   await connectDB();

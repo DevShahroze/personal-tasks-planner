@@ -25,7 +25,9 @@ export default function NewTourPage() {
             destination: fd.get("destination"),
             startDate: fd.get("startDate"),
             endDate: fd.get("endDate"),
-            estimatedBudget: fd.get("estimatedBudget") ? Number(fd.get("estimatedBudget")) : null,
+            estimatedBudget: fd.get("estimatedBudget")
+              ? Number(fd.get("estimatedBudget"))
+              : null,
           });
         }}
       >
@@ -33,7 +35,12 @@ export default function NewTourPage() {
         <Input name="destination" placeholder="Destination" />
         <Input name="startDate" type="date" required />
         <Input name="endDate" type="date" required />
-        <Input name="estimatedBudget" type="number" step="0.01" placeholder="Estimated budget" />
+        <Input
+          name="estimatedBudget"
+          type="number"
+          step="0.01"
+          placeholder="Estimated budget"
+        />
         <Button type="submit">Create</Button>
       </form>
     </div>

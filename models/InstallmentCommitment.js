@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import { PAYMENT_FREQUENCIES } from "@/lib/schedules/frequency";
-import { INSTALLMENT_STATUSES, DEFAULT_PLANNING_CURRENCY } from "@/lib/planning/constants";
+import {
+  INSTALLMENT_STATUSES,
+  DEFAULT_PLANNING_CURRENCY,
+} from "@/lib/planning/constants";
 import { MAX_DESCRIPTION_LENGTH } from "@/lib/security/constants";
 import { createPaymentSubschema } from "@/lib/payments/mongoose";
 

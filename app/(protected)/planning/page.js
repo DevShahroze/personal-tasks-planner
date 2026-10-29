@@ -6,7 +6,8 @@ const sections = [
   {
     href: "/planning/installments",
     title: "Installments & dues",
-    description: "Commitments with recurring installment schedules and payment history.",
+    description:
+      "Commitments with recurring installment schedules and payment history.",
   },
   {
     href: "/planning/kameti",
@@ -36,8 +37,8 @@ export default function PlanningHubPage() {
       <div>
         <h1 className="page-title">Planning</h1>
         <p className="page-lead">
-          Installments, Kameti, subscriptions, applications, and trips — integrated with your
-          calendar.
+          Installments, Kameti, subscriptions, applications, and trips — integrated with
+          your calendar.
         </p>
       </div>
       <ul className="divide-y divide-border rounded-md border border-border bg-card">

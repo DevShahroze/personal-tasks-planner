@@ -88,14 +88,14 @@ See [HYDRATION.md](./HYDRATION.md) for verification tests.
 
 The UI is intentionally **dense** for a single-user productivity app: more rows and controls visible without scrolling, while keeping touch targets usable.
 
-| Area | Convention |
-| --- | --- |
-| **Typography** | Base `0.875rem` on `body`; page titles via `.page-title` (~18px); secondary copy via `.page-lead` (12px) |
-| **Spacing** | Vertical page rhythm via `.page-stack` (1rem gap); main content `p-3` / `md:p-4`; lists/tables use `px-3 py-2` cells |
-| **Shell** | Full viewport (`h-dvh`, `w-full`); **top bar** (brand, theme, logout) + **left nav** on `md+`; mobile **drawer** from Menu; no `max-w-*` page gutters |
-| **Controls** | Buttons/inputs `py-1.5`, `text-xs` buttons; cards via `.surface-card` (`p-3`, `rounded-md`) |
-| **Dashboard** | Summary metrics `text-xl`; chart height `h-52`; grid gaps `gap-2` / `gap-3` |
-| **Theme** | Sun/moon **icons** in the nav; sidebar keeps icon + short text when `compact` |
+| Area           | Convention                                                                                                                                            |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Typography** | Base `0.875rem` on `body`; page titles via `.page-title` (~18px); secondary copy via `.page-lead` (12px)                                              |
+| **Spacing**    | Vertical page rhythm via `.page-stack` (1rem gap); main content `p-3` / `md:p-4`; lists/tables use `px-3 py-2` cells                                  |
+| **Shell**      | Full viewport (`h-dvh`, `w-full`); **top bar** (brand, theme, logout) + **left nav** on `md+`; mobile **drawer** from Menu; no `max-w-*` page gutters |
+| **Controls**   | Buttons/inputs `py-1.5`, `text-xs` buttons; cards via `.surface-card` (`p-3`, `rounded-md`)                                                           |
+| **Dashboard**  | Summary metrics `text-xl`; chart height `h-52`; grid gaps `gap-2` / `gap-3`                                                                           |
+| **Theme**      | Sun/moon **icons** in the nav; sidebar keeps icon + short text when `compact`                                                                         |
 
 Implementation lives in **`app/globals.css`**, **`components/ui/*`**, **`components/layout/app-shell.js`**, and page-level Tailwind classes. No external component library.
 
@@ -179,19 +179,19 @@ See [SECURITY.md](./SECURITY.md) for audit detail.
 
 All runtime secrets and connection strings are loaded through **`lib/env.js`** (single source of truth).
 
-| Variable | Required | Used by | Notes |
-| --- | --- | --- | --- |
-| `MONGODB_URI` | Yes\* | `connectDB`, all APIs | Atlas SRV URI (host only or full); database name appended via `MONGODB_DB_NAME` when omitted |
-| `MONGODB_USERNAME` | Yes\* | `resolveMongoUri` | Alternative to embedding user in `MONGODB_URI` |
-| `MONGODB_PASSWORD` | Yes\* | `resolveMongoUri` | Pair with username when building the URI |
-| `MONGODB_DB_NAME` | No | `resolveMongoUri` | Default **`personal_tasks_planner`** — separate logical DB on the cluster |
-| `MONGODB_HOST` | No | `resolveMongoUri` | Only when building URI from username/password (default Atlas host omitted) |
-| `AUTH_SECRET` | Yes | JWT sign/verify | Long random string; rotate if compromised |
-| `APP_USERNAME` | Yes | Login | Single allowed username |
-| `APP_PASSWORD_HASH_B64` | Yes | Login | Base64 bcrypt hash (`node scripts/hash-password.mjs` prints this) |
-| `APP_PASSWORD_HASH` | No | Login | Raw `$2b$…` only if env loader preserves `$` (Next.js does not) |
-| `SCHEDULE_PUBLIC_HOLIDAYS` | No | Scheduling | Comma-separated `YYYY-MM-DD` dates when holiday exclusion is enabled |
-| `NODE_ENV` | Built-in | Runtime flags | Set by platform (`production` on Vercel) |
+| Variable                   | Required | Used by               | Notes                                                                                        |
+| -------------------------- | -------- | --------------------- | -------------------------------------------------------------------------------------------- |
+| `MONGODB_URI`              | Yes\*    | `connectDB`, all APIs | Atlas SRV URI (host only or full); database name appended via `MONGODB_DB_NAME` when omitted |
+| `MONGODB_USERNAME`         | Yes\*    | `resolveMongoUri`     | Alternative to embedding user in `MONGODB_URI`                                               |
+| `MONGODB_PASSWORD`         | Yes\*    | `resolveMongoUri`     | Pair with username when building the URI                                                     |
+| `MONGODB_DB_NAME`          | No       | `resolveMongoUri`     | Default **`personal_tasks_planner`** — separate logical DB on the cluster                    |
+| `MONGODB_HOST`             | No       | `resolveMongoUri`     | Only when building URI from username/password (default Atlas host omitted)                   |
+| `AUTH_SECRET`              | Yes      | JWT sign/verify       | Long random string; rotate if compromised                                                    |
+| `APP_USERNAME`             | Yes      | Login                 | Single allowed username                                                                      |
+| `APP_PASSWORD_HASH_B64`    | Yes      | Login                 | Base64 bcrypt hash (`node scripts/hash-password.mjs` prints this)                            |
+| `APP_PASSWORD_HASH`        | No       | Login                 | Raw `$2b$…` only if env loader preserves `$` (Next.js does not)                              |
+| `SCHEDULE_PUBLIC_HOLIDAYS` | No       | Scheduling            | Comma-separated `YYYY-MM-DD` dates when holiday exclusion is enabled                         |
+| `NODE_ENV`                 | Built-in | Runtime flags         | Set by platform (`production` on Vercel)                                                     |
 
 \*Provide **`MONGODB_URI`**, or **`MONGODB_USERNAME`** + **`MONGODB_PASSWORD`** (optional **`MONGODB_HOST`**).
 
@@ -222,7 +222,7 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 | **Task scheduling**         | Fixed/flexible slots, conflicts, availability templates                          |
 | **Recurring / procedures**  | In-place next due date, completion recording, optional appointments              |
 | **Theming**                 | Light/dark semantic CSS tokens                                                   |
-| **Error boundaries**        | Client render failures contained per shell / calendar / form calendar              |
+| **Error boundaries**        | Client render failures contained per shell / calendar / form calendar            |
 | **Activity logger**         | Optional client-only diagnostic log export                                       |
 | **Quality gate**            | `npm run validate` — lint, format, security tests, audit, build, hydration tests |
 | **Pre-push hook**           | Husky runs full validate                                                         |

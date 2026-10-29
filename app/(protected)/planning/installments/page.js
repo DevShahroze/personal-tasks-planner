@@ -35,16 +35,25 @@ export default function InstallmentsPage() {
         New commitment
       </Link>
       {!items.length ? (
-        <EmptyState title="No commitments" description="Create an installment plan to track dues." />
+        <EmptyState
+          title="No commitments"
+          description="Create an installment plan to track dues."
+        />
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border bg-card">
           {items.map((item) => (
             <li key={item._id} className="px-3 py-2">
-              <Link href={`/planning/installments/${item._id}`} className="block hover:underline">
+              <Link
+                href={`/planning/installments/${item._id}`}
+                className="block hover:underline"
+              >
                 <span className="font-medium">{item.name}</span>
                 <p className="text-xs text-muted-foreground">
-                  {item.status} · Outstanding {formatCurrency(item.outstandingBalance, item.currency)}
-                  {item.nextDueDate ? ` · Next due ${formatDate(item.nextDueDate)}` : ""}
+                  {item.status} · Outstanding{" "}
+                  {formatCurrency(item.outstandingBalance, item.currency)}
+                  {item.nextDueDate
+                    ? ` · Next due ${formatDate(item.nextDueDate)}`
+                    : ""}
                 </p>
               </Link>
             </li>

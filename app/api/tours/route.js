@@ -14,7 +14,11 @@ export async function GET(request) {
   }
   const { page, limit, skip } = parsePagination(new URL(request.url).searchParams);
   await connectDB();
-  const items = await Tour.find({}).sort({ startDate: 1 }).skip(skip).limit(limit).lean();
+  const items = await Tour.find({})
+    .sort({ startDate: 1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
   const total = await Tour.countDocuments({});
   return jsonOk({ items, page, limit, total });
 }

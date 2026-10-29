@@ -24,8 +24,9 @@ export default function ApplicationDetailPage() {
         {item.universityName} — {item.programName}
       </h1>
       <p className="text-sm">
-        Status: {item.applicationStatus} · Fee {formatCurrency(item.applicationFee, item.feeCurrency)} (
-        {item.feePaymentStatus}) · Deadline {formatDate(item.applicationDeadline)}
+        Status: {item.applicationStatus} · Fee{" "}
+        {formatCurrency(item.applicationFee, item.feeCurrency)} ({item.feePaymentStatus}
+        ) · Deadline {formatDate(item.applicationDeadline)}
       </p>
       {item.notes ? <p className="whitespace-pre-wrap text-sm">{item.notes}</p> : null}
     </div>

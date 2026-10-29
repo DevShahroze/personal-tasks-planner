@@ -16,14 +16,14 @@ cp .env.example .env
 
 **MongoDB (Atlas):**
 
-- `MONGODB_USERNAME` / `MONGODB_PASSWORD` — database user  
-- `MONGODB_URI` — `mongodb+srv://…@cluster….mongodb.net` (database name optional)  
-- `MONGODB_DB_NAME` — dedicated app database (default: `personal_tasks_planner`)  
+- `MONGODB_USERNAME` / `MONGODB_PASSWORD` — database user
+- `MONGODB_URI` — `mongodb+srv://…@cluster….mongodb.net` (database name optional)
+- `MONGODB_DB_NAME` — dedicated app database (default: `personal_tasks_planner`)
 
 **Auth:**
 
-- `AUTH_SECRET` — long random string (JWT signing)  
-- `APP_USERNAME` — login username  
+- `AUTH_SECRET` — long random string (JWT signing)
+- `APP_USERNAME` — login username
 - `APP_PASSWORD_HASH_B64` — bcrypt hash of your password, **base64-encoded** (required on Vercel/local; raw `$2b$...` in `.env` gets corrupted)
 
 3. Generate a bcrypt hash for your password:

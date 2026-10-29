@@ -39,8 +39,21 @@ export default function NewKametiPage() {
         }}
       >
         <Input name="planName" placeholder="Plan name" required />
-        <Input name="totalParticipants" type="number" min="1" placeholder="Participants" required />
-        <Input name="contributionAmount" type="number" step="0.01" min="0.01" placeholder="Contribution" required />
+        <Input
+          name="totalParticipants"
+          type="number"
+          min="1"
+          placeholder="Participants"
+          required
+        />
+        <Input
+          name="contributionAmount"
+          type="number"
+          step="0.01"
+          min="0.01"
+          placeholder="Contribution"
+          required
+        />
         <Input name="startDate" type="date" required />
         <Input name="expectedPayoutDate" type="date" />
         <Button type="submit">Create</Button>

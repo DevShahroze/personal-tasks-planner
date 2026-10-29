@@ -10,7 +10,11 @@ const kametiSchema = new mongoose.Schema(
     totalParticipants: { type: Number, required: true, min: 1 },
     contributionAmount: { type: Number, required: true, min: 0.01 },
     currency: { type: String, default: DEFAULT_PLANNING_CURRENCY },
-    contributionFrequency: { type: String, enum: PAYMENT_FREQUENCIES, default: "monthly" },
+    contributionFrequency: {
+      type: String,
+      enum: PAYMENT_FREQUENCIES,
+      default: "monthly",
+    },
     customIntervalDays: { type: Number, default: null },
     startDate: { type: Date, required: true, index: true },
     endDate: { type: Date, default: null },

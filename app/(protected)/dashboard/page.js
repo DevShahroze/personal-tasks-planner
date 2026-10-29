@@ -31,7 +31,9 @@ function SummaryCard({ label, value }) {
       <p className="text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{value ?? 0}</p>
+      <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">
+        {value ?? 0}
+      </p>
     </div>
   );
 }
@@ -44,9 +46,7 @@ function ChartCard({ title, children, empty, emptyDescription }) {
         {empty ? (
           <EmptyState
             title="No data yet"
-            description={
-              emptyDescription || "Create tasks to populate this chart."
-            }
+            description={emptyDescription || "Create tasks to populate this chart."}
           />
         ) : (
           children
@@ -343,7 +343,9 @@ function ListPanel({ title, items, type, loadFailed }) {
       <div className="dashboard-panel-header">{title}</div>
       <div className="dashboard-panel-body">
         {loadFailed ? (
-          <p className="text-xs text-muted-foreground">List data could not be loaded.</p>
+          <p className="text-xs text-muted-foreground">
+            List data could not be loaded.
+          </p>
         ) : !items?.length ? (
           <p className="text-xs text-muted-foreground">Nothing here yet.</p>
         ) : (

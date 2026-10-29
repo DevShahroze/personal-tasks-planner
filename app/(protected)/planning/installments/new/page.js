@@ -60,8 +60,22 @@ export default function NewInstallmentPage() {
       >
         <Input name="name" placeholder="Name" required />
         <Textarea name="description" rows={2} placeholder="Description" />
-        <Input name="totalAmount" type="number" step="0.01" min="0.01" placeholder="Total amount" required />
-        <Input name="installmentAmount" type="number" step="0.01" min="0.01" placeholder="Installment amount" required />
+        <Input
+          name="totalAmount"
+          type="number"
+          step="0.01"
+          min="0.01"
+          placeholder="Total amount"
+          required
+        />
+        <Input
+          name="installmentAmount"
+          type="number"
+          step="0.01"
+          min="0.01"
+          placeholder="Installment amount"
+          required
+        />
         <Select name="frequency" defaultValue="monthly">
           {PAYMENT_FREQUENCIES.map((value) => (
             <option key={value} value={value}>
@@ -71,7 +85,12 @@ export default function NewInstallmentPage() {
         </Select>
         <Input name="startDate" type="date" required />
         <Input name="endDate" type="date" />
-        <Input name="totalInstallments" type="number" min="1" placeholder="Total installments (optional)" />
+        <Input
+          name="totalInstallments"
+          type="number"
+          min="1"
+          placeholder="Total installments (optional)"
+        />
         <Button type="submit" disabled={create.isPending}>
           Create
         </Button>

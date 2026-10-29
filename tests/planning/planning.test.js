@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { advanceYmdByFrequency, inclusiveDurationDays } from "../../lib/schedules/frequency.js";
+import {
+  advanceYmdByFrequency,
+  inclusiveDurationDays,
+} from "../../lib/schedules/frequency.js";
 import { syncInstallmentCommitment } from "../../lib/planning/installments.js";
 import { syncKametiPlan } from "../../lib/planning/kameti.js";
 import { isDuplicatePayment } from "../../lib/payments/mongoose.js";
@@ -36,7 +39,9 @@ test("kameti payout does not zero remaining contributions automatically", () => 
     contributionAmount: 1000,
     contributionFrequency: "monthly",
     startDate: new Date("2026-01-01T12:00:00.000Z"),
-    contributionPayments: [{ amount: 2000, paidAt: new Date("2026-01-05T12:00:00.000Z") }],
+    contributionPayments: [
+      { amount: 2000, paidAt: new Date("2026-01-05T12:00:00.000Z") },
+    ],
     payoutAmount: 50000,
     payoutReceivedAt: new Date("2026-06-01T12:00:00.000Z"),
     status: "active",

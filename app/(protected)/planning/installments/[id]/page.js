@@ -71,7 +71,8 @@ export default function InstallmentDetailPage() {
         <ul className="mt-2 divide-y divide-border text-sm">
           {(item.payments || []).map((payment, index) => (
             <li key={payment._id || index} className="py-2">
-              {formatCurrency(payment.amount, item.currency)} on {formatDate(payment.paidAt)}
+              {formatCurrency(payment.amount, item.currency)} on{" "}
+              {formatDate(payment.paidAt)}
             </li>
           ))}
         </ul>
@@ -91,15 +92,28 @@ export default function InstallmentDetailPage() {
               }
             }}
           >
-            <Input type="number" step="0.01" min="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required />
-            <Input type="date" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} />
+            <Input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+            />
+            <Input
+              type="date"
+              value={paidAt}
+              onChange={(e) => setPaidAt(e.target.value)}
+            />
             <Button type="submit" disabled={addPayment.isPending || !todayYmd}>
               Record payment
             </Button>
           </form>
         ) : null}
       </div>
-      <p className="text-xs text-muted-foreground">Updated {formatDateTime(item.updatedAt)}</p>
+      <p className="text-xs text-muted-foreground">
+        Updated {formatDateTime(item.updatedAt)}
+      </p>
     </div>
   );
 }

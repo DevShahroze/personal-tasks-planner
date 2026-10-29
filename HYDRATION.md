@@ -2,14 +2,14 @@
 
 ## Root causes addressed
 
-| Area               | Issue                                                                          | Fix                                                                  |
-| ------------------ | ------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| Activity logger UI | `localStorage` read during initial render (`typeof window` in state/`useMemo`) | Deterministic `false` initial state; sync after mount in `useEffect` |
-| Chart theme        | `getComputedStyle` during render                                               | CSS `var(--*)` tokens in Recharts (no DOM reads)                     |
+| Area               | Issue                                                                          | Fix                                                                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Activity logger UI | `localStorage` read during initial render (`typeof window` in state/`useMemo`) | Deterministic `false` initial state; sync after mount in `useEffect`                                                                         |
+| Chart theme        | `getComputedStyle` during render                                               | CSS `var(--*)` tokens in Recharts (no DOM reads)                                                                                             |
 | Dates              | `toLocaleString(undefined)` (server/client locale drift)                       | Fixed **`MM/DD/YYYY`** and **`MM/DD/YYYY h:mm A`** via `lib/format.js` (`formatToParts`, `en-US`; UTC default; task timezone for scheduling) |
-| Theme context      | React state could diverge from pre-hydration `dark` class                      | After mount, reconcile state with DOM + storage in one effect        |
-| Task calendars     | `useSyncExternalStore` returned a new object every snapshot → infinite loop    | Cached snapshot in `use-client-today.js`; server snapshot `null` + skeleton until client |
-| Calendar markers   | Missing import of `uniqueDayMarkers` in mini calendar                        | Import from `lib/calendar/task-entries.js` in `task-month-calendar.js`                 |
+| Theme context      | React state could diverge from pre-hydration `dark` class                      | After mount, reconcile state with DOM + storage in one effect                                                                                |
+| Task calendars     | `useSyncExternalStore` returned a new object every snapshot → infinite loop    | Cached snapshot in `use-client-today.js`; server snapshot `null` + skeleton until client                                                     |
+| Calendar markers   | Missing import of `uniqueDayMarkers` in mini calendar                          | Import from `lib/calendar/task-entries.js` in `task-month-calendar.js`                                                                       |
 
 ## Client “today” for calendars
 

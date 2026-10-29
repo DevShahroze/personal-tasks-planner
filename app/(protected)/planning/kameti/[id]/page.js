@@ -49,10 +49,16 @@ export default function KametiDetailPage() {
       {error ? <Alert variant="error">{error}</Alert> : null}
       <div className="surface-card text-sm">
         <p>Status: {item.status}</p>
-        <p>Remaining owed: {formatCurrency(item.remainingContributionsOwed, item.currency)}</p>
+        <p>
+          Remaining owed:{" "}
+          {formatCurrency(item.remainingContributionsOwed, item.currency)}
+        </p>
         <p>Next contribution: {formatDate(item.nextContributionDueDate)}</p>
         <p>Expected payout: {formatDate(item.expectedPayoutDate)}</p>
-        <p>Payout received: {item.payoutReceivedAt ? formatDate(item.payoutReceivedAt) : "—"}</p>
+        <p>
+          Payout received:{" "}
+          {item.payoutReceivedAt ? formatDate(item.payoutReceivedAt) : "—"}
+        </p>
       </div>
       <form
         className="surface-card flex flex-wrap gap-2"
@@ -67,7 +73,14 @@ export default function KametiDetailPage() {
           }
         }}
       >
-        <Input name="amount" type="number" step="0.01" min="0.01" placeholder="Contribution amount" required />
+        <Input
+          name="amount"
+          type="number"
+          step="0.01"
+          min="0.01"
+          placeholder="Contribution amount"
+          required
+        />
         <Button type="submit">Record contribution</Button>
       </form>
       <form
@@ -85,7 +98,14 @@ export default function KametiDetailPage() {
           }
         }}
       >
-        <Input name="payoutAmount" type="number" step="0.01" min="0.01" placeholder="Payout amount" required />
+        <Input
+          name="payoutAmount"
+          type="number"
+          step="0.01"
+          min="0.01"
+          placeholder="Payout amount"
+          required
+        />
         <Input name="payoutReceivedAt" type="date" />
         <Button type="submit" variant="secondary">
           Record payout received
