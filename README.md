@@ -1,6 +1,6 @@
 # Personal Tasks & Plans Tracker
 
-Private single-user app for tasks, thoughts, plans, categories, relationships, **scheduling**, **recurring procedures**, **financial records**, **planning** (installments, Kameti, subscriptions, university applications, tours), and a dashboard (including a **task calendar**) backed by MongoDB.
+Private single-user app for tasks, thoughts, plans, categories, relationships, **scheduling**, **recurring procedures**, a **daily task processor** (timezone-aware rollover after 11 PM), **financial records**, **planning** (installments with prepaid/variable amounts, Kameti, subscriptions, university applications, tours), and a dashboard (including a **task calendar**) backed by MongoDB.
 
 Architecture overview: [ARCHITECTURE.md](./ARCHITECTURE.md)
 
@@ -54,10 +54,14 @@ Open [http://localhost:3000](http://localhost:3000) and sign in.
 - `npm run test:recurrence` — recurrence and calendar entry tests
 - `npm run test:subtasks` — subtask filters and parent completion helpers
 - `npm run test:finance` — financial balances, notes validation, calendar entries
-- `npm run test:planning` — installments, Kameti, subscriptions, tours schedule helpers
+- `npm run test:planning` — installments (including prepaid payments), Kameti, subscriptions, tours schedule helpers
+- `npm run test:client-today` — cached client “today” snapshot (calendar hydration safety)
+- `npm run test:hydration` — Playwright against production build (`next start`); needs MongoDB
 - `npm run validate` — lint, format, tests (security, scheduling, recurrence, client-today, format, subtasks, finance, planning), audit, build, hydration (runs before `git push` via Husky)
 
 To bypass the pre-push hook in an emergency: `git push --no-verify`
+
+**Hydration / validate tip:** Playwright reuses an existing server on port 3000 when `CI` is unset. If `npm run dev` is already bound to `:3000`, login during `test:hydration` can fail (wrong auth env). Stop the dev server, or run hydration with a dedicated port, e.g. `CI=1 PLAYWRIGHT_PORT=3001 npm run test:hydration`.
 
 ## Theme
 
@@ -71,7 +75,19 @@ Failed TanStack Query reads and mutations show a **toast** in the bottom-right (
 
 Enable **Enable Logs** in the navigation bar after you sign in to record page visits and API calls for the current browser session. Logs clear on full page refresh; the enable preference persists. Use **Export Logs** to download a `.txt` file (always visible; disabled when no events exist).
 
-Next.js (App Router, JavaScript), MongoDB/Mongoose, TanStack Query, Tailwind CSS, Recharts (dashboard only).
+Next.js (App Router, JavaScript), MongoDB/Mongoose, TanStack Query (central stale times in `lib/query-cache.js`), Tailwind CSS, Recharts (dashboard only).
+
+## Daily task processor
+
+After **11 PM** in the processor timezone (default: task schedule timezone; override with optional `TASK_PROCESSOR_TIMEZONE`), open **To Do** / **In Progress** tasks scheduled for that calendar day roll to the next day. Missed days are caught up (up to 31 days). Progress is stored in MongoDB (`TaskProcessorRun`); the protected layout runs a client driver (`TaskProcessorProvider`) that polls status, shows a banner while work runs, and blocks the main shell until idle. The navbar shows when the last run completed. Task create/update/delete APIs return **423** while a run is active. See [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## Client data caching
+
+List/detail/dashboard reads use shared TanStack Query keys and stale times (`lib/query-client.js`, `lib/query-cache.js`). Catalog data (categories) loads through `AppDataProvider` / `contexts/slices/categories-slice.js` with longer cache and `refetchOnMount: false` to avoid API churn.
+
+## Planning money fields
+
+Create flows support **prepaid periods** (count or comma-separated amounts) for installments, Kameti, and subscriptions. Amount parsing and validation live in `lib/planning/money-fields.js` and `lib/planning/validate.js` (safe for client bundles — no Mongoose import). Server routes enforce the same rules.
 
 ## Task content blocks
 

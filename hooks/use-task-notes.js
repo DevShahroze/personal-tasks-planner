@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tasksApi } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
+import { detailQueryOptions } from "@/lib/query-cache";
 
 export function useTaskNotes(taskId, enabled = true) {
   return useQuery({
     queryKey: queryKeys.taskNotes(taskId),
     queryFn: () => tasksApi.listNotes(taskId),
     enabled: Boolean(taskId) && enabled,
+    ...detailQueryOptions(),
   });
 }
 

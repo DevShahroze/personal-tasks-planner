@@ -7,6 +7,10 @@ import { authApi } from "@/lib/api-client";
 import Button from "@/components/ui/button";
 import ThemeToggle from "@/components/theme/theme-toggle";
 import ActivityLoggerControls from "@/components/nav/activity-logger-controls";
+import {
+  TaskProcessorMainChrome,
+  TaskProcessorNavStatus,
+} from "@/contexts/task-processor-context";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -96,6 +100,7 @@ export default function AppShell({ children }) {
           </p>
         </div>
         <div className="flex-1" />
+        <TaskProcessorNavStatus className="hidden max-w-[14rem] sm:block" />
         <ThemeToggle />
         <Button
           type="button"
@@ -117,7 +122,9 @@ export default function AppShell({ children }) {
           <SidebarFooter onLogout={logout} loggingOut={loggingOut} compact />
         </aside>
 
-        <main className="min-w-0 flex-1 overflow-y-auto p-3 md:p-4">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto p-3 md:p-4">
+          <TaskProcessorMainChrome>{children}</TaskProcessorMainChrome>
+        </main>
       </div>
 
       {mobileOpen ? (

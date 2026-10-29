@@ -3,14 +3,20 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useClientTodayYmd } from "@/hooks/use-client-today";
+import { useInstallmentCommitment } from "@/hooks/use-planning";
 import { planningApi } from "@/lib/api-client";
+import { queryKeys } from "@/lib/query-client";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
+import { validatePlanningPayment } from "@/lib/planning/validate";
+import { formatValidationErrors } from "@/lib/planning/money-fields";
+import { apiErrorMessage } from "@/lib/planning/form-errors";
+import { validatePaymentAmount } from "@/lib/finance/balance";
 
 export default function InstallmentDetailPage() {
   const params = useParams();
@@ -22,17 +28,15 @@ export default function InstallmentDetailPage() {
   const [amount, setAmount] = useState("");
   const [paidAt, setPaidAt] = useState("");
 
-  const detailQuery = useQuery({
-    queryKey: ["planning", "installments", id],
-    queryFn: () => planningApi.installments.get(id),
-    enabled: Boolean(id),
-  });
+  const detailQuery = useInstallmentCommitment(id);
 
   const addPayment = useMutation({
     mutationFn: (body) => planningApi.installments.addPayment(id, body, todayYmd),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["planning", "installments"] });
-      queryClient.invalidateQueries({ queryKey: ["planning", "installments", id] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.planning.installments.detail(id),
+      });
       queryClient.invalidateQueries({ queryKey: ["tasks", "calendar"] });
       setAmount("");
       setPaidAt("");
@@ -63,6 +67,13 @@ export default function InstallmentDetailPage() {
         <p>Outstanding: {formatCurrency(item.outstandingBalance, item.currency)}</p>
         <p>Total: {formatCurrency(item.totalAmount, item.currency)}</p>
         <p>Installments paid: {item.installmentsPaid}</p>
+        {item.installmentAmount ? (
+          <p>
+            Typical installment: {formatCurrency(item.installmentAmount, item.currency)}
+          </p>
+        ) : (
+          <p className="text-muted-foreground">Variable installment amounts</p>
+        )}
         <p>Next due: {formatDate(item.nextDueDate)}</p>
         <p>Frequency: {item.frequency}</p>
       </div>
@@ -82,13 +93,29 @@ export default function InstallmentDetailPage() {
             onSubmit={async (event) => {
               event.preventDefault();
               setError("");
+              const paymentCheck = validatePlanningPayment({
+                amount,
+                paidAt: paidAt || undefined,
+              });
+              if (!paymentCheck.ok) {
+                setError(formatValidationErrors(paymentCheck.errors));
+                return;
+              }
+              const balanceCheck = validatePaymentAmount(
+                amount,
+                item.outstandingBalance,
+              );
+              if (!balanceCheck.ok) {
+                setError(balanceCheck.error);
+                return;
+              }
               try {
                 await addPayment.mutateAsync({
-                  amount: Number(amount),
+                  amount: paymentCheck.value.amount,
                   paidAt: paidAt || undefined,
                 });
               } catch (err) {
-                setError(err.message || "Payment failed");
+                setError(apiErrorMessage(err));
               }
             }}
           >
@@ -96,9 +123,11 @@ export default function InstallmentDetailPage() {
               type="number"
               step="0.01"
               min="0.01"
+              inputMode="decimal"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               required
+              placeholder="Amount"
             />
             <Input
               type="date"

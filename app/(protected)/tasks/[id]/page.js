@@ -13,7 +13,6 @@ import {
   useTask,
   useUpdateTaskMutation,
 } from "@/hooks/use-tasks";
-import { useCategories } from "@/hooks/use-categories";
 import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
@@ -30,7 +29,6 @@ export default function TaskDetailPage() {
   const router = useRouter();
   const taskId = params.id;
   const taskQuery = useTask(taskId);
-  const categories = useCategories();
   const updateTask = useUpdateTaskMutation();
   const deleteTask = useDeleteTaskMutation();
   const [editing, setEditing] = useState(false);
@@ -43,7 +41,7 @@ export default function TaskDetailPage() {
   const subtasksQuery = useSubtasks(taskId, Boolean(task && !task.parentTaskId));
   const parentTaskQuery = useTask(task?.parentTaskId, Boolean(task?.parentTaskId));
 
-  if (taskQuery.isLoading || categories.isLoading) {
+  if (taskQuery.isLoading) {
     return <Spinner label="Loading task…" />;
   }
 
@@ -59,6 +57,19 @@ export default function TaskDetailPage() {
     if (!window.confirm(`Delete this task?${subtaskNote}`)) return;
     await deleteTask.mutateAsync(taskId);
     router.push(task.parentTaskId ? `/tasks/${task.parentTaskId}` : "/tasks");
+  };
+
+  const onCancelTask = async () => {
+    if (!window.confirm("Cancel this task? It will stay in your list as cancelled.")) {
+      return;
+    }
+    setError("");
+    try {
+      await updateTask.mutateAsync({ id: taskId, body: { status: "Cancelled" } });
+      setMessage("Task cancelled");
+    } catch (err) {
+      setError(err.message || "Could not cancel task");
+    }
   };
 
   return (
@@ -88,6 +99,11 @@ export default function TaskDetailPage() {
           <Button variant="secondary" onClick={() => setEditing((v) => !v)}>
             {editing ? "Cancel edit" : "Edit details"}
           </Button>
+          {task.status !== "Cancelled" && task.status !== "Completed" ? (
+            <Button variant="secondary" onClick={onCancelTask}>
+              Cancel task
+            </Button>
+          ) : null}
           <Button variant="danger" onClick={onDelete}>
             Delete
           </Button>
@@ -114,7 +130,6 @@ export default function TaskDetailPage() {
           <TaskForm
             taskId={taskId}
             initialValues={task}
-            categories={categories.data?.items}
             submitting={updateTask.isPending}
             scheduleConflicts={scheduleConflicts}
             onClearScheduleConflicts={() => setScheduleConflicts([])}

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { financialRecordsApi } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
+import { detailQueryOptions, listQueryOptions } from "@/lib/query-cache";
 
 function invalidateFinancialQueries(queryClient, id) {
   queryClient.invalidateQueries({ queryKey: ["financial-records"] });
@@ -16,6 +17,7 @@ export function useFinancialRecords(filters, enabled = true) {
     queryFn: () => financialRecordsApi.list(filters),
     enabled,
     placeholderData: (prev) => prev,
+    ...listQueryOptions(),
   });
 }
 
@@ -24,6 +26,7 @@ export function useFinancialRecord(id, todayYmd, enabled = true) {
     queryKey: queryKeys.financialRecord(id),
     queryFn: () => financialRecordsApi.get(id, todayYmd),
     enabled: Boolean(id) && enabled,
+    ...detailQueryOptions(),
   });
 }
 

@@ -11,6 +11,10 @@ import Textarea from "@/components/ui/textarea";
 import Select from "@/components/ui/select";
 import Alert from "@/components/ui/alert";
 import { PAYMENT_FREQUENCIES } from "@/lib/schedules/frequency";
+import PrepaidPaymentsFields from "@/components/planning/prepaid-payments-fields";
+import { validateInstallmentCreate } from "@/lib/planning/validate";
+import { formatValidationErrors } from "@/lib/planning/money-fields";
+import { apiErrorMessage } from "@/lib/planning/form-errors";
 
 export default function NewInstallmentPage() {
   const router = useRouter();
@@ -40,21 +44,27 @@ export default function NewInstallmentPage() {
           event.preventDefault();
           setError("");
           const formData = new FormData(event.currentTarget);
+          const payload = {
+            name: formData.get("name"),
+            description: formData.get("description"),
+            totalAmount: formData.get("totalAmount"),
+            installmentAmount: formData.get("installmentAmount") || null,
+            frequency: formData.get("frequency"),
+            startDate: formData.get("startDate"),
+            endDate: formData.get("endDate") || null,
+            totalInstallments: formData.get("totalInstallments") || null,
+            prepaidPaymentsCount: formData.get("prepaidPaymentsCount") || 0,
+            prepaidPaymentAmounts: formData.get("prepaidPaymentAmounts") || "",
+          };
+          const validated = validateInstallmentCreate(payload);
+          if (!validated.ok) {
+            setError(formatValidationErrors(validated.errors));
+            return;
+          }
           try {
-            await create.mutateAsync({
-              name: formData.get("name"),
-              description: formData.get("description"),
-              totalAmount: Number(formData.get("totalAmount")),
-              installmentAmount: Number(formData.get("installmentAmount")),
-              frequency: formData.get("frequency"),
-              startDate: formData.get("startDate"),
-              endDate: formData.get("endDate") || null,
-              totalInstallments: formData.get("totalInstallments")
-                ? Number(formData.get("totalInstallments"))
-                : null,
-            });
+            await create.mutateAsync(payload);
           } catch (err) {
-            setError(err.message || "Could not create commitment");
+            setError(apiErrorMessage(err));
           }
         }}
       >
@@ -73,8 +83,7 @@ export default function NewInstallmentPage() {
           type="number"
           step="0.01"
           min="0.01"
-          placeholder="Installment amount"
-          required
+          placeholder="Typical installment (optional if amounts vary)"
         />
         <Select name="frequency" defaultValue="monthly">
           {PAYMENT_FREQUENCIES.map((value) => (
@@ -90,6 +99,10 @@ export default function NewInstallmentPage() {
           type="number"
           min="1"
           placeholder="Total installments (optional)"
+        />
+        <PrepaidPaymentsFields
+          periodAmountLabel="each installment amount when using the count field"
+          variableAmounts
         />
         <Button type="submit" disabled={create.isPending}>
           Create

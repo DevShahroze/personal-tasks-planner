@@ -27,7 +27,7 @@ List endpoints omit `contentBlocks` for efficiency.
 - Checkbox and radio changes save immediately.
 - Text labels and table cells debounce (~600ms) before PATCH.
 - Save status: pending, saving, saved, or error with **Retry** (failed saves also trigger the global API error toast).
-- Mutations invalidate the task detail, task lists, and dashboard queries only (see `hooks/use-tasks.js`).
+- Mutations invalidate the task detail, task lists, dashboard, and calendar queries where applicable (see `hooks/use-tasks.js` and `lib/query-client.js`).
 
 ## Backward compatibility
 

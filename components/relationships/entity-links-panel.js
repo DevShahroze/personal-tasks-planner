@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { searchApi } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
+import { searchQueryOptions } from "@/lib/query-cache";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useEntityLinks } from "@/hooks/use-entity-links";
 import Button from "@/components/ui/button";
@@ -32,7 +33,8 @@ export default function EntityLinksPanel({
   const optionsQuery = useQuery({
     queryKey: queryKeys.searchOptions(debouncedSearch),
     queryFn: () => searchApi.options(debouncedSearch),
-    enabled: open,
+    enabled: open && debouncedSearch.length >= 1,
+    ...searchQueryOptions(),
   });
 
   const linkItem = async (item) => {

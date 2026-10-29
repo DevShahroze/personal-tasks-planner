@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useEffect } from "react";
 import Button from "@/components/ui/button";
 
@@ -13,9 +14,9 @@ export default function Modal({ open, title, children, onClose }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
@@ -26,12 +27,13 @@ export default function Modal({ open, title, children, onClose }) {
       <div className="relative z-10 w-full max-w-lg rounded-lg border border-border bg-card p-4 text-card-foreground shadow-lg">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">{title}</h2>
-          <Button variant="ghost" onClick={onClose}>
+          <Button type="button" variant="ghost" onClick={onClose}>
             Close
           </Button>
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

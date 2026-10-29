@@ -106,25 +106,44 @@ export function TaskRecurrenceFields({
   setRecurrenceState,
   timeZone,
   taskId,
+  suggestedStartYmd,
   onRecordCompletion,
   recording,
   nextDuePreview,
   needsStartingDate,
 }) {
+  const toggleRecurring = (enabled) => {
+    setRecurrenceState((prev) => {
+      if (!enabled) {
+        return { ...prev, enabled: false };
+      }
+      const next = { ...prev, enabled: true };
+      if (suggestedStartYmd && !next.lastProcedureDate && !next.lastCompletedDate) {
+        next.lastProcedureDate = suggestedStartYmd;
+      }
+      return next;
+    });
+  };
+
   return (
-    <div className="space-y-3 rounded-md border border-border p-3">
-      <p className="text-sm font-medium">Recurrence & procedures</p>
+    <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+      <p className="text-sm font-semibold tracking-tight">Recurrence & procedures</p>
 
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
           checked={recurrenceState.enabled}
-          onChange={(event) =>
-            setRecurrenceState((prev) => ({ ...prev, enabled: event.target.checked }))
-          }
+          onChange={(event) => toggleRecurring(event.target.checked)}
         />
         Recurring task
       </label>
+
+      {!recurrenceState.enabled ? (
+        <p className="text-xs text-muted-foreground">
+          Turn this on to repeat on a schedule, or save with this off to stop an
+          existing recurring task.
+        </p>
+      ) : null}
 
       {recurrenceState.enabled ? (
         <>

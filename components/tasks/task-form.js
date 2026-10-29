@@ -23,6 +23,9 @@ import { formatScheduleInstant } from "@/lib/scheduling/client-form";
 import TaskCommerceFields, {
   commerceFromFormData,
 } from "@/components/tasks/task-commerce-fields";
+import TaskCategoryField, {
+  initialCategoryId,
+} from "@/components/tasks/task-category-field";
 
 function dateInputValue(value) {
   if (!value) {
@@ -35,10 +38,27 @@ function dateInputValue(value) {
   return date.toISOString().slice(0, 10);
 }
 
+function FormSection({ title, children, className = "" }) {
+  return (
+    <section
+      className={`rounded-lg border border-border bg-card p-4 ${className}`.trim()}
+    >
+      {title ? (
+        <h2 className="mb-3 text-sm font-semibold tracking-tight text-foreground">
+          {title}
+        </h2>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+const detailFieldGrid =
+  "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-4 lg:gap-y-4";
+
 export default function TaskForm({
   taskId,
   initialValues,
-  categories,
   onSubmit,
   submitting,
   submitLabel = "Save task",
@@ -58,6 +78,7 @@ export default function TaskForm({
     dateInputValue(initialValues?.taskDate),
   );
   const [taskDateWarning, setTaskDateWarning] = useState("");
+  const [categoryId, setCategoryId] = useState(() => initialCategoryId(initialValues));
 
   const schedulePayload = useMemo(
     () => scheduleFromFormState(scheduleState),
@@ -76,7 +97,7 @@ export default function TaskForm({
   return (
     <form
       id={formId}
-      className="space-y-4"
+      className="flex w-full flex-col gap-5"
       onSubmit={(event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
@@ -86,7 +107,7 @@ export default function TaskForm({
           description: formData.get("description"),
           status: formData.get("status"),
           priority: formData.get("priority"),
-          category: formData.get("category") || null,
+          category: categoryId || null,
           taskDate: taskDate || null,
           timelineStart: formData.get("timelineStart") || null,
           timelineEnd: formData.get("timelineEnd") || null,
@@ -96,35 +117,90 @@ export default function TaskForm({
         });
       }}
     >
-      <label className="block space-y-1 text-sm">
-        <span>Title *</span>
-        <Input name="title" defaultValue={initialValues?.title || ""} required />
-      </label>
-
-      <label className="block space-y-1 text-sm">
-        <span>Description</span>
-        <Textarea
-          name="description"
-          rows={4}
-          defaultValue={initialValues?.description || ""}
-        />
-      </label>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="space-y-2">
+      <FormSection title="Basics">
+        <div className="space-y-4">
           <label className="block space-y-1 text-sm">
-            <span>Task date</span>
-            <Input
-              type="date"
-              name="taskDateDisplay"
-              value={taskDate}
-              onChange={(event) => setTaskDate(event.target.value)}
+            <span>Title *</span>
+            <Input name="title" defaultValue={initialValues?.title || ""} required />
+          </label>
+          <label className="block space-y-1 text-sm">
+            <span>Description</span>
+            <Textarea
+              name="description"
+              rows={4}
+              defaultValue={initialValues?.description || ""}
             />
           </label>
+        </div>
+      </FormSection>
+
+      <FormSection title="Details & dates">
+        <div className="space-y-4">
+          <div className={detailFieldGrid}>
+            <label className="block space-y-1 text-sm">
+              <span>Status</span>
+              <Select name="status" defaultValue={initialValues?.status || "To Do"}>
+                {TASK_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <label className="block space-y-1 text-sm">
+              <span>Priority</span>
+              <Select
+                name="priority"
+                defaultValue={initialValues?.priority || "Medium"}
+              >
+                {TASK_PRIORITIES.map((priority) => (
+                  <option key={priority} value={priority}>
+                    {priority}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <TaskCategoryField
+              categoryId={categoryId}
+              onCategoryIdChange={setCategoryId}
+            />
+          </div>
+          <div className={detailFieldGrid}>
+            <label className="block space-y-1 text-sm">
+              <span>Task date</span>
+              <Input
+                type="date"
+                name="taskDateDisplay"
+                value={taskDate}
+                onChange={(event) => setTaskDate(event.target.value)}
+              />
+            </label>
+            <label className="block space-y-1 text-sm">
+              <span>Timeline start</span>
+              <Input
+                type="date"
+                name="timelineStart"
+                defaultValue={dateInputValue(initialValues?.timelineStart)}
+              />
+            </label>
+            <label className="block space-y-1 text-sm">
+              <span>Timeline end</span>
+              <Input
+                type="date"
+                name="timelineEnd"
+                defaultValue={dateInputValue(initialValues?.timelineEnd)}
+              />
+            </label>
+          </div>
+        </div>
+      </FormSection>
+
+      <FormSection title="Calendar">
+        <div className="max-w-md space-y-3">
           {taskDateWarning ? <Alert variant="info">{taskDateWarning}</Alert> : null}
           <ErrorBoundary
             title="Calendar unavailable"
-            description="Use the date field above or save the task without the mini calendar."
+            description="Use the task date field above or save without the mini calendar."
           >
             <TaskFormCalendarPicker
               selectedYmd={taskDate}
@@ -137,62 +213,7 @@ export default function TaskForm({
             />
           </ErrorBoundary>
         </div>
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-          <label className="block space-y-1 text-sm">
-            <span>Status</span>
-            <Select name="status" defaultValue={initialValues?.status || "To Do"}>
-              {TASK_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span>Priority</span>
-            <Select name="priority" defaultValue={initialValues?.priority || "Medium"}>
-              {TASK_PRIORITIES.map((priority) => (
-                <option key={priority} value={priority}>
-                  {priority}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span>Category</span>
-            <Select
-              name="category"
-              defaultValue={
-                initialValues?.category?._id || initialValues?.category || ""
-              }
-            >
-              <option value="">None</option>
-              {(categories || []).map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span>Timeline start</span>
-            <Input
-              type="date"
-              name="timelineStart"
-              defaultValue={dateInputValue(initialValues?.timelineStart)}
-            />
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span>Timeline end</span>
-            <Input
-              type="date"
-              name="timelineEnd"
-              defaultValue={dateInputValue(initialValues?.timelineEnd)}
-            />
-          </label>
-        </div>
-      </div>
+      </FormSection>
 
       <TaskCommerceFields initialValues={initialValues} />
 
@@ -201,6 +222,7 @@ export default function TaskForm({
         setRecurrenceState={setRecurrenceState}
         timeZone={scheduleState.timezone}
         taskId={taskId}
+        suggestedStartYmd={taskDate}
         onRecordCompletion={onRecordRecurrenceCompletion}
         recording={recordingRecurrence}
         nextDuePreview={nextDueLabel}
@@ -217,9 +239,11 @@ export default function TaskForm({
         conflicts={scheduleConflicts}
       />
 
-      <Button type="submit" disabled={submitting}>
-        {submitting ? "Saving…" : submitLabel}
-      </Button>
+      <div className="flex flex-wrap gap-2 border-t border-border pt-2">
+        <Button type="submit" disabled={submitting}>
+          {submitting ? "Saving…" : submitLabel}
+        </Button>
+      </div>
     </form>
   );
 }

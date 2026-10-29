@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useClientTodayYmd } from "@/hooks/use-client-today";
+import { useKametiPlan } from "@/hooks/use-planning";
 import { planningApi } from "@/lib/api-client";
 import { formatCurrency, formatDate } from "@/lib/format";
 import Spinner from "@/components/ui/spinner";
@@ -17,10 +18,7 @@ export default function KametiDetailPage() {
   const todayYmd = useClientTodayYmd()?.ymd || "";
   const queryClient = useQueryClient();
   const [error, setError] = useState("");
-  const query = useQuery({
-    queryKey: ["planning", "kameti", id],
-    queryFn: () => planningApi.kameti.get(id),
-  });
+  const query = useKametiPlan(id);
   const addContribution = useMutation({
     mutationFn: (body) => planningApi.kameti.addContribution(id, body, todayYmd),
     onSuccess: () => {

@@ -1,17 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { planningApi } from "@/lib/api-client";
+import { useInstallmentCommitments } from "@/hooks/use-planning";
 import { formatCurrency, formatDate } from "@/lib/format";
 import Spinner from "@/components/ui/spinner";
 import EmptyState from "@/components/ui/empty-state";
 
 export default function InstallmentsPage() {
-  const query = useQuery({
-    queryKey: ["planning", "installments"],
-    queryFn: () => planningApi.installments.list({ limit: 50 }),
-  });
+  const query = useInstallmentCommitments();
 
   if (query.isLoading) {
     return <Spinner label="Loading installments…" />;

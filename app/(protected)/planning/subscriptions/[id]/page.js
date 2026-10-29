@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSubscription } from "@/hooks/use-planning";
 import { planningApi } from "@/lib/api-client";
 import { formatCurrency, formatDate } from "@/lib/format";
 import Spinner from "@/components/ui/spinner";
@@ -12,10 +13,7 @@ import Input from "@/components/ui/input";
 export default function SubscriptionDetailPage() {
   const { id } = useParams();
   const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: ["planning", "subscriptions", id],
-    queryFn: () => planningApi.subscriptions.get(id),
-  });
+  const query = useSubscription(id);
   const addPayment = useMutation({
     mutationFn: (body) => planningApi.subscriptions.addPayment(id, body),
     onSuccess: () => {

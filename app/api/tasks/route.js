@@ -8,6 +8,7 @@ import { assertNoScheduleConflicts } from "@/lib/scheduling/conflicts";
 import { DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants";
 import { buildTaskListFilter } from "@/lib/security/task-filters";
 import { readJsonBody } from "@/lib/security/request";
+import { enforceProcessorIdleResponse } from "@/lib/task-processor/enforce-idle";
 import Task from "@/models/Task";
 import Category from "@/models/Category";
 import mongoose from "mongoose";
@@ -61,6 +62,11 @@ export async function POST(request) {
   const auth = await requireAuth();
   if (auth.error) {
     return jsonError(auth.error, auth.status);
+  }
+
+  const processorBlock = await enforceProcessorIdleResponse();
+  if (processorBlock) {
+    return processorBlock;
   }
 
   const parsed = await readJsonBody(request);

@@ -10,6 +10,7 @@
 | Theme context      | React state could diverge from pre-hydration `dark` class                      | After mount, reconcile state with DOM + storage in one effect                                                                                |
 | Task calendars     | `useSyncExternalStore` returned a new object every snapshot → infinite loop    | Cached snapshot in `use-client-today.js`; server snapshot `null` + skeleton until client                                                     |
 | Calendar markers   | Missing import of `uniqueDayMarkers` in mini calendar                          | Import from `lib/calendar/task-entries.js` in `task-month-calendar.js`                                                                       |
+| Task processor     | Status polling could spam `/api/task-processor/status` on every mount          | TanStack Query cache + `STALE_MS.taskProcessor`; poll interval only while processor active; single auto-drive flag per page load             |
 
 ## Client “today” for calendars
 
@@ -25,7 +26,7 @@ Do not return inline object literals from `useSyncExternalStore` getSnapshot wit
 
 `components/error-boundary.js` (class component) catches render errors in:
 
-- Protected app shell (`app/(protected)/layout.js`)
+- Protected app shell (`app/(protected)/layout.js`) — includes `TaskProcessorProvider` (banner/shell gate; deterministic until status query resolves)
 - Dashboard task calendar (`app/(protected)/dashboard/page.js`)
 - Task form mini calendar (`components/tasks/task-form.js`)
 
@@ -63,9 +64,11 @@ Default test credentials (override with env):
 
 - `APP_USERNAME=hydration-user`
 - `HYDRATION_TEST_PASSWORD=hydration-test-pass`
-- Matching default `APP_PASSWORD_HASH` in `playwright.config.mjs`
+- `APP_PASSWORD_HASH_B64` — set by `playwright.config.mjs` for the test user (do not rely on your local `.env` `APP_USERNAME` when the web server is reused)
 
 MongoDB must accept connections for login/API during tests (`MONGODB_URI`, default `mongodb://127.0.0.1:27017/ptp-hydration-test`).
+
+**Local server reuse:** When `CI` is unset, Playwright **`reuseExistingServer: true`** — if something already listens on the Playwright port (default **3000**), tests hit that process instead of starting `next start` with hydration env. Symptom: auth setup times out on `/login` after sign-in. Mitigations: stop `npm run dev` on that port; set `CI=1`; or use another port, e.g. `PLAYWRIGHT_PORT=3001 CI=1 npm run test:hydration`.
 
 ## Limitations
 

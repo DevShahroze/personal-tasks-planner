@@ -1,16 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { planningApi } from "@/lib/api-client";
+import { useTours } from "@/hooks/use-planning";
 import { formatCurrency, formatDate } from "@/lib/format";
 import Spinner from "@/components/ui/spinner";
 
 export default function ToursPage() {
-  const query = useQuery({
-    queryKey: ["planning", "tours"],
-    queryFn: () => planningApi.tours.list({ limit: 50 }),
-  });
+  const query = useTours();
   if (query.isLoading) return <Spinner label="Loading…" />;
   return (
     <div className="page-stack mx-auto max-w-3xl">

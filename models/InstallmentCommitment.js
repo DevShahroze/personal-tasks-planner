@@ -12,7 +12,7 @@ const installmentSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     description: { type: String, default: "", maxlength: MAX_DESCRIPTION_LENGTH },
     totalAmount: { type: Number, required: true, min: 0.01 },
-    installmentAmount: { type: Number, required: true, min: 0.01 },
+    installmentAmount: { type: Number, default: null, min: 0.01 },
     currency: { type: String, default: DEFAULT_PLANNING_CURRENCY },
     frequency: { type: String, enum: PAYMENT_FREQUENCIES, default: "monthly" },
     customIntervalDays: { type: Number, default: null },

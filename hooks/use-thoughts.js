@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { thoughtsApi } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
+import { detailQueryOptions, listQueryOptions } from "@/lib/query-cache";
 
 export function useThoughts(filters) {
   return useQuery({
     queryKey: queryKeys.thoughts(filters),
     queryFn: () => thoughtsApi.list(filters),
     placeholderData: (prev) => prev,
+    ...listQueryOptions(),
   });
 }
 
@@ -15,6 +17,7 @@ export function useThought(id, enabled = true) {
     queryKey: queryKeys.thought(id),
     queryFn: () => thoughtsApi.get(id),
     enabled: Boolean(id) && enabled,
+    ...detailQueryOptions(),
   });
 }
 

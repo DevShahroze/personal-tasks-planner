@@ -1,16 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { planningApi } from "@/lib/api-client";
+import { useUniversityApplications } from "@/hooks/use-planning";
 import { formatDate } from "@/lib/format";
 import Spinner from "@/components/ui/spinner";
 
 export default function ApplicationsPage() {
-  const query = useQuery({
-    queryKey: ["planning", "applications"],
-    queryFn: () => planningApi.applications.list({ limit: 50 }),
-  });
+  const query = useUniversityApplications();
   if (query.isLoading) return <Spinner label="Loading…" />;
   return (
     <div className="page-stack mx-auto max-w-3xl">

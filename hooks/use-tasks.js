@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tasksApi } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
+import { detailQueryOptions, listQueryOptions } from "@/lib/query-cache";
 
 export function useTasks(filters) {
   return useQuery({
     queryKey: queryKeys.tasks(filters),
     queryFn: () => tasksApi.list(filters),
     placeholderData: (prev) => prev,
+    ...listQueryOptions(),
   });
 }
 
@@ -15,6 +17,7 @@ export function useTask(id, enabled = true) {
     queryKey: queryKeys.task(id),
     queryFn: () => tasksApi.get(id),
     enabled: Boolean(id) && enabled,
+    ...detailQueryOptions(),
   });
 }
 
@@ -38,6 +41,7 @@ export function useSubtasks(parentId, enabled = true) {
     queryKey: queryKeys.subtasks(parentId),
     queryFn: () => tasksApi.listSubtasks(parentId),
     enabled: Boolean(parentId) && enabled,
+    ...detailQueryOptions(),
   });
 }
 

@@ -1,17 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { planningApi } from "@/lib/api-client";
+import { useKametiPlans } from "@/hooks/use-planning";
 import { formatCurrency, formatDate } from "@/lib/format";
 import Spinner from "@/components/ui/spinner";
 import EmptyState from "@/components/ui/empty-state";
 
 export default function KametiListPage() {
-  const query = useQuery({
-    queryKey: ["planning", "kameti"],
-    queryFn: () => planningApi.kameti.list({ limit: 50 }),
-  });
+  const query = useKametiPlans();
   if (query.isLoading) return <Spinner label="Loading Kameti plans…" />;
   const items = query.data?.items || [];
   return (

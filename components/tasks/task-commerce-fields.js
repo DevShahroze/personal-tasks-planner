@@ -19,9 +19,11 @@ function moneyInputValue(value) {
 
 export default function TaskCommerceFields({ initialValues }) {
   return (
-    <fieldset className="space-y-3 rounded-md border border-border p-3">
-      <legend className="px-1 text-sm font-medium">Purchase / sale estimate</legend>
-      <div className="grid gap-3 md:grid-cols-2">
+    <fieldset className="space-y-3 rounded-lg border border-border bg-card p-4">
+      <legend className="px-1 text-sm font-semibold tracking-tight">
+        Purchase / sale estimate
+      </legend>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="block space-y-1 text-sm">
           <span>Intent</span>
           <Select name="intent" defaultValue={initialValues?.intent || "none"}>
@@ -67,7 +69,7 @@ export default function TaskCommerceFields({ initialValues }) {
             defaultValue={moneyInputValue(initialValues?.actualValue)}
           />
         </label>
-        <label className="block space-y-1 text-sm md:col-span-2">
+        <label className="block space-y-1 text-sm sm:col-span-2 lg:col-span-1 lg:max-w-[8rem]">
           <span>Currency</span>
           <Input
             name="currency"

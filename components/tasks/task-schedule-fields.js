@@ -87,8 +87,8 @@ export default function TaskScheduleFields({
   };
 
   return (
-    <div className="space-y-4 rounded-md border border-border p-3">
-      <p className="text-sm font-medium">Scheduling</p>
+    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+      <p className="text-sm font-semibold tracking-tight">Scheduling</p>
 
       <label className="block space-y-1 text-sm">
         <span>Mode</span>

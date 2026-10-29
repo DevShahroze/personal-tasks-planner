@@ -32,6 +32,7 @@ Last updated: 2026-10-29
 - CSRF mitigation via `SameSite` cookies + origin/referer validation on state-changing API requests.
 - Security headers: CSP (app-compatible), `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`, HSTS in production.
 - Input validation hardening: operator rejection, search sanitization, enum allowlists, string length limits, ObjectId validation.
+- **Task processor lock:** While a daily rollover run is pending or running, protected task mutation endpoints return **423 Locked** with a generic message (`lib/task-processor/enforce-idle.js`) so clients cannot interleave edits with batched rollovers.
 - Dependency audit gate for high/critical production vulnerabilities (`npm run audit:security`).
 
 ## Rate limiting limitations
@@ -60,10 +61,11 @@ For multi-instance/serverless production, use a shared store (for example Redis)
 3. Security tests (`node --test tests/security`)
 4. Scheduling tests (`npm run test:scheduling`)
 5. Recurrence / calendar logic tests (`npm run test:recurrence`)
-6. Format, subtasks, finance, and planning unit tests
-7. Production dependency audit (`scripts/security-audit.mjs`)
-8. Production build
-9. Hydration tests (`npm run test:hydration`) when MongoDB is available
+6. Client “today” snapshot test (`npm run test:client-today`)
+7. Format, subtasks, finance, and planning unit tests
+8. Production dependency audit (`scripts/security-audit.mjs`)
+9. Production build
+10. Hydration tests (`npm run test:hydration`) when MongoDB is available (see [HYDRATION.md](./HYDRATION.md) for port reuse)
 
 Git pre-push hook runs the same validate command.
 

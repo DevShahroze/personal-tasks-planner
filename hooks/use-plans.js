@@ -1,12 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { plansApi } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
+import { detailQueryOptions, listQueryOptions } from "@/lib/query-cache";
 
 export function usePlans(filters) {
   return useQuery({
     queryKey: queryKeys.plans(filters),
     queryFn: () => plansApi.list(filters),
     placeholderData: (prev) => prev,
+    ...listQueryOptions(),
   });
 }
 
@@ -15,6 +17,7 @@ export function usePlan(id, enabled = true) {
     queryKey: queryKeys.plan(id),
     queryFn: () => plansApi.get(id),
     enabled: Boolean(id) && enabled,
+    ...detailQueryOptions(),
   });
 }
 

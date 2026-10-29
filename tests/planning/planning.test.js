@@ -7,7 +7,60 @@ import {
 import { syncInstallmentCommitment } from "../../lib/planning/installments.js";
 import { syncKametiPlan } from "../../lib/planning/kameti.js";
 import { isDuplicatePayment } from "../../lib/payments/mongoose.js";
+import {
+  buildPrepaidPaymentRecords,
+  parsePrepaidPaymentAmounts,
+} from "../../lib/planning/prepaid-payments.js";
+import { validateInstallmentCreate } from "../../lib/planning/validate.js";
 import { buildTourCalendarEntries } from "../../lib/calendar/planning-entries.js";
+
+test("buildPrepaidPaymentRecords creates monthly history from start date", () => {
+  const payments = buildPrepaidPaymentRecords({
+    count: 3,
+    amountPerPayment: 100,
+    startDate: new Date("2026-01-15T12:00:00.000Z"),
+    frequency: "monthly",
+  });
+  assert.equal(payments.length, 3);
+  assert.equal(payments[0].amount, 100);
+  assert.equal(payments[0].paidAt.toISOString().slice(0, 10), "2026-01-15");
+  assert.equal(payments[2].paidAt.toISOString().slice(0, 10), "2026-03-15");
+});
+
+test("validateInstallmentCreate applies prepaid payments", () => {
+  const result = validateInstallmentCreate({
+    name: "Loan",
+    totalAmount: 1000,
+    installmentAmount: 100,
+    frequency: "monthly",
+    startDate: "2026-01-01",
+    prepaidPaymentsCount: 2,
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.value.payments.length, 2);
+  assert.equal(result.value.payments[0].amount, 100);
+});
+
+test("validateInstallmentCreate supports variable prepaid amounts", () => {
+  const result = validateInstallmentCreate({
+    name: "Loan",
+    totalAmount: 1000,
+    frequency: "monthly",
+    startDate: "2026-01-01",
+    prepaidPaymentAmounts: "100\n120\n90",
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.value.payments.length, 3);
+  assert.equal(result.value.payments[1].amount, 120);
+  assert.equal(result.value.installmentAmount, null);
+});
+
+test("parsePrepaidPaymentAmounts accepts comma-separated values", () => {
+  const errors = [];
+  const amounts = parsePrepaidPaymentAmounts("50, 75, 80", errors);
+  assert.equal(errors.length, 0);
+  assert.deepEqual(amounts, [50, 75, 80]);
+});
 
 test("advanceYmdByFrequency moves monthly dates", () => {
   assert.equal(advanceYmdByFrequency("2026-01-15", "monthly"), "2026-02-15");

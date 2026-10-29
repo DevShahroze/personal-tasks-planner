@@ -19,6 +19,7 @@ import { normalizeRecurrence } from "@/lib/recurrence/defaults";
 import { assertNoScheduleConflicts } from "@/lib/scheduling/conflicts";
 import { DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants";
 import { readJsonBody } from "@/lib/security/request";
+import { enforceProcessorIdleResponse } from "@/lib/task-processor/enforce-idle";
 import { removeTaskReferences } from "@/lib/relationships";
 import {
   assertValidParentTaskId,
@@ -57,6 +58,11 @@ export async function PATCH(request, { params }) {
   const auth = await requireAuth();
   if (auth.error) {
     return jsonError(auth.error, auth.status);
+  }
+
+  const processorBlock = await enforceProcessorIdleResponse();
+  if (processorBlock) {
+    return processorBlock;
   }
 
   const { id } = await params;
@@ -203,6 +209,11 @@ export async function DELETE(request, { params }) {
   const auth = await requireAuth();
   if (auth.error) {
     return jsonError(auth.error, auth.status);
+  }
+
+  const processorBlock = await enforceProcessorIdleResponse();
+  if (processorBlock) {
+    return processorBlock;
   }
 
   const { id } = await params;
