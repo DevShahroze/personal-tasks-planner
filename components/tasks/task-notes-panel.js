@@ -15,7 +15,7 @@ export default function TaskNotesPanel({ taskId }) {
   const [editingContent, setEditingContent] = useState("");
   const [error, setError] = useState("");
 
-  const items = notesQuery.data?.items || [];
+  const items = (notesQuery.data?.items || []).filter((note) => !note.visitDate);
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">

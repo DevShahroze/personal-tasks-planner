@@ -190,6 +190,18 @@ export async function PATCH(request, { params }) {
   }
 
   Object.assign(existing, patch);
+  if (patch.schedule !== undefined) {
+    existing.schedule = patch.schedule;
+    existing.markModified("schedule");
+  }
+  if (patch.recurrence !== undefined) {
+    existing.recurrence = patch.recurrence;
+    existing.markModified("recurrence");
+  }
+  if (patch.contentBlocks !== undefined) {
+    existing.contentBlocks = patch.contentBlocks;
+    existing.markModified("contentBlocks");
+  }
   try {
     await existing.save();
   } catch (err) {

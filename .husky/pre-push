@@ -1,1 +1,1 @@
-CI=1 PLAYWRIGHT_PORT="${PLAYWRIGHT_PORT:-3001}" npm run validate
+npm run validate:ci

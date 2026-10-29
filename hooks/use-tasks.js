@@ -21,9 +21,10 @@ export function useTask(id, enabled = true) {
   });
 }
 
-function invalidateTaskQueries(queryClient, id, parentTaskId) {
+function invalidateTaskQueries(queryClient, id, parentTaskId, options = {}) {
+  const { skipTaskDetail = false } = options;
   queryClient.invalidateQueries({ queryKey: ["tasks"] });
-  if (id) {
+  if (id && !skipTaskDetail) {
     queryClient.invalidateQueries({ queryKey: queryKeys.task(id) });
   }
   if (parentTaskId) {
@@ -85,10 +86,9 @@ export function useUpdateTaskMutation() {
     mutationFn: ({ id, body }) => tasksApi.update(id, body),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.task(data._id), data);
-      invalidateTaskQueries(queryClient, data._id, data.parentTaskId || undefined);
-      if (!data.parentTaskId) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.subtasks(data._id) });
-      }
+      invalidateTaskQueries(queryClient, data._id, data.parentTaskId || undefined, {
+        skipTaskDetail: true,
+      });
     },
   });
 }

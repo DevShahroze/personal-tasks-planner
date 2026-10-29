@@ -15,10 +15,12 @@ const taskNoteSchema = new mongoose.Schema(
       trim: true,
       maxlength: MAX_DESCRIPTION_LENGTH,
     },
+    visitDate: { type: Date, default: null },
   },
   { timestamps: true },
 );
 
 taskNoteSchema.index({ taskId: 1, createdAt: -1 });
+taskNoteSchema.index({ taskId: 1, visitDate: -1 });
 
 export default mongoose.models.TaskNote || mongoose.model("TaskNote", taskNoteSchema);

@@ -26,6 +26,7 @@ import TaskCommerceFields, {
 import TaskCategoryField, {
   initialCategoryId,
 } from "@/components/tasks/task-category-field";
+import { useClientTodayYmd } from "@/hooks/use-client-today";
 
 function dateInputValue(value) {
   if (!value) {
@@ -72,6 +73,8 @@ export default function TaskForm({
   recordingRecurrence,
 }) {
   const formId = "task-form";
+  const isEditForm = Boolean(taskId);
+  const clientToday = useClientTodayYmd();
   const [scheduleState, setScheduleState] = useState(() =>
     buildInitialScheduleState(initialValues),
   );
@@ -84,10 +87,16 @@ export default function TaskForm({
   const [taskDateWarning, setTaskDateWarning] = useState("");
   const [categoryId, setCategoryId] = useState(() => initialCategoryId(initialValues));
 
-  const schedulePayload = useMemo(
-    () => scheduleFromFormState(scheduleState),
-    [scheduleState],
-  );
+  const taskDateForForm =
+    taskDate || (!isEditForm && clientToday?.ymd ? clientToday.ymd : "");
+
+  const schedulePayload = useMemo(() => {
+    const stateForSchedule =
+      scheduleState.mode === "fixed" && !scheduleState.scheduledDate && taskDateForForm
+        ? { ...scheduleState, scheduledDate: taskDateForForm }
+        : scheduleState;
+    return scheduleFromFormState(stateForSchedule);
+  }, [scheduleState, taskDateForForm]);
 
   const recurrencePreview = useMemo(() => {
     const normalized = normalizeRecurrence(recurrenceFromFormState(recurrenceState));
@@ -97,8 +106,6 @@ export default function TaskForm({
   const nextDueLabel = recurrencePreview.nextDueDate
     ? formatScheduleInstant(recurrencePreview.nextDueDate, scheduleState.timezone)
     : null;
-
-  const isEditForm = Boolean(taskId);
 
   const actionButtons = (
     <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
@@ -126,7 +133,7 @@ export default function TaskForm({
     <>
       <form
         id={formId}
-        className={`flex w-full flex-col gap-5${isEditForm ? " pb-24" : ""}`}
+        className={`flex w-full flex-col gap-5`}
         onSubmit={(event) => {
           event.preventDefault();
           const formData = new FormData(event.currentTarget);
@@ -137,7 +144,7 @@ export default function TaskForm({
             status: formData.get("status"),
             priority: formData.get("priority"),
             category: categoryId || null,
-            taskDate: taskDate || null,
+            taskDate: taskDateForForm || null,
             timelineStart: formData.get("timelineStart") || null,
             timelineEnd: formData.get("timelineEnd") || null,
             schedule: schedulePayload,
@@ -219,7 +226,7 @@ export default function TaskForm({
                 <Input
                   type="date"
                   name="taskDateDisplay"
-                  value={taskDate}
+                  value={taskDateForForm}
                   onChange={(event) => setTaskDate(event.target.value)}
                 />
               </label>
@@ -253,7 +260,7 @@ export default function TaskForm({
               description="Use the task date field above or save without the mini calendar."
             >
               <TaskFormCalendarPicker
-                selectedYmd={taskDate}
+                selectedYmd={taskDateForForm}
                 timeZone={scheduleState.timezone}
                 scheduleForValidation={schedulePayload}
                 onSelectYmd={(ymd, warning) => {
@@ -270,7 +277,7 @@ export default function TaskForm({
           setRecurrenceState={setRecurrenceState}
           timeZone={scheduleState.timezone}
           taskId={taskId}
-          suggestedStartYmd={taskDate}
+          suggestedStartYmd={taskDateForForm}
           onRecordCompletion={onRecordRecurrenceCompletion}
           recording={recordingRecurrence}
           nextDuePreview={nextDueLabel}

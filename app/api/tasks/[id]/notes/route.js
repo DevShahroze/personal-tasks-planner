@@ -58,6 +58,7 @@ export async function POST(request, { params }) {
   const created = await TaskNote.create({
     taskId: id,
     content: validated.value.content,
+    visitDate: validated.value.visitDate,
   });
 
   return jsonOk(created.toObject(), 201);

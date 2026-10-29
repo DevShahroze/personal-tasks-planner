@@ -5,6 +5,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
   Line,
   LineChart,
@@ -24,6 +25,11 @@ import { useChartTheme } from "@/hooks/use-chart-theme";
 import { formatDate, formatDateTime } from "@/lib/format";
 import DashboardTaskCalendar from "@/components/dashboard/dashboard-task-calendar";
 import ErrorBoundary from "@/components/error-boundary";
+import {
+  fillForTaskCategory,
+  fillForTaskPriority,
+  fillForTaskStatus,
+} from "@/lib/dashboard/chart-colors";
 
 function SummaryCard({ label, value }) {
   return (
@@ -173,7 +179,11 @@ export default function DashboardPage() {
                     color: "var(--foreground)",
                   }}
                 />
-                <Bar dataKey="count" fill={chartTheme.primary} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {c.tasksByStatus.map((entry) => (
+                    <Cell key={entry.name} fill={fillForTaskStatus(entry.name)} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -207,7 +217,11 @@ export default function DashboardPage() {
                     color: "var(--foreground)",
                   }}
                 />
-                <Bar dataKey="count" fill={chartTheme.text} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {c.tasksByPriority.map((entry) => (
+                    <Cell key={entry.name} fill={fillForTaskPriority(entry.name)} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -241,12 +255,11 @@ export default function DashboardPage() {
                     color: "var(--foreground)",
                   }}
                 />
-                <Bar
-                  dataKey="count"
-                  fill={chartTheme.primary}
-                  fillOpacity={0.75}
-                  radius={[4, 4, 0, 0]}
-                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {c.tasksByCategory.map((entry) => (
+                    <Cell key={entry.name} fill={fillForTaskCategory(entry.name)} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

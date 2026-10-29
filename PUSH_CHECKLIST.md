@@ -1,6 +1,6 @@
 # Push checklist (for humans and Cursor)
 
-Use this file when you want to **run pre-checks**, **commit**, and **push** this repo. Point the agent here: e.g. “follow `PUSH_CHECKLIST.md` and push.”
+Use this file when you want to **run pre-checks**, **commit**, and **push**. Example: “follow `PUSH_CHECKLIST.md` and push.”
 
 ---
 
@@ -14,53 +14,28 @@ Do **not** change global or local `git config`. Set the author **per commit** on
 | Email      | `DevShahroze@users.noreply.github.com`               |
 | `--author` | `DevShahroze <DevShahroze@users.noreply.github.com>` |
 
-Example:
-
-```bash
-git commit --author="DevShahroze <DevShahroze@users.noreply.github.com>" -m "$(cat <<'EOF'
-Your commit message here.
-
-EOF
-)"
-```
-
 ---
 
-## Pre-checks before push
+## One local pre-check command
 
-### What runs
-
-The same pipeline as **`npm run validate`** (also enforced by Husky on **`git push`**):
-
-1. ESLint (`npm run lint`)
-2. Prettier check (`npm run format`)
-3. Unit tests: security, scheduling, recurrence, client-today, format, subtasks, finance, planning
-4. Production dependency audit (`npm run audit:security`)
-5. Production build (`npm run build`)
-6. Playwright hydration tests (`npm run test:hydration`)
-
-### Command to run locally (recommended)
-
-Matches [`.husky/pre-push`](./.husky/pre-push) so local results match the hook:
+Formats the repo, then runs the same gate as Husky (Playwright on port **3001**, **`CI=1`**):
 
 ```bash
-CI=1 PLAYWRIGHT_PORT=3001 npm run validate
+npm run prepush:local
 ```
 
-If Prettier fails, fix formatting then re-run validate:
+Underlying scripts: `format:fix` → `validate:ci` (see [package.json](./package.json)). [`.husky/pre-push`](./.husky/pre-push) runs **`npm run validate:ci`** only (no auto-format on push).
 
-```bash
-npm run format:fix
-CI=1 PLAYWRIGHT_PORT=3001 npm run validate
-```
+### What `validate:ci` runs
 
-### Hydration / Playwright notes
+ESLint, Prettier check, unit tests (security, scheduling, recurrence, client-today, format, subtasks, finance, planning), dependency audit, production build, Playwright hydration tests.
 
-- Hydration needs **MongoDB** reachable (see [HYDRATION.md](./HYDRATION.md)).
-- With **`CI=1`** and **`PLAYWRIGHT_PORT=3001`**, tests start their own production server with test credentials instead of reusing `npm run dev` on port **3000** (which causes login failures during validate).
-- If validate fails only on hydration while dev is on `:3000`, stop dev or use the command above.
+### Hydration notes
 
-### Emergency bypass (avoid unless necessary)
+- Needs **MongoDB** (see [HYDRATION.md](./HYDRATION.md)).
+- Stop `npm run dev` on **:3000** if hydration login fails; `validate:ci` avoids reusing that server.
+
+### Emergency bypass
 
 ```bash
 git push --no-verify
@@ -68,13 +43,31 @@ git push --no-verify
 
 ---
 
-## Commit and push workflow (agent)
+## Agent: one shell, one go (do not fragment)
 
-1. Inspect changes: `git status`, `git diff` (and `git log -3` for message style if needed).
-2. Run pre-checks (command above). Fix failures before committing.
-3. Stage intended files only (no `.env` or secrets). On zsh, quote paths with parentheses, e.g. `"app/(protected)/tasks/[id]/page.js"`, or use `git add -A` when the whole change set should ship.
-4. Commit with **`--author="DevShahroze <DevShahroze@users.noreply.github.com>"`** and a clear message (what/why).
-5. Push: `git push` (Husky runs validate again with `CI=1` and `PLAYWRIGHT_PORT=3001`).
+When the user asks to **push** (or follow this checklist and push):
+
+1. **Inspect once** (may run `git status`, `git diff`, and `git log -3` in parallel in the same turn).
+2. **Run a single long Shell command** that chains everything below. Do **not** stop after validate, ask the user to run another command, or split into separate validate → format → validate → commit → push turns unless **`prepush:local` failed** and you are fixing code before retrying **one** new chain.
+3. Do **not** ask the user to run commands manually.
+
+Replace the commit message with an accurate summary. Stage only intended files (`git add -A` when the whole change set should ship; never `.env` or secrets). On zsh, quote paths with parentheses.
+
+```bash
+cd /path/to/personal-tasks-planner && \
+npm run prepush:local && \
+git add -A && \
+git commit --author="DevShahroze <DevShahroze@users.noreply.github.com>" -m "$(cat <<'EOF'
+Your commit message here.
+
+EOF
+)" && \
+git push
+```
+
+Use a long `block_until_ms` (e.g. 600000) on that Shell call — validate + hydration takes several minutes. Husky runs `validate:ci` again on push; that is expected.
+
+If **`prepush:local` fails**: fix the reported issue, then run **one** new chained command (same shape). Do not commit until `prepush:local` succeeds.
 
 Do **not** commit or push unless the user asked for it.
 
@@ -82,11 +75,11 @@ Do **not** commit or push unless the user asked for it.
 
 ## Quick reference
 
-| Step          | Command                                                         |
-| ------------- | --------------------------------------------------------------- |
-| Pre-check     | `CI=1 PLAYWRIGHT_PORT=3001 npm run validate`                    |
-| Format fix    | `npm run format:fix`                                            |
-| Commit author | `--author="DevShahroze <DevShahroze@users.noreply.github.com>"` |
-| Push          | `git push` (runs validate via Husky)                            |
+| Step                    | Command                                                         |
+| ----------------------- | --------------------------------------------------------------- |
+| Pre-check (once)        | `npm run prepush:local`                                         |
+| Hook / CI validate only | `npm run validate:ci`                                           |
+| Commit author           | `--author="DevShahroze <DevShahroze@users.noreply.github.com>"` |
+| Push                    | `git push` (Husky → `validate:ci`)                              |
 
-Related: [README.md](./README.md) (scripts), [ARCHITECTURE.md](./ARCHITECTURE.md) (features), [SECURITY.md](./SECURITY.md) (validate list), [HYDRATION.md](./HYDRATION.md) (Playwright env), [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) (interactive blocks).
+Related: [README.md](./README.md), [ARCHITECTURE.md](./ARCHITECTURE.md), [SECURITY.md](./SECURITY.md), [HYDRATION.md](./HYDRATION.md).

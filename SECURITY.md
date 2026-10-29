@@ -70,7 +70,7 @@ For multi-instance/serverless production, use a shared store (for example Redis)
 Git **pre-push** hook (`.husky/pre-push`):
 
 ```bash
-CI=1 PLAYWRIGHT_PORT="${PLAYWRIGHT_PORT:-3001}" npm run validate
+npm run validate:ci
 ```
 
 Emergency hook bypass: `git push --no-verify`

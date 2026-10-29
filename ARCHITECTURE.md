@@ -228,21 +228,21 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 
 ## 6. Cross-cutting features (generic catalog)
 
-| Feature                     | Description                                                                                        |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| **Private auth**            | Cookie session, middleware + handler checks                                                        |
-| **CRUD modules**            | Tasks, thoughts, plans, categories                                                                 |
-| **Structured task content** | Checkbox / radio / table blocks with server validation                                             |
-| **Entity relationships**    | Many-to-many style links between domain objects                                                    |
-| **Dashboard**               | Aggregations + charts + recent activity lists + task calendar                                      |
-| **Task scheduling**         | Fixed/flexible slots, conflicts, availability templates                                            |
-| **Recurring / procedures**  | In-place next due date, completion recording, optional appointments                                |
-| **Daily task processor**    | Post–11 PM rollover, catch-up runs, DB-backed progress, client step driver                         |
-| **Theming**                 | Light/dark semantic CSS tokens                                                                     |
-| **Error boundaries**        | Client render failures contained per shell / calendar / form calendar                              |
-| **Activity logger**         | Optional client-only diagnostic log export                                                         |
-| **Quality gate**            | `npm run validate` — lint, format, security tests, audit, build, hydration tests                   |
-| **Pre-push hook**           | Husky: `CI=1 PLAYWRIGHT_PORT=3001 npm run validate` (see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md)) |
+| Feature                     | Description                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| **Private auth**            | Cookie session, middleware + handler checks                                      |
+| **CRUD modules**            | Tasks, thoughts, plans, categories                                               |
+| **Structured task content** | Checkbox / radio / table blocks with server validation                           |
+| **Entity relationships**    | Many-to-many style links between domain objects                                  |
+| **Dashboard**               | Aggregations + charts + recent activity lists + task calendar                    |
+| **Task scheduling**         | Fixed/flexible slots, conflicts, availability templates                          |
+| **Recurring / procedures**  | In-place next due date, completion recording, optional appointments              |
+| **Daily task processor**    | Post–11 PM rollover, catch-up runs, DB-backed progress, client step driver       |
+| **Theming**                 | Light/dark semantic CSS tokens                                                   |
+| **Error boundaries**        | Client render failures contained per shell / calendar / form calendar            |
+| **Activity logger**         | Optional client-only diagnostic log export                                       |
+| **Quality gate**            | `npm run validate` — lint, format, security tests, audit, build, hydration tests |
+| **Pre-push hook**           | Husky: `npm run validate:ci` (see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md))      |
 
 ---
 
@@ -285,7 +285,7 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 3. Use **MongoDB Atlas** (or compatible) with network access allowed for Vercel (IP allowlist or `0.0.0.0/0` with strong DB user password).
 4. Create a **least-privilege database user** (read/write on app database only).
 5. Deploy; smoke-test login, one CRUD flow, dashboard load.
-6. Run locally before push: [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md) (`CI=1 PLAYWRIGHT_PORT=3001 npm run validate`, commit author, then push).
+6. Run locally before push: [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md) (`npm run prepush:local`, commit author, then push).
 
 ---
 

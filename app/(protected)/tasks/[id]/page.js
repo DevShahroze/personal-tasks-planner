@@ -21,6 +21,9 @@ import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import TaskNotesPanel from "@/components/tasks/task-notes-panel";
+import TaskVisitsPanel from "@/components/tasks/task-visits-panel";
+import { mergeSchedulePatch, validateSchedule } from "@/lib/scheduling/validate";
+import { defaultSchedule } from "@/lib/scheduling/defaults";
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -34,7 +37,6 @@ export default function TaskDetailPage() {
   const [scheduleConflicts, setScheduleConflicts] = useState([]);
   const [incompleteSubtasks, setIncompleteSubtasks] = useState([]);
   const [creatingItems, setCreatingItems] = useState(false);
-  const [formRevision, setFormRevision] = useState(0);
 
   const task = taskQuery.data;
   const subtasksQuery = useSubtasks(taskId, Boolean(task && !task.parentTaskId));
@@ -120,7 +122,7 @@ export default function TaskDetailPage() {
 
       <div className="overflow-visible rounded-lg border border-border bg-card p-4">
         <TaskForm
-          key={`${taskId}-${formRevision}`}
+          key={`${taskId}-${task.updatedAt}`}
           taskId={taskId}
           initialValues={task}
           submitting={updateTask.isPending}
@@ -181,10 +183,16 @@ export default function TaskDetailPage() {
             setError("");
             setScheduleConflicts([]);
             setIncompleteSubtasks([]);
+            const scheduleCheck = validateSchedule(
+              mergeSchedulePatch(task.schedule || defaultSchedule(), values.schedule),
+            );
+            if (!scheduleCheck.ok) {
+              setError(scheduleCheck.errors.join(", "));
+              return;
+            }
             try {
               await updateTask.mutateAsync({ id: taskId, body: values });
               setMessage("Task updated");
-              setFormRevision((n) => n + 1);
             } catch (err) {
               if (err.conflicts?.length) {
                 setScheduleConflicts(err.conflicts);
@@ -203,6 +211,8 @@ export default function TaskDetailPage() {
       </div>
 
       {!task.parentTaskId ? <TaskSubtasksPanel parentTaskId={taskId} /> : null}
+
+      <TaskVisitsPanel task={task} />
 
       <TaskNotesPanel taskId={taskId} />
 

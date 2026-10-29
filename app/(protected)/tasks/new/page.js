@@ -25,8 +25,8 @@ export default function NewTaskPage() {
           setError("");
           setScheduleConflicts([]);
           try {
-            const task = await createTask.mutateAsync(values);
-            router.push(`/tasks/${task._id}`);
+            await createTask.mutateAsync(values);
+            router.push("/tasks");
           } catch (err) {
             if (err.conflicts?.length) {
               setScheduleConflicts(err.conflicts);
