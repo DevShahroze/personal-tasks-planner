@@ -3,6 +3,8 @@ import { requireAuth } from "@/lib/auth";
 import { readJsonBody } from "@/lib/security/request";
 import { jsonError, jsonOk, isValidObjectId } from "@/lib/api-response";
 import { validateCategoryName } from "@/lib/validations";
+import { UNASSIGNED_CATEGORY_NAME } from "@/lib/constants";
+import { findOrCreateUnassignedCategory } from "@/lib/categories/unassigned";
 import Category from "@/models/Category";
 import Task from "@/models/Task";
 
@@ -68,7 +70,12 @@ export async function DELETE(request, { params }) {
     return jsonError("Category not found", 404);
   }
 
-  await Task.updateMany({ category: id }, { $set: { category: null } });
+  if (category.name === UNASSIGNED_CATEGORY_NAME) {
+    return jsonError("The Unassigned category cannot be deleted", 400);
+  }
+
+  const unassigned = await findOrCreateUnassignedCategory();
+  await Task.updateMany({ category: id }, { $set: { category: unassigned._id } });
   await Category.findByIdAndDelete(id);
 
   return jsonOk({ ok: true });

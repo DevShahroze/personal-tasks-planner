@@ -59,8 +59,8 @@ export function useCategoriesSlice() {
 
   const removeMutation = useMutation({
     mutationFn: categoriesApi.remove,
-    onSuccess: (_result, id) => {
-      patchList((items) => items.filter((item) => String(item._id) !== String(id)));
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories });
       invalidateTaskViews();
     },
   });
