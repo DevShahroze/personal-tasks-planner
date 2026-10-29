@@ -3,7 +3,10 @@ import { requireAuth } from "@/lib/auth";
 import { jsonError, jsonOk, isValidObjectId } from "@/lib/api-response";
 import { readJsonBody } from "@/lib/security/request";
 import { validateSubscriptionUpdate } from "@/lib/planning/validate";
-import { syncSubscription } from "@/lib/planning/subscriptions";
+import {
+  recomputeSubscriptionNextBilling,
+  syncSubscription,
+} from "@/lib/planning/subscriptions";
 import Subscription from "@/models/Subscription";
 
 export async function GET(request, { params }) {
@@ -45,7 +48,19 @@ export async function PATCH(request, { params }) {
   if (!doc) {
     return jsonError("Subscription not found", 404);
   }
+  const scheduleKeys = [
+    "amount",
+    "billingFrequency",
+    "customIntervalDays",
+    "startDate",
+    "nextBillingDate",
+    "manualBilling",
+  ];
+  const scheduleChanged = scheduleKeys.some((key) => key in validated.patch);
   Object.assign(doc, validated.patch);
+  if (scheduleChanged) {
+    recomputeSubscriptionNextBilling(doc);
+  }
   syncSubscription(doc, new Date().toISOString().slice(0, 10));
   await doc.save();
   return jsonOk(doc.toObject());

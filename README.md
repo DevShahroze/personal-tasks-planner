@@ -89,6 +89,13 @@ List/detail/dashboard reads use shared TanStack Query keys and stale times (`lib
 
 Create flows support **prepaid periods** (count or comma-separated amounts) for installments, Kameti, and subscriptions. Amount parsing and validation live in `lib/planning/money-fields.js` and `lib/planning/validate.js` (safe for client bundles — no Mongoose import). Server routes enforce the same rules.
 
+## Subscriptions (planning)
+
+- **Planning → Subscriptions → New**: labeled fields with info popovers, desktop two-row layout on detail, live recurring-charge summary.
+- **Manual billing**: optional mode when you choose when to pay (not a fixed auto-charge schedule). Optional **started tracking** and **next pay date** (calendar reminder only).
+- **Detail**: edit fields, delete subscription, **log payment** (amount + optional date), **remove** individual payment history rows (`DELETE /api/subscriptions/:id/payments/:paymentId`).
+- After a successful create, the new form remounts empty; opening **New subscription** again also starts fresh (including back/forward cache).
+
 ## Task content blocks
 
 See [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) for interactive checkboxes, radio groups, and tables inside tasks (including **Create items** from comma-separated description text).

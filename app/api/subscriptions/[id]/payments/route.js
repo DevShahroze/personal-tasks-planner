@@ -4,7 +4,10 @@ import { jsonError, jsonOk, isValidObjectId } from "@/lib/api-response";
 import { readJsonBody } from "@/lib/security/request";
 import { validatePlanningPayment } from "@/lib/planning/validate";
 import { isDuplicatePayment } from "@/lib/payments/mongoose";
-import { syncSubscription } from "@/lib/planning/subscriptions";
+import {
+  recomputeSubscriptionNextBilling,
+  syncSubscription,
+} from "@/lib/planning/subscriptions";
 import Subscription from "@/models/Subscription";
 
 export async function POST(request, { params }) {
@@ -35,6 +38,7 @@ export async function POST(request, { params }) {
   }
 
   record.paymentHistory.push(validated.value);
+  recomputeSubscriptionNextBilling(record);
   syncSubscription(record, new Date().toISOString().slice(0, 10));
   await record.save();
   return jsonOk(record.toObject(), 201);

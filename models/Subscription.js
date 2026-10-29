@@ -18,6 +18,7 @@ const subscriptionSchema = new mongoose.Schema(
     renewalDate: { type: Date, default: null },
     cancellationDate: { type: Date, default: null },
     autoRenew: { type: Boolean, default: true },
+    manualBilling: { type: Boolean, default: false },
     paymentHistory: { type: [createPaymentSubschema()], default: [] },
     status: {
       type: String,
