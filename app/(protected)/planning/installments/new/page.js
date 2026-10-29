@@ -6,20 +6,13 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { planningApi } from "@/lib/api-client";
 import Button from "@/components/ui/button";
-import Input from "@/components/ui/input";
-import Textarea from "@/components/ui/textarea";
-import Select from "@/components/ui/select";
 import Alert from "@/components/ui/alert";
-import FieldLabel from "@/components/ui/field-label";
-import { PAYMENT_FREQUENCIES } from "@/lib/schedules/frequency";
-import PrepaidPaymentsFields from "@/components/planning/prepaid-payments-fields";
+import InstallmentFormFields, {
+  installmentPayloadFromFormData,
+} from "@/components/planning/installment-form-fields";
 import { validateInstallmentCreate } from "@/lib/planning/validate";
 import { formatValidationErrors } from "@/lib/planning/money-fields";
 import { apiErrorMessage } from "@/lib/planning/form-errors";
-
-function frequencyLabel(value) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
 
 export default function NewInstallmentPage() {
   const router = useRouter();
@@ -57,19 +50,13 @@ export default function NewInstallmentPage() {
         onSubmit={async (event) => {
           event.preventDefault();
           setError("");
-          const formData = new FormData(event.currentTarget);
-          const payload = {
-            name: formData.get("name"),
-            description: formData.get("description"),
-            totalAmount: formData.get("totalAmount"),
-            installmentAmount: formData.get("installmentAmount") || null,
-            frequency: formData.get("frequency"),
-            startDate: formData.get("startDate"),
-            endDate: formData.get("endDate") || null,
-            totalInstallments: formData.get("totalInstallments") || null,
-            prepaidPaymentsCount: formData.get("prepaidPaymentsCount") || 0,
-            prepaidPaymentAmounts: formData.get("prepaidPaymentAmounts") || "",
-          };
+          const payload = installmentPayloadFromFormData(
+            new FormData(event.currentTarget),
+            {
+              includePrepaid: true,
+              includeDownPayment: true,
+            },
+          );
           const validated = validateInstallmentCreate(payload);
           if (!validated.ok) {
             setError(formatValidationErrors(validated.errors));
@@ -82,111 +69,7 @@ export default function NewInstallmentPage() {
           }
         }}
       >
-        <div className="space-y-1">
-          <FieldLabel
-            htmlFor="installment-name"
-            label="Commitment name"
-            required
-            info="A short label you will recognize later, e.g. “Phone EMI” or “Car loan”."
-          />
-          <Input id="installment-name" name="name" required />
-        </div>
-
-        <div className="space-y-1">
-          <FieldLabel
-            htmlFor="installment-description"
-            label="Description"
-            info="Optional context: seller, account number, or what the installments are for."
-          />
-          <Textarea id="installment-description" name="description" rows={2} />
-        </div>
-
-        <div className="space-y-1">
-          <FieldLabel
-            htmlFor="installment-total"
-            label="Total amount"
-            required
-            info="Full commitment amount (principal or total price). Outstanding balance is reduced as you log payments."
-          />
-          <Input
-            id="installment-total"
-            name="totalAmount"
-            type="number"
-            step="0.01"
-            min="0.01"
-            required
-          />
-        </div>
-
-        <div className="space-y-1">
-          <FieldLabel
-            htmlFor="installment-amount"
-            label="Typical installment amount"
-            info="Default amount for each billing period when every installment is the same. Leave empty if amounts vary and you will use variable prepaid lines or enter payments manually later."
-          />
-          <Input
-            id="installment-amount"
-            name="installmentAmount"
-            type="number"
-            step="0.01"
-            min="0.01"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <FieldLabel
-            htmlFor="installment-frequency"
-            label="Payment frequency"
-            required
-            info="How often an installment is due. Due dates on the calendar are calculated from the start date using this schedule."
-          />
-          <Select id="installment-frequency" name="frequency" defaultValue="monthly">
-            {PAYMENT_FREQUENCIES.map((value) => (
-              <option key={value} value={value}>
-                {frequencyLabel(value)}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <FieldLabel
-            htmlFor="installment-start"
-            label="Start date"
-            required
-            info="Date of the first installment (or the first period you are tracking). Used for the payment schedule and for prepaid catch-up."
-          />
-          <Input id="installment-start" name="startDate" type="date" required />
-        </div>
-
-        <div className="space-y-1">
-          <FieldLabel
-            htmlFor="installment-end"
-            label="End date"
-            info="Optional last due date. You can leave this empty if you prefer to set a total number of installments instead."
-          />
-          <Input id="installment-end" name="endDate" type="date" />
-        </div>
-
-        <div className="space-y-1">
-          <FieldLabel
-            htmlFor="installment-count"
-            label="Total installments"
-            info="Optional cap on how many payments complete the commitment. Helpful when you know the exact count (e.g. 12 monthly payments)."
-          />
-          <Input
-            id="installment-count"
-            name="totalInstallments"
-            type="number"
-            min="1"
-            step="1"
-          />
-        </div>
-
-        <PrepaidPaymentsFields
-          periodAmountLabel="each installment amount when using the count field"
-          variableAmounts
-        />
+        <InstallmentFormFields idPrefix="new-installment" showPrepaid showDownPayment />
 
         <Button type="submit" disabled={create.isPending}>
           {create.isPending ? "Creating…" : "Create commitment"}

@@ -6,13 +6,67 @@ import {
 } from "../../lib/schedules/frequency.js";
 import { syncInstallmentCommitment } from "../../lib/planning/installments.js";
 import { syncKametiPlan } from "../../lib/planning/kameti.js";
-import { isDuplicatePayment } from "../../lib/payments/mongoose.js";
+import {
+  isDuplicatePayment,
+  sortPaymentsByPaidAtAsc,
+} from "../../lib/payments/mongoose.js";
 import {
   buildPrepaidPaymentRecords,
   parsePrepaidPaymentAmounts,
 } from "../../lib/planning/prepaid-payments.js";
-import { validateInstallmentCreate } from "../../lib/planning/validate.js";
+import {
+  validateInstallmentCreate,
+  validateInstallmentUpdate,
+  validateInstallmentPaymentLog,
+} from "../../lib/planning/validate.js";
 import { buildTourCalendarEntries } from "../../lib/calendar/planning-entries.js";
+
+test("validateInstallmentCreate records down payment separately from installments", () => {
+  const result = validateInstallmentCreate({
+    name: "Car",
+    totalAmount: 100000,
+    installmentAmount: 5000,
+    frequency: "monthly",
+    startDate: "2026-01-01",
+    downPaymentAmount: 20000,
+    downPaymentDate: "2025-12-15",
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.value.downPaymentAmount, 20000);
+  assert.equal(result.value.payments.length, 1);
+  assert.equal(result.value.payments[0].amount, 20000);
+  assert.equal(result.value.payments[0].note, "Down payment");
+  assert.equal(
+    result.value.payments[0].paidAt.toISOString().slice(0, 10),
+    "2025-12-15",
+  );
+});
+
+test("validateInstallmentPaymentLog sets note from payment type", () => {
+  const balloon = validateInstallmentPaymentLog({
+    amount: 1000,
+    paymentKind: "balloon",
+  });
+  assert.equal(balloon.ok, true);
+  assert.equal(balloon.value.note, "Balloon payment");
+});
+
+test("validateInstallmentUpdate accepts commitment field changes", () => {
+  const result = validateInstallmentUpdate({
+    name: "Updated loan",
+    totalAmount: 5000,
+    installmentAmount: 500,
+    frequency: "monthly",
+    startDate: "2026-02-01",
+    endDate: null,
+    totalInstallments: 10,
+    status: "active",
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.patch.name, "Updated loan");
+  assert.equal(result.patch.totalAmount, 5000);
+  assert.equal(result.patch.installmentAmount, 500);
+});
 
 test("buildPrepaidPaymentRecords creates monthly history from start date", () => {
   const payments = buildPrepaidPaymentRecords({
@@ -85,6 +139,53 @@ test("syncInstallmentCommitment reduces outstanding after payments", () => {
   assert.equal(doc.installmentsPaid, 2);
 });
 
+test("syncInstallmentCommitment does not count down payment toward installments paid", () => {
+  const doc = {
+    totalAmount: 100000,
+    installmentAmount: 5000,
+    frequency: "monthly",
+    startDate: new Date("2026-01-01T12:00:00.000Z"),
+    endDate: null,
+    status: "active",
+    payments: [
+      {
+        amount: 20000,
+        paidAt: new Date("2025-12-15T12:00:00.000Z"),
+        note: "Down payment",
+      },
+    ],
+  };
+  syncInstallmentCommitment(doc, "2026-06-01");
+  assert.equal(doc.outstandingBalance, 80000);
+  assert.equal(doc.installmentsPaid, 0);
+});
+
+test("syncInstallmentCommitment does not count balloon payment toward installments paid", () => {
+  const doc = {
+    totalAmount: 100000,
+    installmentAmount: 5000,
+    frequency: "monthly",
+    startDate: new Date("2026-01-01T12:00:00.000Z"),
+    endDate: null,
+    status: "active",
+    payments: [
+      {
+        amount: 5000,
+        paidAt: new Date("2026-01-01T12:00:00.000Z"),
+        note: "Installment",
+      },
+      {
+        amount: 15000,
+        paidAt: new Date("2026-06-01T12:00:00.000Z"),
+        note: "Balloon payment",
+      },
+    ],
+  };
+  syncInstallmentCommitment(doc, "2026-06-15");
+  assert.equal(doc.outstandingBalance, 80000);
+  assert.equal(doc.installmentsPaid, 1);
+});
+
 test("kameti payout does not zero remaining contributions automatically", () => {
   const doc = {
     planName: "Test",
@@ -110,6 +211,16 @@ test("isDuplicatePayment detects identical records", () => {
     isDuplicatePayment([{ amount: 50, paidAt }], { amount: 50, paidAt }),
     true,
   );
+});
+
+test("sortPaymentsByPaidAtAsc orders payments oldest first", () => {
+  const sorted = sortPaymentsByPaidAtAsc([
+    { amount: 10, paidAt: new Date("2026-03-01T12:00:00.000Z") },
+    { amount: 20, paidAt: new Date("2026-01-01T12:00:00.000Z") },
+    { amount: 30, paidAt: new Date("2026-02-01T12:00:00.000Z") },
+  ]);
+  assert.equal(sorted[0].amount, 20);
+  assert.equal(sorted[2].amount, 10);
 });
 
 test("tour calendar spans start through end dates", () => {

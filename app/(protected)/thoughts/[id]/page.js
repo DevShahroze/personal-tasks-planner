@@ -14,10 +14,12 @@ import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import { formatDateTime } from "@/lib/format";
+import { useConfirm } from "@/contexts/confirm-context";
 
 export default function ThoughtDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const confirm = useConfirm();
   const thoughtId = params.id;
   const thoughtQuery = useThought(thoughtId);
   const updateThought = useUpdateThoughtMutation();
@@ -51,7 +53,15 @@ export default function ThoughtDetailPage() {
           <Button
             variant="danger"
             onClick={async () => {
-              if (!window.confirm("Delete this thought?")) return;
+              const ok = await confirm({
+                title: "Delete thought?",
+                description: "Delete this thought? This cannot be undone.",
+                confirmLabel: "Delete",
+                variant: "danger",
+              });
+              if (!ok) {
+                return;
+              }
               await deleteThought.mutateAsync(thoughtId);
               router.push("/thoughts");
             }}

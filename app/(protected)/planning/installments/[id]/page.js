@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useClientTodayYmd } from "@/hooks/use-client-today";
@@ -13,33 +13,68 @@ import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
-import { validatePlanningPayment } from "@/lib/planning/validate";
+import Select from "@/components/ui/select";
+import InstallmentFormFields, {
+  installmentPayloadFromFormData,
+} from "@/components/planning/installment-form-fields";
+import {
+  validateInstallmentUpdate,
+  validateInstallmentPaymentLog,
+} from "@/lib/planning/validate";
 import { formatValidationErrors } from "@/lib/planning/money-fields";
 import { apiErrorMessage } from "@/lib/planning/form-errors";
 import { validatePaymentAmount } from "@/lib/finance/balance";
+import StickyPageFooter from "@/components/layout/sticky-page-footer";
+import { useConfirm } from "@/contexts/confirm-context";
 
 export default function InstallmentDetailPage() {
   const params = useParams();
   const id = params.id;
+  const router = useRouter();
+  const confirm = useConfirm();
   const clientToday = useClientTodayYmd();
   const todayYmd = clientToday?.ymd || "";
   const queryClient = useQueryClient();
   const [error, setError] = useState("");
+  const [editKey, setEditKey] = useState(0);
   const [amount, setAmount] = useState("");
   const [paidAt, setPaidAt] = useState("");
+  const [paymentKind, setPaymentKind] = useState("installment");
 
   const detailQuery = useInstallmentCommitment(id);
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["planning", "installments"] });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.planning.installments.detail(id),
+    });
+    queryClient.invalidateQueries({ queryKey: ["tasks", "calendar"] });
+  };
+
+  const update = useMutation({
+    mutationFn: (body) => planningApi.installments.update(id, body),
+    onSuccess: () => {
+      invalidate();
+      setEditKey((value) => value + 1);
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: () => planningApi.installments.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["planning", "installments"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks", "calendar"] });
+      router.push("/planning/installments");
+    },
+  });
 
   const addPayment = useMutation({
     mutationFn: (body) => planningApi.installments.addPayment(id, body, todayYmd),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["planning", "installments"] });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.planning.installments.detail(id),
-      });
-      queryClient.invalidateQueries({ queryKey: ["tasks", "calendar"] });
+      invalidate();
       setAmount("");
       setPaidAt("");
+      setPaymentKind("installment");
     },
   });
 
@@ -52,21 +87,81 @@ export default function InstallmentDetailPage() {
 
   const item = detailQuery.data;
 
+  const onDelete = async () => {
+    const ok = await confirm({
+      title: "Delete installment?",
+      description:
+        "Delete this installment commitment and its payment history? This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) {
+      return;
+    }
+    setError("");
+    try {
+      await remove.mutateAsync();
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    }
+  };
+
   return (
-    <div className="page-stack mx-auto max-w-2xl">
-      <p className="text-sm text-muted-foreground">
-        <Link href="/planning/installments" className="hover:underline">
-          Installments
-        </Link>{" "}
-        / {item.name}
-      </p>
-      <h1 className="page-title">{item.name}</h1>
+    <div className="page-stack mx-auto w-full max-w-4xl pb-20">
+      <div>
+        <p className="text-sm text-muted-foreground">
+          <Link href="/planning/installments" className="hover:underline">
+            Installments
+          </Link>{" "}
+          / {item.name}
+        </p>
+        <h1 className="page-title">{item.name}</h1>
+        <p className="page-lead">
+          {item.status} · Outstanding{" "}
+          {formatCurrency(item.outstandingBalance, item.currency)} · Next due{" "}
+          {formatDate(item.nextDueDate)}
+        </p>
+      </div>
+
       {error ? <Alert variant="error">{error}</Alert> : null}
+
+      <form
+        id="installment-edit-form"
+        key={editKey}
+        className="surface-card space-y-3"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          setError("");
+          const body = installmentPayloadFromFormData(
+            new FormData(event.currentTarget),
+            {
+              includeStatus: true,
+            },
+          );
+          const validated = validateInstallmentUpdate(body);
+          if (!validated.ok) {
+            setError(formatValidationErrors(validated.errors));
+            return;
+          }
+          try {
+            await update.mutateAsync(validated.patch);
+          } catch (err) {
+            setError(apiErrorMessage(err));
+          }
+        }}
+      >
+        <h2 className="text-sm font-semibold">Commitment details</h2>
+        <InstallmentFormFields idPrefix="edit-installment" defaults={item} showStatus />
+      </form>
+
       <div className="surface-card grid gap-2 text-sm md:grid-cols-2">
-        <p>Status: {item.status}</p>
-        <p>Outstanding: {formatCurrency(item.outstandingBalance, item.currency)}</p>
-        <p>Total: {formatCurrency(item.totalAmount, item.currency)}</p>
         <p>Installments paid: {item.installmentsPaid}</p>
+        {item.downPaymentAmount ? (
+          <p>
+            Down payment: {formatCurrency(item.downPaymentAmount, item.currency)}
+            {item.downPaymentDate ? ` on ${formatDate(item.downPaymentDate)}` : null}
+          </p>
+        ) : null}
         {item.installmentAmount ? (
           <p>
             Typical installment: {formatCurrency(item.installmentAmount, item.currency)}
@@ -74,28 +169,36 @@ export default function InstallmentDetailPage() {
         ) : (
           <p className="text-muted-foreground">Variable installment amounts</p>
         )}
-        <p>Next due: {formatDate(item.nextDueDate)}</p>
-        <p>Frequency: {item.frequency}</p>
+        <p>Total: {formatCurrency(item.totalAmount, item.currency)}</p>
       </div>
-      <div className="surface-card">
+
+      <div className="surface-card space-y-3">
         <h2 className="text-sm font-semibold">Payments</h2>
-        <ul className="mt-2 divide-y divide-border text-sm">
-          {(item.payments || []).map((payment, index) => (
-            <li key={payment._id || index} className="py-2">
-              {formatCurrency(payment.amount, item.currency)} on{" "}
-              {formatDate(payment.paidAt)}
-            </li>
-          ))}
-        </ul>
+        {!item.payments?.length ? (
+          <p className="text-xs text-muted-foreground">No payments logged yet.</p>
+        ) : (
+          <ul className="divide-y divide-border text-sm">
+            {(item.payments || []).map((payment, index) => (
+              <li key={payment._id || index} className="py-2">
+                {formatCurrency(payment.amount, item.currency)} on{" "}
+                {formatDate(payment.paidAt)}
+                {payment.note ? (
+                  <span className="text-muted-foreground"> — {payment.note}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
         {item.status !== "completed" && item.status !== "cancelled" ? (
           <form
-            className="mt-3 flex flex-wrap gap-2"
+            className="flex flex-wrap gap-2"
             onSubmit={async (event) => {
               event.preventDefault();
               setError("");
-              const paymentCheck = validatePlanningPayment({
+              const paymentCheck = validateInstallmentPaymentLog({
                 amount,
                 paidAt: paidAt || undefined,
+                paymentKind,
               });
               if (!paymentCheck.ok) {
                 setError(formatValidationErrors(paymentCheck.errors));
@@ -113,12 +216,24 @@ export default function InstallmentDetailPage() {
                 await addPayment.mutateAsync({
                   amount: paymentCheck.value.amount,
                   paidAt: paidAt || undefined,
+                  paymentKind,
                 });
               } catch (err) {
                 setError(apiErrorMessage(err));
               }
             }}
           >
+            <Select
+              name="paymentKind"
+              value={paymentKind}
+              onChange={(event) => setPaymentKind(event.target.value)}
+              className="max-w-[11rem]"
+              aria-label="Payment type"
+            >
+              <option value="installment">Installment</option>
+              <option value="down_payment">Down payment</option>
+              <option value="balloon">Balloon payment</option>
+            </Select>
             <Input
               type="number"
               step="0.01"
@@ -128,11 +243,13 @@ export default function InstallmentDetailPage() {
               onChange={(e) => setAmount(e.target.value)}
               required
               placeholder="Amount"
+              className="max-w-[10rem]"
             />
             <Input
               type="date"
               value={paidAt}
               onChange={(e) => setPaidAt(e.target.value)}
+              className="max-w-[10rem]"
             />
             <Button type="submit" disabled={addPayment.isPending || !todayYmd}>
               Record payment
@@ -140,9 +257,31 @@ export default function InstallmentDetailPage() {
           </form>
         ) : null}
       </div>
+
       <p className="text-xs text-muted-foreground">
         Updated {formatDateTime(item.updatedAt)}
       </p>
+
+      <StickyPageFooter>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => router.push("/planning/installments")}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          variant="danger"
+          disabled={remove.isPending}
+          onClick={onDelete}
+        >
+          Delete
+        </Button>
+        <Button type="submit" form="installment-edit-form" disabled={update.isPending}>
+          {update.isPending ? "Saving…" : "Save changes"}
+        </Button>
+      </StickyPageFooter>
     </div>
   );
 }

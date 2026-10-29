@@ -24,10 +24,12 @@ import TaskNotesPanel from "@/components/tasks/task-notes-panel";
 import TaskVisitsPanel from "@/components/tasks/task-visits-panel";
 import { mergeSchedulePatch, validateSchedule } from "@/lib/scheduling/validate";
 import { defaultSchedule } from "@/lib/scheduling/defaults";
+import { useConfirm } from "@/contexts/confirm-context";
 
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const confirm = useConfirm();
   const taskId = params.id;
   const taskQuery = useTask(taskId);
   const updateTask = useUpdateTaskMutation();
@@ -55,13 +57,27 @@ export default function TaskDetailPage() {
       !task.parentTaskId && subtasksQuery.data?.summary?.total
         ? ` This will also delete ${subtasksQuery.data.summary.total} subtask(s).`
         : "";
-    if (!window.confirm(`Delete this task?${subtaskNote}`)) return;
+    const ok = await confirm({
+      title: "Delete task?",
+      description: `Delete this task?${subtaskNote} This cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) {
+      return;
+    }
     await deleteTask.mutateAsync(taskId);
     router.push(task.parentTaskId ? `/tasks/${task.parentTaskId}` : "/tasks");
   };
 
   const onCancelTask = async () => {
-    if (!window.confirm("Cancel this task? It will stay in your list as cancelled.")) {
+    const ok = await confirm({
+      title: "Cancel task?",
+      description: "Cancel this task? It will stay in your list as cancelled.",
+      confirmLabel: "Cancel task",
+      variant: "primary",
+    });
+    if (!ok) {
       return;
     }
     setError("");

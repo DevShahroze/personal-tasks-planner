@@ -17,10 +17,12 @@ import Alert from "@/components/ui/alert";
 import FinancialRecordFormFields, {
   financialRecordPayloadFromFormData,
 } from "@/components/finance/financial-record-form-fields";
+import { useConfirm } from "@/contexts/confirm-context";
 
 export default function FinancialRecordDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const confirm = useConfirm();
   const clientToday = useClientTodayYmd();
   const todayYmd = clientToday?.ymd || "";
   const recordId = params.id;
@@ -43,7 +45,14 @@ export default function FinancialRecordDetailPage() {
   const record = recordQuery.data;
 
   const onDelete = async () => {
-    if (!window.confirm("Delete this financial record and its payment history?")) {
+    const ok = await confirm({
+      title: "Delete financial record?",
+      description:
+        "Delete this financial record and its payment history? This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) {
       return;
     }
     await remove.mutateAsync(recordId);

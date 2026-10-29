@@ -23,10 +23,12 @@ import {
 import { formatValidationErrors } from "@/lib/planning/money-fields";
 import { apiErrorMessage } from "@/lib/planning/form-errors";
 import { validatePaymentAmount } from "@/lib/finance/balance";
+import { useConfirm } from "@/contexts/confirm-context";
 
 export default function InsurancePolicyDetailClient() {
   const { id } = useParams();
   const router = useRouter();
+  const confirm = useConfirm();
   const clientToday = useClientTodayYmd();
   const todayYmd = clientToday?.ymd || "";
   const queryClient = useQueryClient();
@@ -98,7 +100,14 @@ export default function InsurancePolicyDetailClient() {
           type="button"
           disabled={remove.isPending}
           onClick={async () => {
-            if (!window.confirm("Delete this policy and payment history?")) {
+            const ok = await confirm({
+              title: "Delete policy?",
+              description:
+                "Delete this policy and its payment history? This cannot be undone.",
+              confirmLabel: "Delete",
+              variant: "danger",
+            });
+            if (!ok) {
               return;
             }
             setError("");
@@ -184,7 +193,13 @@ export default function InsurancePolicyDetailClient() {
                     className="text-xs"
                     disabled={removePayment.isPending}
                     onClick={async () => {
-                      if (!window.confirm("Remove this payment?")) {
+                      const ok = await confirm({
+                        title: "Remove payment?",
+                        description: "Remove this premium payment from history?",
+                        confirmLabel: "Remove",
+                        variant: "danger",
+                      });
+                      if (!ok) {
                         return;
                       }
                       setError("");

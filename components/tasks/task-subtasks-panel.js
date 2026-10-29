@@ -9,8 +9,10 @@ import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
 import Alert from "@/components/ui/alert";
+import { useConfirm } from "@/contexts/confirm-context";
 
 export default function TaskSubtasksPanel({ parentTaskId }) {
+  const confirm = useConfirm();
   const subtasksQuery = useSubtasks(parentTaskId);
   const { createSubtask, updateSubtask, deleteSubtask } =
     useSubtaskMutations(parentTaskId);
@@ -95,7 +97,13 @@ export default function TaskSubtasksPanel({ parentTaskId }) {
                 className="px-2 py-1 text-xs"
                 disabled={deleteSubtask.isPending}
                 onClick={async () => {
-                  if (!window.confirm(`Delete subtask "${subtask.title}"?`)) {
+                  const ok = await confirm({
+                    title: "Delete subtask?",
+                    description: `Delete subtask "${subtask.title}"? This cannot be undone.`,
+                    confirmLabel: "Delete",
+                    variant: "danger",
+                  });
+                  if (!ok) {
                     return;
                   }
                   setError("");

@@ -102,7 +102,9 @@ The UI is intentionally **dense** for a single-user productivity app: more rows 
 | **Dashboard**  | Summary metrics `text-xl`; chart height `h-52`; grid gaps `gap-2` / `gap-3`                                                                           |
 | **Theme**      | Sun/moon **icons** in the nav; sidebar keeps icon + short text when `compact`                                                                         |
 
-Implementation lives in **`app/globals.css`**, **`components/ui/*`**, **`components/layout/app-shell.js`**, and page-level Tailwind classes. No external component library.
+Implementation lives in **`app/globals.css`**, **`components/ui/*`**, **`components/layout/app-shell.js`** (includes **Go back** on nested routes), **`components/layout/sticky-page-footer.js`**, and page-level Tailwind classes. No external component library.
+
+**Confirm flows:** `contexts/confirm-context.js` wraps the app in `components/providers.js` and exposes `useConfirm()` for modal confirmations (delete, remove payment, etc.).
 
 ---
 
@@ -181,7 +183,7 @@ See [SECURITY.md](./SECURITY.md) for audit detail.
 - **Tasks**: status, priority, dates, category, **schedule**, **recurrence**, **content blocks**, optional **`amountSpent`** / commerce fields (`intent`, `estimatedValue`, `actualValue`, `currency`), **subtasks** (`parentTaskId`), links to thoughts/plans.
 - **Task notes**: separate `TaskNote` collection (not the task description).
 - **Financial records**: lent/borrowed/payable/receivable with payment history.
-- **Planning** (dedicated models): installment commitments (optional per-installment `installmentAmount`), Kameti plans, **subscriptions** (`manualBilling`, `paymentHistory`, edit/delete UI, payment log + per-payment delete), university applications, tours/expenses — calendar and dashboard integrate due dates without spawning per-payment tasks.
+- **Planning** (dedicated models): **installment commitments** (`downPaymentAmount`, optional `installmentAmount`, payment notes for installment/down/balloon types; `lib/planning/installment-payments.js` drives **installments paid**), Kameti plans, **subscriptions** (`manualBilling`, `paymentHistory`, edit/delete UI, payment log + per-payment delete), university applications, tours/expenses — calendar and dashboard integrate due dates without spawning per-payment tasks. Installment payments are sorted by `paidAt` on sync and in GET detail responses.
 - **Planning validation**: shared helpers in `lib/planning/validate.js`, `lib/planning/money-fields.js`, `lib/planning/prepaid-payments.js`, and `lib/planning/form-errors.js` (client-safe ObjectId checks via `lib/security/ids.js`, not Mongoose).
 - **TaskProcessorRun**: one document per business date — tracks pending/running/completed rollover batches and failures.
 - **Thoughts / Plans**: metadata + relationship edges to other entities.

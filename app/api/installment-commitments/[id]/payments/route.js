@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { jsonError, jsonOk, isValidObjectId } from "@/lib/api-response";
 import { readJsonBody } from "@/lib/security/request";
 import { applyPlanningPayment } from "@/lib/planning/payment-handler";
+import { validateInstallmentPaymentLog } from "@/lib/planning/validate";
 import { syncInstallmentCommitment } from "@/lib/planning/installments";
 import InstallmentCommitment from "@/models/InstallmentCommitment";
 
@@ -41,6 +42,7 @@ export async function POST(request, { params }) {
     body: parsed.body,
     syncFn: syncInstallmentCommitment,
     todayYmd,
+    validateFn: validateInstallmentPaymentLog,
   });
   if (result.error) {
     return result.error;

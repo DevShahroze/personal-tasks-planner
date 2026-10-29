@@ -97,6 +97,13 @@ Create flows support **prepaid periods** (count or comma-separated amounts) for 
 - **Detail**: edit fields, delete subscription, **log payment** (amount + optional date), **remove** individual payment history rows (`DELETE /api/subscriptions/:id/payments/:paymentId`).
 - After a successful create, the new form remounts empty; opening **New subscription** again also starts fresh (including back/forward cache).
 
+## Installments (planning)
+
+- **Planning → Installments → New**: commitment fields, optional **down payment** (logged as its own payment on create), prepaid periods (count or variable amounts), shared form in `components/planning/installment-form-fields.js`.
+- **Detail**: edit name, amounts, schedule, and status; **log payment** with type **Installment**, **Down payment**, or **Balloon payment**; payment history sorted by **paid date** (oldest first). Down payment and balloon amounts reduce outstanding balance but do not increase **installments paid**.
+- **Sticky footer** on detail: **Cancel** (back to list), **Delete**, **Save changes**. Destructive actions use the app **confirm dialog** (`useConfirm` in `contexts/confirm-context.js`), not browser `window.confirm`.
+- Nested routes show **Go back** in the shell (`components/layout/page-go-back.js`) to the parent URL.
+
 ## Task content blocks
 
 See [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) for interactive checkboxes, radio groups, and tables inside tasks (including **Create items** from comma-separated description text).
@@ -111,6 +118,10 @@ See [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) for interactive checkboxe
 ## Categories
 
 Search on the categories page; delete uses a confirmation modal. Deleting a category moves linked tasks to **Unassigned** (`lib/categories/unassigned.js`, `UNASSIGNED_CATEGORY_NAME` in `lib/constants.js`). The Unassigned category cannot be deleted.
+
+## Confirm dialogs
+
+Destructive or irreversible actions (delete task, remove payment, cancel task, etc.) use **`ConfirmProvider`** / **`useConfirm()`** (`contexts/confirm-context.js`) with the shared **`Modal`** component — not native browser confirm/alert dialogs.
 
 ## Scheduling, recurrence, and calendar
 

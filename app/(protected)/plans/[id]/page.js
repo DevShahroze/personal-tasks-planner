@@ -14,10 +14,12 @@ import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { useConfirm } from "@/contexts/confirm-context";
 
 export default function PlanDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const confirm = useConfirm();
   const planId = params.id;
   const planQuery = usePlan(planId);
   const updatePlan = useUpdatePlanMutation();
@@ -51,7 +53,15 @@ export default function PlanDetailPage() {
           <Button
             variant="danger"
             onClick={async () => {
-              if (!window.confirm("Delete this plan?")) return;
+              const ok = await confirm({
+                title: "Delete plan?",
+                description: "Delete this plan? This cannot be undone.",
+                confirmLabel: "Delete",
+                variant: "danger",
+              });
+              if (!ok) {
+                return;
+              }
               await deletePlan.mutateAsync(planId);
               router.push("/plans");
             }}

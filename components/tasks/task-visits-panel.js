@@ -10,9 +10,11 @@ import Button from "@/components/ui/button";
 import Textarea from "@/components/ui/textarea";
 import Input from "@/components/ui/input";
 import Alert from "@/components/ui/alert";
+import { useConfirm } from "@/contexts/confirm-context";
 
 export default function TaskVisitsPanel({ task, onTaskRescheduled }) {
   const taskId = task._id;
+  const confirm = useConfirm();
   const notesQuery = useTaskNotes(taskId);
   const { createNote, deleteNote } = useTaskNoteMutations(taskId);
   const updateTask = useUpdateTaskMutation();
@@ -84,7 +86,13 @@ export default function TaskVisitsPanel({ task, onTaskRescheduled }) {
                   className="px-2 py-1 text-xs"
                   disabled={deleteNote.isPending}
                   onClick={async () => {
-                    if (!window.confirm("Delete this visit record?")) {
+                    const ok = await confirm({
+                      title: "Delete visit?",
+                      description: "Delete this visit record? This cannot be undone.",
+                      confirmLabel: "Delete",
+                      variant: "danger",
+                    });
+                    if (!ok) {
                       return;
                     }
                     setError("");

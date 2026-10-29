@@ -6,8 +6,10 @@ import { useTaskNoteMutations, useTaskNotes } from "@/hooks/use-task-notes";
 import Button from "@/components/ui/button";
 import Textarea from "@/components/ui/textarea";
 import Alert from "@/components/ui/alert";
+import { useConfirm } from "@/contexts/confirm-context";
 
 export default function TaskNotesPanel({ taskId }) {
+  const confirm = useConfirm();
   const notesQuery = useTaskNotes(taskId);
   const { createNote, updateNote, deleteNote } = useTaskNoteMutations(taskId);
   const [draft, setDraft] = useState("");
@@ -101,7 +103,13 @@ export default function TaskNotesPanel({ taskId }) {
                       className="px-2 py-1 text-xs"
                       disabled={deleteNote.isPending}
                       onClick={async () => {
-                        if (!window.confirm("Delete this note?")) {
+                        const ok = await confirm({
+                          title: "Delete note?",
+                          description: "Delete this note? This cannot be undone.",
+                          confirmLabel: "Delete",
+                          variant: "danger",
+                        });
+                        if (!ok) {
                           return;
                         }
                         setError("");

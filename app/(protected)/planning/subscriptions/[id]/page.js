@@ -18,10 +18,12 @@ import SubscriptionFormFields, {
 import { validateSubscriptionUpdate } from "@/lib/planning/validate";
 import { formatValidationErrors } from "@/lib/planning/money-fields";
 import { apiErrorMessage } from "@/lib/planning/form-errors";
+import { useConfirm } from "@/contexts/confirm-context";
 
 export default function SubscriptionDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [error, setError] = useState("");
   const [editKey, setEditKey] = useState(0);
@@ -72,7 +74,14 @@ export default function SubscriptionDetailPage() {
   }
 
   const onDelete = async () => {
-    if (!window.confirm("Delete this subscription and its payment history?")) {
+    const ok = await confirm({
+      title: "Delete subscription?",
+      description:
+        "Delete this subscription and its payment history? This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) {
       return;
     }
     setError("");
@@ -183,7 +192,13 @@ export default function SubscriptionDetailPage() {
                     className="shrink-0 text-xs"
                     disabled={removePayment.isPending}
                     onClick={async () => {
-                      if (!window.confirm("Remove this payment from history?")) {
+                      const ok = await confirm({
+                        title: "Remove payment?",
+                        description: "Remove this payment from history?",
+                        confirmLabel: "Remove",
+                        variant: "danger",
+                      });
+                      if (!ok) {
                         return;
                       }
                       setError("");

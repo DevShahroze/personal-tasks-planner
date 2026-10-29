@@ -5,6 +5,7 @@ import { readJsonBody } from "@/lib/security/request";
 import { validateInstallmentUpdate } from "@/lib/planning/validate";
 import { syncInstallmentCommitment } from "@/lib/planning/installments";
 import InstallmentCommitment from "@/models/InstallmentCommitment";
+import { sortPaymentsByPaidAtAsc } from "@/lib/payments/mongoose";
 
 export async function GET(request, { params }) {
   const auth = await requireAuth();
@@ -22,7 +23,10 @@ export async function GET(request, { params }) {
   if (!doc) {
     return jsonError("Installment commitment not found", 404);
   }
-  return jsonOk(doc);
+  return jsonOk({
+    ...doc,
+    payments: sortPaymentsByPaidAtAsc(doc.payments),
+  });
 }
 
 export async function PATCH(request, { params }) {

@@ -11,6 +11,7 @@ import {
   TaskProcessorMainChrome,
   TaskProcessorNavStatus,
 } from "@/contexts/task-processor-context";
+import PageGoBack from "@/components/layout/page-go-back";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -123,7 +124,10 @@ export default function AppShell({ children }) {
         </aside>
 
         <main className="flex min-w-0 flex-1 flex-col overflow-y-auto p-3 md:p-4">
-          <TaskProcessorMainChrome>{children}</TaskProcessorMainChrome>
+          <TaskProcessorMainChrome>
+            <PageGoBack />
+            {children}
+          </TaskProcessorMainChrome>
         </main>
       </div>
 
