@@ -4,17 +4,20 @@ const port = Number(process.env.PLAYWRIGHT_PORT || 3000);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://127.0.0.1:${port}`;
 const authFile = "tests/hydration/.auth/user.json";
 
+const hydrationUsername = "hydration-user";
+const hydrationPasswordHash =
+  "$2b$12$nbYsZnCEkMLR/9K2MZwYaeLOAq9Aq/UzAkHZejVUmOMGVRh2Ximb2";
+const hydrationPassword = "hydration-test-pass";
+
 const serverEnv = {
   ...process.env,
   NODE_ENV: "production",
   MONGODB_URI:
     process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/ptp-hydration-test",
   AUTH_SECRET: process.env.AUTH_SECRET || "hydration-test-auth-secret-32chars-min",
-  APP_USERNAME: process.env.APP_USERNAME || "hydration-user",
-  APP_PASSWORD_HASH:
-    process.env.APP_PASSWORD_HASH ||
-    "$2b$12$nbYsZnCEkMLR/9K2MZwYaeLOAq9Aq/UzAkHZejVUmOMGVRh2Ximb2",
-  HYDRATION_TEST_PASSWORD: process.env.HYDRATION_TEST_PASSWORD || "hydration-test-pass",
+  APP_USERNAME: hydrationUsername,
+  APP_PASSWORD_HASH: hydrationPasswordHash,
+  HYDRATION_TEST_PASSWORD: hydrationPassword,
 };
 
 export default defineConfig({
