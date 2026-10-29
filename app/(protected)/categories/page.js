@@ -175,14 +175,17 @@ export default function CategoriesPage() {
         {deleteTarget ? (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Delete <span className="font-medium text-foreground">{deleteTarget.name}</span>
-              ?
+              Delete{" "}
+              <span className="font-medium text-foreground">{deleteTarget.name}</span>?
               {deleteTarget.taskCount > 0 ? (
                 <>
                   {" "}
                   {deleteTarget.taskCount} linked task
                   {deleteTarget.taskCount === 1 ? "" : "s"} will move to{" "}
-                  <span className="font-medium text-foreground">{UNASSIGNED_CATEGORY_NAME}</span>.
+                  <span className="font-medium text-foreground">
+                    {UNASSIGNED_CATEGORY_NAME}
+                  </span>
+                  .
                 </>
               ) : (
                 <> This cannot be undone.</>
