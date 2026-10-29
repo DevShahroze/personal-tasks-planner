@@ -2,7 +2,7 @@
 
 Private single-user app for tasks, thoughts, plans, categories, relationships, **scheduling**, **recurring procedures**, a **daily task processor** (timezone-aware rollover after 11 PM), **financial records**, **planning** (installments with prepaid/variable amounts, Kameti, subscriptions, university applications, tours), and a dashboard (including a **task calendar**) backed by MongoDB.
 
-Architecture overview: [ARCHITECTURE.md](./ARCHITECTURE.md)
+Architecture overview: [ARCHITECTURE.md](./ARCHITECTURE.md) · Before push: [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md)
 
 ## Setup
 
@@ -57,11 +57,11 @@ Open [http://localhost:3000](http://localhost:3000) and sign in.
 - `npm run test:planning` — installments (including prepaid payments), Kameti, subscriptions, tours schedule helpers
 - `npm run test:client-today` — cached client “today” snapshot (calendar hydration safety)
 - `npm run test:hydration` — Playwright against production build (`next start`); needs MongoDB
-- `npm run validate` — lint, format, tests (security, scheduling, recurrence, client-today, format, subtasks, finance, planning), audit, build, hydration (runs before `git push` via Husky)
+- `npm run validate` — full quality gate (see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md) for the recommended local command and commit author)
+
+**Before you push:** follow [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md) — run `CI=1 PLAYWRIGHT_PORT=3001 npm run validate`, commit with `--author="DevShahroze <DevShahroze@users.noreply.github.com>"`, then `git push` (Husky runs the same validate).
 
 To bypass the pre-push hook in an emergency: `git push --no-verify`
-
-**Hydration / validate tip:** Playwright reuses an existing server on port 3000 when `CI` is unset. If `npm run dev` is already bound to `:3000`, login during `test:hydration` can fail (wrong auth env). Stop the dev server, or run hydration with a dedicated port, e.g. `CI=1 PLAYWRIGHT_PORT=3001 npm run test:hydration`.
 
 ## Theme
 
@@ -91,11 +91,23 @@ Create flows support **prepaid periods** (count or comma-separated amounts) for 
 
 ## Task content blocks
 
-See [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) for interactive checkboxes, radio groups, and tables inside tasks.
+See [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) for interactive checkboxes, radio groups, and tables inside tasks (including **Create items** from comma-separated description text).
+
+## Tasks (detail page)
+
+- Opening a task shows the **edit form** immediately (no separate “Edit details” mode).
+- **Update task** / **Delete** sit in a **fixed bottom bar** (viewport footer, aligned with the main column).
+- Optional **Amount spent** + currency on the form; optional **Create items** builds deduplicated checkbox blocks from the description (title-case labels, lowercase **slug** keys).
+- **Interactive content** below the form still saves on its own schedule (debounced PATCH); the main form saves only when you click **Update task**.
+
+## Categories
+
+Search on the categories page; delete uses a confirmation modal. Deleting a category moves linked tasks to **Unassigned** (`lib/categories/unassigned.js`, `UNASSIGNED_CATEGORY_NAME` in `lib/constants.js`). The Unassigned category cannot be deleted.
 
 ## Scheduling, recurrence, and calendar
 
 - Task **schedule** (fixed / flexible / unscheduled), availability templates, and conflict checks — see [ARCHITECTURE.md](./ARCHITECTURE.md).
 - **Recurring** tasks keep one document; `nextDueDate` is calculated on the server. Optional `SCHEDULE_PUBLIC_HOLIDAYS` in `.env` for holiday exclusion.
-- Dashboard and task forms use a shared month calendar (`uniqueDayMarkers` in `lib/calendar/task-entries.js` for priority + financial markers); client “today” uses a cached `useSyncExternalStore` snapshot (see [HYDRATION.md](./HYDRATION.md)).
+- Dashboard and task forms use a shared month calendar (`lib/calendar/task-entries.js`: **task date**, scheduled, deadline, recurring due, plus planning/financial markers via `uniqueDayMarkers`).
 - Render errors in the shell or calendar widgets are caught by **error boundaries** (`components/error-boundary.js`).
+- Client “today” uses a cached `useSyncExternalStore` snapshot (see [HYDRATION.md](./HYDRATION.md)).

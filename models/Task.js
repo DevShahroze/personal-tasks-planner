@@ -51,6 +51,7 @@ const contentBlockSchema = new mongoose.Schema(
       required: true,
     },
     label: { type: String, default: "" },
+    slug: { type: String, default: "" },
     checked: { type: Boolean, default: false },
     groupLabel: { type: String, default: "" },
     options: [optionSchema],
@@ -148,6 +149,7 @@ const taskSchema = new mongoose.Schema(
     },
     estimatedValue: { type: Number, default: null },
     actualValue: { type: Number, default: null },
+    amountSpent: { type: Number, default: null },
     currency: { type: String, default: DEFAULT_TASK_CURRENCY },
   },
   { timestamps: true },
@@ -163,14 +165,17 @@ taskSchema.index({
 });
 taskSchema.index({ parentTaskId: 1, status: 1 });
 
-taskSchema.pre("save", function ensureScheduleDefaults(next) {
+taskSchema.pre("save", function ensureScheduleDefaults() {
   if (!this.schedule) {
     this.schedule = defaultSchedule();
   }
   if (!this.recurrence) {
     this.recurrence = defaultRecurrence();
   }
-  next();
 });
 
-export default mongoose.models.Task || mongoose.model("Task", taskSchema);
+if (mongoose.models.Task) {
+  delete mongoose.models.Task;
+}
+
+export default mongoose.model("Task", taskSchema);

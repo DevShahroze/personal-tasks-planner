@@ -65,9 +65,13 @@ For multi-instance/serverless production, use a shared store (for example Redis)
 7. Format, subtasks, finance, and planning unit tests
 8. Production dependency audit (`scripts/security-audit.mjs`)
 9. Production build
-10. Hydration tests (`npm run test:hydration`) when MongoDB is available (see [HYDRATION.md](./HYDRATION.md) for port reuse)
+10. Hydration tests (`npm run test:hydration`) when MongoDB is available (see [HYDRATION.md](./HYDRATION.md) and [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md))
 
-Git pre-push hook runs the same validate command.
+Git **pre-push** hook (`.husky/pre-push`):
+
+```bash
+CI=1 PLAYWRIGHT_PORT="${PLAYWRIGHT_PORT:-3001}" npm run validate
+```
 
 Emergency hook bypass: `git push --no-verify`
 

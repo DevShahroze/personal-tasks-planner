@@ -26,6 +26,7 @@ export default function TaskContentBlocks({ task }) {
   const [saveError, setSaveError] = useState("");
   const expectedUpdatedAtRef = useRef(task.updatedAt);
   const debounceTimerRef = useRef(null);
+  const saveChainRef = useRef(Promise.resolve());
   const updateTask = useUpdateTaskMutation();
 
   useEffect(() => {
@@ -61,12 +62,20 @@ export default function TaskContentBlocks({ task }) {
         }
       };
 
+      const enqueueSave = () => {
+        saveChainRef.current = saveChainRef.current.then(runSave, runSave);
+        return saveChainRef.current;
+      };
+
       if (immediate) {
-        await runSave();
+        await enqueueSave();
         return;
       }
 
-      debounceTimerRef.current = setTimeout(runSave, 600);
+      debounceTimerRef.current = setTimeout(() => {
+        debounceTimerRef.current = null;
+        void enqueueSave();
+      }, 600);
       setSaveState("pending");
     },
     [task._id, updateTask],

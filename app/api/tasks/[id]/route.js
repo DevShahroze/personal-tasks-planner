@@ -190,7 +190,14 @@ export async function PATCH(request, { params }) {
   }
 
   Object.assign(existing, patch);
-  await existing.save();
+  try {
+    await existing.save();
+  } catch (err) {
+    if (err?.name === "VersionError") {
+      return jsonError("Task was updated elsewhere. Refresh and try again.", 409);
+    }
+    throw err;
+  }
 
   if (existing.parentTaskId && patch.status !== undefined) {
     await reopenParentIfNeeded(existing, previousStatus, existing.status);

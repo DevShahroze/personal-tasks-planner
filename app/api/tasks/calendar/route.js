@@ -29,6 +29,7 @@ const calendarProjection = {
   title: 1,
   status: 1,
   priority: 1,
+  taskDate: 1,
   schedule: 1,
   recurrence: 1,
   parentTaskId: 1,
@@ -92,6 +93,7 @@ export async function GET(request) {
           { status: { $ne: "Cancelled" } },
           {
             $or: [
+              rangeOr("taskDate", rangeStart, rangeEnd),
               rangeOr("schedule.scheduledStart", rangeStart, rangeEnd),
               rangeOr("schedule.dueDate", rangeStart, rangeEnd),
               rangeOr("recurrence.nextDueDate", rangeStart, rangeEnd),

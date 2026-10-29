@@ -5,6 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import TaskForm from "@/components/tasks/task-form";
 import TaskContentBlocks from "@/components/tasks/task-content-blocks";
+import {
+  createCheckboxBlocksFromLabels,
+  parseCommaSeparatedLabels,
+} from "@/lib/content-blocks";
 import TaskSubtasksPanel from "@/components/tasks/task-subtasks-panel";
 import EntityLinksPanel from "@/components/relationships/entity-links-panel";
 import {
@@ -17,12 +21,6 @@ import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import TaskNotesPanel from "@/components/tasks/task-notes-panel";
-import {
-  TASK_DECISION_STATUS_LABEL,
-  TASK_INTENT_LABEL,
-} from "@/lib/task-commerce/constants";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
-import { formatScheduleInstant } from "@/lib/scheduling/client-form";
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -31,11 +29,12 @@ export default function TaskDetailPage() {
   const taskQuery = useTask(taskId);
   const updateTask = useUpdateTaskMutation();
   const deleteTask = useDeleteTaskMutation();
-  const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [scheduleConflicts, setScheduleConflicts] = useState([]);
   const [incompleteSubtasks, setIncompleteSubtasks] = useState([]);
+  const [creatingItems, setCreatingItems] = useState(false);
+  const [formRevision, setFormRevision] = useState(0);
 
   const task = taskQuery.data;
   const subtasksQuery = useSubtasks(taskId, Boolean(task && !task.parentTaskId));
@@ -73,7 +72,7 @@ export default function TaskDetailPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
+    <div className="mx-auto max-w-4xl space-y-4 pb-24">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">
@@ -96,17 +95,11 @@ export default function TaskDetailPage() {
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => setEditing((v) => !v)}>
-            {editing ? "Cancel edit" : "Edit details"}
-          </Button>
           {task.status !== "Cancelled" && task.status !== "Completed" ? (
             <Button variant="secondary" onClick={onCancelTask}>
               Cancel task
             </Button>
           ) : null}
-          <Button variant="danger" onClick={onDelete}>
-            Delete
-          </Button>
         </div>
       </div>
 
@@ -125,106 +118,89 @@ export default function TaskDetailPage() {
       ) : null}
       {message ? <Alert variant="success">{message}</Alert> : null}
 
-      {editing ? (
-        <div className="rounded-lg border border-border bg-card p-4">
-          <TaskForm
-            taskId={taskId}
-            initialValues={task}
-            submitting={updateTask.isPending}
-            scheduleConflicts={scheduleConflicts}
-            onClearScheduleConflicts={() => setScheduleConflicts([])}
-            recordingRecurrence={updateTask.isPending}
-            onRecordRecurrenceCompletion={async (payload) => {
-              setError("");
-              try {
-                await updateTask.mutateAsync({
-                  id: taskId,
-                  body: { recordRecurrenceCompletion: payload },
-                });
-                setMessage("Occurrence recorded");
-              } catch (err) {
-                setError(err.message || "Could not record occurrence");
-              }
-            }}
-            onSubmit={async (values) => {
-              setError("");
-              setScheduleConflicts([]);
-              setIncompleteSubtasks([]);
-              try {
-                await updateTask.mutateAsync({ id: taskId, body: values });
-                setMessage("Task updated");
-                setEditing(false);
-              } catch (err) {
-                if (err.conflicts?.length) {
-                  setScheduleConflicts(err.conflicts);
-                }
-                if (err.incompleteSubtasks?.length) {
-                  setIncompleteSubtasks(err.incompleteSubtasks);
-                }
-                if (Array.isArray(err.details)) {
-                  setError(err.details.join(", "));
-                } else {
-                  setError(err.message || "Update failed");
-                }
-              }
-            }}
-          />
-        </div>
-      ) : (
-        <div className="grid gap-4 rounded-lg border border-border bg-card p-4 md:grid-cols-2">
-          <Meta label="Status" value={task.status} />
-          <Meta label="Priority" value={task.priority} />
-          <Meta label="Category" value={task.category?.name || "—"} />
-          <Meta label="Task date" value={formatDate(task.taskDate)} />
-          <Meta label="Timeline start" value={formatDate(task.timelineStart)} />
-          <Meta label="Timeline end" value={formatDate(task.timelineEnd)} />
-          <Meta
-            label="Schedule"
-            value={
-              task.schedule?.mode && task.schedule.mode !== "unscheduled"
-                ? `${task.schedule.mode}${
-                    task.schedule.scheduledStart
-                      ? ` · ${formatScheduleInstant(task.schedule.scheduledStart, task.schedule.timezone || "Asia/Karachi")} – ${formatScheduleInstant(task.schedule.scheduledEnd, task.schedule.timezone || "Asia/Karachi")}`
-                      : ""
-                  }`
-                : "Unscheduled"
+      <div className="overflow-visible rounded-lg border border-border bg-card p-4">
+        <TaskForm
+          key={`${taskId}-${formRevision}`}
+          taskId={taskId}
+          initialValues={task}
+          submitting={updateTask.isPending}
+          submitLabel="Update task"
+          onDelete={onDelete}
+          deleting={deleteTask.isPending}
+          creatingItemsFromDescription={creatingItems}
+          onCreateItemsFromDescription={async (descriptionText) => {
+            const labels = parseCommaSeparatedLabels(descriptionText);
+            if (!labels.length) {
+              setError("Add comma-separated text in the description first.");
+              return;
             }
-          />
-          <Meta
-            label="Recurrence"
-            value={
-              task.recurrence?.enabled
-                ? `Every ${task.recurrence.interval} ${task.recurrence.unit} · Next due ${formatDate(task.recurrence.nextDueDate)}`
-                : "Not recurring"
+            setError("");
+            setMessage("");
+            setCreatingItems(true);
+            try {
+              const newBlocks = createCheckboxBlocksFromLabels(
+                labels,
+                task.contentBlocks || [],
+              );
+              if (!newBlocks.length) {
+                setMessage("No new items — matching checkboxes already exist.");
+                return;
+              }
+              await updateTask.mutateAsync({
+                id: taskId,
+                body: {
+                  contentBlocks: [...(task.contentBlocks || []), ...newBlocks],
+                  expectedUpdatedAt: task.updatedAt,
+                },
+              });
+              setMessage(
+                `Added ${newBlocks.length} checkbox item${newBlocks.length === 1 ? "" : "s"}.`,
+              );
+            } catch (err) {
+              setError(err.message || "Could not create items");
+            } finally {
+              setCreatingItems(false);
             }
-          />
-          <Meta
-            label="Next appointment"
-            value={formatDate(task.recurrence?.nextAppointmentDate)}
-          />
-          <Meta
-            label="Purchase/sale intent"
-            value={TASK_INTENT_LABEL[task.intent] || "None"}
-          />
-          <Meta
-            label="Decision"
-            value={TASK_DECISION_STATUS_LABEL[task.decisionStatus] || "—"}
-          />
-          <Meta
-            label="Estimated value"
-            value={formatCurrency(task.estimatedValue, task.currency)}
-          />
-          <Meta
-            label="Actual value"
-            value={formatCurrency(task.actualValue, task.currency)}
-          />
-          <Meta label="Updated" value={formatDateTime(task.updatedAt)} />
-          <Meta label="Created" value={formatDateTime(task.createdAt)} />
-          <div className="md:col-span-2">
-            <Meta label="Description" value={task.description || "—"} />
-          </div>
-        </div>
-      )}
+          }}
+          scheduleConflicts={scheduleConflicts}
+          onClearScheduleConflicts={() => setScheduleConflicts([])}
+          recordingRecurrence={updateTask.isPending}
+          onRecordRecurrenceCompletion={async (payload) => {
+            setError("");
+            try {
+              await updateTask.mutateAsync({
+                id: taskId,
+                body: { recordRecurrenceCompletion: payload },
+              });
+              setMessage("Occurrence recorded");
+            } catch (err) {
+              setError(err.message || "Could not record occurrence");
+            }
+          }}
+          onSubmit={async (values) => {
+            setError("");
+            setScheduleConflicts([]);
+            setIncompleteSubtasks([]);
+            try {
+              await updateTask.mutateAsync({ id: taskId, body: values });
+              setMessage("Task updated");
+              setFormRevision((n) => n + 1);
+            } catch (err) {
+              if (err.conflicts?.length) {
+                setScheduleConflicts(err.conflicts);
+              }
+              if (err.incompleteSubtasks?.length) {
+                setIncompleteSubtasks(err.incompleteSubtasks);
+              }
+              if (Array.isArray(err.details)) {
+                setError(err.details.join(", "));
+              } else {
+                setError(err.message || "Update failed");
+              }
+            }
+          }}
+        />
+      </div>
 
       {!task.parentTaskId ? <TaskSubtasksPanel parentTaskId={taskId} /> : null}
 
@@ -240,15 +216,6 @@ export default function TaskDetailPage() {
         linkedThoughts={task.linkedThoughts || []}
         linkedPlans={task.linkedPlans || []}
       />
-    </div>
-  );
-}
-
-function Meta({ label, value }) {
-  return (
-    <div>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm whitespace-pre-wrap">{value}</p>
     </div>
   );
 }

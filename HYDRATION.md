@@ -51,8 +51,10 @@ Protected pages rely on middleware redirects; client routes render loading state
 ```bash
 npm run build
 npm run test:client-today
-npm run test:hydration
+CI=1 PLAYWRIGHT_PORT=3001 npm run test:hydration
 ```
+
+Full pre-push pipeline: [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md).
 
 Playwright starts **`next start`** (production server), watches the browser console for hydration errors, and covers:
 
@@ -68,7 +70,7 @@ Default test credentials (override with env):
 
 MongoDB must accept connections for login/API during tests (`MONGODB_URI`, default `mongodb://127.0.0.1:27017/ptp-hydration-test`).
 
-**Local server reuse:** When `CI` is unset, Playwright **`reuseExistingServer: true`** — if something already listens on the Playwright port (default **3000**), tests hit that process instead of starting `next start` with hydration env. Symptom: auth setup times out on `/login` after sign-in. Mitigations: stop `npm run dev` on that port; set `CI=1`; or use another port, e.g. `PLAYWRIGHT_PORT=3001 CI=1 npm run test:hydration`.
+**Local server reuse:** When `CI` is unset, Playwright **`reuseExistingServer: true`** — if something already listens on the Playwright port (default **3000**), tests hit that process instead of starting `next start` with hydration env. Symptom: auth setup times out on `/login` after sign-in. Mitigations: stop `npm run dev` on that port; use **`CI=1 PLAYWRIGHT_PORT=3001 npm run validate`** (same as Husky pre-push; see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md)).
 
 ## Limitations
 

@@ -61,9 +61,10 @@ Generic reference for this personal productivity app: a **single-user**, **cooki
 - **Task processor UI** (`contexts/task-processor-context.js`, `contexts/slices/task-processor-slice.js`): banner + shell gate while rollover runs; **TaskProcessorNavStatus** shows last completed run; status fetched via TanStack Query (`GET /api/task-processor/status`), steps via `POST /api/task-processor/step`.
 - **Toast host** (`components/ui/toast-host.js`): non-blocking API error feedback via TanStack Query global handlers.
 - **Entity modules**: list + detail + create flows per domain (tasks, thoughts, plans, categories).
-- **Rich task content**: structured **content blocks** (checkboxes, radio groups, editable tables) stored as JSON on the task document, edited client-side, persisted via PATCH with optimistic concurrency (`expectedUpdatedAt`).
+- **Task detail**: `/tasks/[id]` loads **`TaskForm`** immediately; **Update** / **Delete** in a fixed viewport footer (`components/tasks/task-form.js`); subtasks, notes, and interactive blocks render below the form.
+- **Rich task content**: structured **content blocks** (checkboxes with optional **`slug`**, radio groups, tables) stored on the task document; checkboxes can be bulk-created from comma-separated description text; block edits persist via PATCH (see [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md)).
 - **Relationships**: link tasks, thoughts, and plans through dedicated API routes and UI panels.
-- **Dashboard**: summary cards, Recharts visualizations, recent listings (server aggregations), **monthly task calendar** (priority markers, selected-day task list).
+- **Dashboard**: summary cards, Recharts visualizations, recent listings (server aggregations), **monthly task calendar** (task date + schedule/deadline/recurrence markers, priority markers, selected-day task list).
 - **Task scheduling**: modes (unscheduled / flexible / fixed), availability templates, conflict detection, flexible slot suggestions (`lib/scheduling/*`).
 - **Recurring tasks**: single-task recurrence and procedure fields; server-calculated `nextDueDate` (`lib/recurrence/*`); optional `recordRecurrenceCompletion` on PATCH.
 
@@ -144,7 +145,7 @@ Implementation lives in **`app/globals.css`**, **`components/ui/*`**, **`compone
 ### 3.6 Error handling
 
 - Stable JSON error responses; no stack traces or secrets in client payloads.
-- Appropriate HTTP status codes (`400`, `401`, `403`, `404`, `409`, `413`, `422`, `423`, `429`, `500`).
+- Appropriate HTTP status codes (`400`, `401`, `403`, `404`, `409`, `413`, `422`, `423`, `429`, `500`). Concurrent task **`PATCH`** saves that lose a Mongoose version race return **409** (same message as `expectedUpdatedAt` conflicts).
 - **Client error boundaries** catch render errors in the protected shell and high-risk widgets (dashboard calendar, task-form mini calendar); users get retry/reload actions without exposing stack traces in production UI.
 - **Toast notifications** (`lib/toast-bus.js`, `components/ui/toast-host.js`): TanStack Query `QueryCache` / `MutationCache` `onError` handlers surface failed API reads and mutations as dismissible toasts (client-only; no SSR). The dashboard degrades gracefully when individual aggregation endpoints fail (summary may still render).
 
@@ -177,14 +178,14 @@ See [SECURITY.md](./SECURITY.md) for audit detail.
 
 ### 4.2 Domain concepts
 
-- **Tasks**: status, priority, dates, category, **schedule**, **recurrence**, **content blocks**, optional **purchase/sale estimates**, **subtasks** (`parentTaskId`), links to thoughts/plans.
+- **Tasks**: status, priority, dates, category, **schedule**, **recurrence**, **content blocks**, optional **`amountSpent`** / commerce fields (`intent`, `estimatedValue`, `actualValue`, `currency`), **subtasks** (`parentTaskId`), links to thoughts/plans.
 - **Task notes**: separate `TaskNote` collection (not the task description).
 - **Financial records**: lent/borrowed/payable/receivable with payment history.
 - **Planning** (dedicated models): installment commitments (optional per-installment `installmentAmount`), Kameti plans, subscriptions, university applications, tours/expenses — calendar and dashboard integrate due dates without spawning per-payment tasks.
 - **Planning validation**: shared helpers in `lib/planning/validate.js`, `lib/planning/money-fields.js`, `lib/planning/prepaid-payments.js`, and `lib/planning/form-errors.js` (client-safe ObjectId checks via `lib/security/ids.js`, not Mongoose).
 - **TaskProcessorRun**: one document per business date — tracks pending/running/completed rollover batches and failures.
 - **Thoughts / Plans**: metadata + relationship edges to other entities.
-- **Categories**: labels for task organization.
+- **Categories**: labels for task organization; list UI supports search; delete reassigns tasks to **Unassigned** (`lib/categories/unassigned.js`).
 - **Dashboard**: read-only aggregation endpoints (`summary`, `charts`, `listings`); each handler must import Mongoose models explicitly.
 
 ---
@@ -227,21 +228,21 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 
 ## 6. Cross-cutting features (generic catalog)
 
-| Feature                     | Description                                                                      |
-| --------------------------- | -------------------------------------------------------------------------------- |
-| **Private auth**            | Cookie session, middleware + handler checks                                      |
-| **CRUD modules**            | Tasks, thoughts, plans, categories                                               |
-| **Structured task content** | Checkbox / radio / table blocks with server validation                           |
-| **Entity relationships**    | Many-to-many style links between domain objects                                  |
-| **Dashboard**               | Aggregations + charts + recent activity lists + task calendar                    |
-| **Task scheduling**         | Fixed/flexible slots, conflicts, availability templates                          |
-| **Recurring / procedures**  | In-place next due date, completion recording, optional appointments              |
-| **Daily task processor**    | Post–11 PM rollover, catch-up runs, DB-backed progress, client step driver       |
-| **Theming**                 | Light/dark semantic CSS tokens                                                   |
-| **Error boundaries**        | Client render failures contained per shell / calendar / form calendar            |
-| **Activity logger**         | Optional client-only diagnostic log export                                       |
-| **Quality gate**            | `npm run validate` — lint, format, security tests, audit, build, hydration tests |
-| **Pre-push hook**           | Husky runs full validate                                                         |
+| Feature                     | Description                                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Private auth**            | Cookie session, middleware + handler checks                                                        |
+| **CRUD modules**            | Tasks, thoughts, plans, categories                                                                 |
+| **Structured task content** | Checkbox / radio / table blocks with server validation                                             |
+| **Entity relationships**    | Many-to-many style links between domain objects                                                    |
+| **Dashboard**               | Aggregations + charts + recent activity lists + task calendar                                      |
+| **Task scheduling**         | Fixed/flexible slots, conflicts, availability templates                                            |
+| **Recurring / procedures**  | In-place next due date, completion recording, optional appointments                                |
+| **Daily task processor**    | Post–11 PM rollover, catch-up runs, DB-backed progress, client step driver                         |
+| **Theming**                 | Light/dark semantic CSS tokens                                                                     |
+| **Error boundaries**        | Client render failures contained per shell / calendar / form calendar                              |
+| **Activity logger**         | Optional client-only diagnostic log export                                                         |
+| **Quality gate**            | `npm run validate` — lint, format, security tests, audit, build, hydration tests                   |
+| **Pre-push hook**           | Husky: `CI=1 PLAYWRIGHT_PORT=3001 npm run validate` (see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md)) |
 
 ---
 
@@ -284,13 +285,14 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 3. Use **MongoDB Atlas** (or compatible) with network access allowed for Vercel (IP allowlist or `0.0.0.0/0` with strong DB user password).
 4. Create a **least-privilege database user** (read/write on app database only).
 5. Deploy; smoke-test login, one CRUD flow, dashboard load.
-6. Run locally before push: `npm run validate` (includes production build and hydration tests when MongoDB is available).
+6. Run locally before push: [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md) (`CI=1 PLAYWRIGHT_PORT=3001 npm run validate`, commit author, then push).
 
 ---
 
 ## 9. Related documentation
 
 - [README.md](./README.md) — setup and scripts
+- [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md) — pre-push validate, git author, commit/push workflow
 - [SECURITY.md](./SECURITY.md) — security audit and controls
 - [HYDRATION.md](./HYDRATION.md) — hydration strategy and tests
 - [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) — interactive task blocks
@@ -303,7 +305,7 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 
 **Task APIs (additional):**
 
-- `GET /api/tasks/calendar?year=&month=&timeZone=` — month-scoped calendar entries (scheduled, deadline, recurring due).
+- `GET /api/tasks/calendar?year=&month=&timeZone=` — month-scoped entries (**task date**, scheduled, deadline, recurring due, plus planning/financial).
 - `POST /api/tasks/[id]/schedule/slots` — flexible scheduling suggestions.
 - `GET/POST /api/availability-templates`, `PATCH/DELETE /api/availability-templates/[id]`.
 - Task `PATCH` may include `recordRecurrenceCompletion: { completedDate, procedureDate? }`.
