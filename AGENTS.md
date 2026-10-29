@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Project documentation
+
+Human-maintained docs live in the repo root: [README.md](./README.md) (setup and **API error toasts**), [ARCHITECTURE.md](./ARCHITECTURE.md) (dashboard aggregation routes, toast bus, graceful degradation), [HYDRATION.md](./HYDRATION.md), [SECURITY.md](./SECURITY.md), and [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md).

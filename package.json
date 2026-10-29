@@ -6,17 +6,39 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "test:security": "node --test tests/security/security.test.js",
+    "test:scheduling": "node --test tests/scheduling/scheduling.test.js",
+    "test:recurrence": "node --test tests/recurrence/recurrence.test.js",
+    "test:hydration": "playwright test",
+    "test:client-today": "node --test tests/hydration/client-today.test.js",
+    "test:format": "node --test tests/format/format.test.js",
+    "test:subtasks": "node --test tests/subtasks/subtasks.test.js",
+    "test:finance": "node --test tests/finance/finance.test.js",
+    "test:planning": "node --test tests/planning/planning.test.js",
+    "audit:security": "node scripts/security-audit.mjs",
+    "validate": "npm run lint && npm run format && npm run test:security && npm run test:scheduling && npm run test:recurrence && npm run test:client-today && npm run test:format && npm run test:subtasks && npm run test:finance && npm run test:planning && npm run audit:security && npm run build && npm run test:hydration",
+    "prepare": "husky"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.105.0",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.13",
+    "mongoose": "^9.11.4",
     "next": "16.4.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/turbopack": "^4",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "husky": "^9.1.7",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4"
   }
 }
