@@ -148,6 +148,7 @@ export default function TaskForm({
     <>
       <form
         id={formId}
+        autoComplete="off"
         className={`flex w-full flex-col gap-5`}
         onSubmit={(event) => {
           event.preventDefault();
@@ -252,7 +253,7 @@ export default function TaskForm({
                   }}
                 />
                 <span className="text-xs text-muted-foreground">
-                  For a meeting or call, set the date and start time below.
+                  For meetings or same-day work. Orders use expected receive below.
                 </span>
               </label>
               <label className="block space-y-1 text-sm">

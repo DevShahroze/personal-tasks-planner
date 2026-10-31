@@ -160,6 +160,9 @@ const taskSchema = new mongoose.Schema(
     actualValue: { type: Number, default: null },
     amountSpent: { type: Number, default: null },
     currency: { type: String, default: DEFAULT_TASK_CURRENCY },
+    orderPlacedDate: { type: Date, default: null },
+    expectedReceiveDate: { type: Date, default: null, index: true },
+    receivedDate: { type: Date, default: null, index: true },
   },
   { timestamps: true },
 );

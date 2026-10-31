@@ -32,6 +32,9 @@ const calendarProjection = {
   status: 1,
   priority: 1,
   taskDate: 1,
+  orderPlacedDate: 1,
+  expectedReceiveDate: 1,
+  receivedDate: 1,
   schedule: 1,
   recurrence: 1,
   parentTaskId: 1,
@@ -144,6 +147,9 @@ export async function GET(request) {
           {
             $or: [
               rangeOr("taskDate", rangeStart, rangeEnd),
+              rangeOr("orderPlacedDate", rangeStart, rangeEnd),
+              rangeOr("expectedReceiveDate", rangeStart, rangeEnd),
+              rangeOr("receivedDate", rangeStart, rangeEnd),
               rangeOr("schedule.scheduledStart", rangeStart, rangeEnd),
               rangeOr("schedule.dueDate", rangeStart, rangeEnd),
               rangeOr("recurrence.nextDueDate", rangeStart, rangeEnd),
@@ -187,7 +193,10 @@ export async function GET(request) {
   ]);
 
   const days = mergeAllPlanningCalendarMaps(
-    indexEntriesByYmd(tasks),
+    indexEntriesByYmd(tasks, {
+      monthFirstYmd: firstDay,
+      monthLastYmd: lastDay,
+    }),
     indexFinancialEntriesByYmd(financialRecords, {
       timeZone,
       todayYmd,

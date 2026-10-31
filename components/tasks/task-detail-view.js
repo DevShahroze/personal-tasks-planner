@@ -111,6 +111,22 @@ export default function TaskDetailView({ task }) {
   const hasCommerceEstimate =
     task.intent && task.intent !== "none" && task.intent !== undefined;
 
+  const hasOrderPurchase =
+    task.orderPlacedDate ||
+    task.expectedReceiveDate ||
+    task.receivedDate ||
+    (task.amountSpent != null && task.amountSpent !== "") ||
+    hasCommerceEstimate;
+
+  const orderPlacedDisplay =
+    task.orderPlacedDate || task.timelineStart
+      ? formatDate(task.orderPlacedDate || task.timelineStart)
+      : null;
+  const expectedReceiveDisplay =
+    task.expectedReceiveDate || task.timelineEnd
+      ? formatDate(task.expectedReceiveDate || task.timelineEnd)
+      : null;
+
   return (
     <div className="flex flex-col gap-5">
       <ViewSection title="Basics">
@@ -149,11 +165,17 @@ export default function TaskDetailView({ task }) {
             },
             {
               label: "Timeline start",
-              value: task.timelineStart ? formatDate(task.timelineStart) : null,
+              value:
+                task.timelineStart && !task.orderPlacedDate
+                  ? formatDate(task.timelineStart)
+                  : null,
             },
             {
               label: "Timeline end",
-              value: task.timelineEnd ? formatDate(task.timelineEnd) : null,
+              value:
+                task.timelineEnd && !task.expectedReceiveDate
+                  ? formatDate(task.timelineEnd)
+                  : null,
             },
           ]}
         />
@@ -168,38 +190,45 @@ export default function TaskDetailView({ task }) {
         ) : null}
       </ViewSection>
 
-      {task.amountSpent != null && task.amountSpent !== "" ? (
-        <ViewSection title="Spending record">
+      {hasOrderPurchase ? (
+        <ViewSection title="Order & purchase">
           <DetailGrid
             rows={[
+              { label: "Order placed", value: orderPlacedDisplay },
+              { label: "Expected receive", value: expectedReceiveDisplay },
               {
-                label: "Amount spent",
-                value: formatCurrency(task.amountSpent, task.currency),
+                label: "Received on",
+                value: task.receivedDate ? formatDate(task.receivedDate) : null,
               },
-            ]}
-          />
-        </ViewSection>
-      ) : null}
-
-      {hasCommerceEstimate ? (
-        <ViewSection title="Purchase / sale estimate">
-          <DetailGrid
-            rows={[
               {
                 label: "Intent",
-                value: TASK_INTENT_LABEL[task.intent] || task.intent,
+                value: hasCommerceEstimate
+                  ? TASK_INTENT_LABEL[task.intent] || task.intent
+                  : null,
               },
               {
                 label: "Decision",
                 value:
-                  TASK_DECISION_STATUS_LABEL[task.decisionStatus] ||
-                  task.decisionStatus,
+                  task.decisionStatus && task.decisionStatus !== "considering"
+                    ? TASK_DECISION_STATUS_LABEL[task.decisionStatus] ||
+                      task.decisionStatus
+                    : hasCommerceEstimate
+                      ? TASK_DECISION_STATUS_LABEL[task.decisionStatus] ||
+                        task.decisionStatus
+                      : null,
               },
               {
-                label: "Estimated value",
+                label: "Order total (estimated)",
                 value:
                   task.estimatedValue != null
                     ? formatCurrency(task.estimatedValue, task.currency)
+                    : null,
+              },
+              {
+                label: "Amount spent",
+                value:
+                  task.amountSpent != null
+                    ? formatCurrency(task.amountSpent, task.currency)
                     : null,
               },
               {

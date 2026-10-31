@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   intervalsOverlap,
+  ymdInTimeZone,
   zonedDateTimeToUtc,
   isoWeekdayInTimeZone,
 } from "../../lib/scheduling/time.js";
@@ -217,6 +218,39 @@ test("scheduleFromFormState infers fixed from task date and start time", () => {
   assert.equal(schedule.mode, "fixed");
   assert.ok(schedule.scheduledStart);
   assert.ok(schedule.scheduledEnd);
+});
+
+test("scheduleFromFormState rolls end time to next day when end is before start", () => {
+  const schedule = scheduleFromFormState({
+    visitAvailabilityEnabled: false,
+    scheduledDate: "2026-06-02",
+    scheduledStartTime: "22:00",
+    scheduledEndTime: "01:00",
+    timezone: TZ,
+    daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+    startTime: "00:00",
+    endTime: "23:59",
+    excludePublicHolidays: false,
+    avoidConflicts: true,
+    availabilityTemplateId: "",
+    durationMinutes: "",
+    earliestDate: "",
+    dueDate: "",
+    selectedSlot: null,
+    timeSlots: [],
+  });
+  const start = new Date(schedule.scheduledStart);
+  const end = new Date(schedule.scheduledEnd);
+  assert.ok(end > start);
+  assert.equal(ymdInTimeZone(start, TZ), "2026-06-02");
+  assert.equal(ymdInTimeZone(end, TZ), "2026-06-03");
+  const validated = validateSchedule({
+    ...defaultSchedule(),
+    ...schedule,
+    scheduledStart: start,
+    scheduledEnd: end,
+  });
+  assert.equal(validated.ok, true);
 });
 
 test("scheduleFromFormState infers flexible when visit availability is enabled", () => {
