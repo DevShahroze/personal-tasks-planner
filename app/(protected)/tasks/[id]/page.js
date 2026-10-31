@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import TaskForm from "@/components/tasks/task-form";
+import TaskDetailView from "@/components/tasks/task-detail-view";
 import TaskContentBlocks from "@/components/tasks/task-content-blocks";
 import {
   createCheckboxBlocksFromLabels,
@@ -25,20 +26,23 @@ import TaskVisitsPanel from "@/components/tasks/task-visits-panel";
 import { mergeSchedulePatch, validateSchedule } from "@/lib/scheduling/validate";
 import { defaultSchedule } from "@/lib/scheduling/defaults";
 import { useConfirm } from "@/contexts/confirm-context";
+import { toastError, toastSuccess } from "@/lib/toast-bus";
 
 export default function TaskDetailPage() {
   const params = useParams();
+  const taskId = params.id;
+  return <TaskDetailPageBody key={String(taskId)} taskId={taskId} />;
+}
+
+function TaskDetailPageBody({ taskId }) {
   const router = useRouter();
   const confirm = useConfirm();
-  const taskId = params.id;
   const taskQuery = useTask(taskId);
   const updateTask = useUpdateTaskMutation();
   const deleteTask = useDeleteTaskMutation();
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
   const [scheduleConflicts, setScheduleConflicts] = useState([]);
-  const [incompleteSubtasks, setIncompleteSubtasks] = useState([]);
   const [creatingItems, setCreatingItems] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const task = taskQuery.data;
   const subtasksQuery = useSubtasks(taskId, Boolean(task && !task.parentTaskId));
@@ -80,150 +84,126 @@ export default function TaskDetailPage() {
     if (!ok) {
       return;
     }
-    setError("");
     try {
       await updateTask.mutateAsync({ id: taskId, body: { status: "Cancelled" } });
-      setMessage("Task cancelled");
-    } catch (err) {
-      setError(err.message || "Could not cancel task");
+      toastSuccess("Task cancelled");
+    } catch {
+      // API mutation toast
     }
   };
 
+  const canCancelTask = task.status !== "Cancelled" && task.status !== "Completed";
+  const showReadOnlyFooter = !editing;
+
   return (
-    <div className="mx-auto max-w-4xl space-y-4 pb-24">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            <Link href="/tasks" className="hover:underline">
-              Tasks
-            </Link>{" "}
-            / {task.title}
+    <div
+      className={`mx-auto max-w-4xl space-y-4 ${showReadOnlyFooter || editing ? "pb-24" : ""}`}
+    >
+      <div>
+        <p className="text-sm text-muted-foreground">
+          <Link href="/tasks" className="hover:underline">
+            Tasks
+          </Link>{" "}
+          / {task.title}
+        </p>
+        <h1 className="text-lg font-semibold tracking-tight">{task.title}</h1>
+        {task.parentTaskId ? (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Subtask of{" "}
+            <Link
+              href={`/tasks/${task.parentTaskId}`}
+              className="font-medium hover:underline"
+            >
+              {parentTaskQuery.data?.title || "parent task"}
+            </Link>
           </p>
-          <h1 className="text-lg font-semibold tracking-tight">{task.title}</h1>
-          {task.parentTaskId ? (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Subtask of{" "}
-              <Link
-                href={`/tasks/${task.parentTaskId}`}
-                className="font-medium hover:underline"
-              >
-                {parentTaskQuery.data?.title || "parent task"}
-              </Link>
-            </p>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {task.status !== "Cancelled" && task.status !== "Completed" ? (
-            <Button variant="secondary" onClick={onCancelTask}>
-              Cancel task
-            </Button>
-          ) : null}
-        </div>
+        ) : null}
       </div>
 
-      {error ? <Alert variant="error">{error}</Alert> : null}
-      {incompleteSubtasks.length ? (
-        <Alert variant="error">
-          <p>Complete these subtasks before marking this task completed:</p>
-          <ul className="mt-2 list-inside list-disc text-sm">
-            {incompleteSubtasks.map((item) => (
-              <li key={item.id}>
-                {item.title} ({item.status})
-              </li>
-            ))}
-          </ul>
-        </Alert>
-      ) : null}
-      {message ? <Alert variant="success">{message}</Alert> : null}
-
       <div className="overflow-visible rounded-lg border border-border bg-card p-4">
-        <TaskForm
-          key={`${taskId}-${task.updatedAt}`}
-          taskId={taskId}
-          initialValues={task}
-          submitting={updateTask.isPending}
-          submitLabel="Update task"
-          onDelete={onDelete}
-          deleting={deleteTask.isPending}
-          creatingItemsFromDescription={creatingItems}
-          onCreateItemsFromDescription={async (descriptionText) => {
-            const labels = parseCommaSeparatedLabels(descriptionText);
-            if (!labels.length) {
-              setError("Add comma-separated text in the description first.");
-              return;
-            }
-            setError("");
-            setMessage("");
-            setCreatingItems(true);
-            try {
-              const newBlocks = createCheckboxBlocksFromLabels(
-                labels,
-                task.contentBlocks || [],
-              );
-              if (!newBlocks.length) {
-                setMessage("No new items — matching checkboxes already exist.");
+        {editing ? (
+          <TaskForm
+            key={`${taskId}-${task.updatedAt}`}
+            taskId={taskId}
+            initialValues={task}
+            submitting={updateTask.isPending}
+            submitLabel="Update task"
+            onCancelEdit={() => {
+              setEditing(false);
+              setScheduleConflicts([]);
+            }}
+            onDelete={onDelete}
+            deleting={deleteTask.isPending}
+            creatingItemsFromDescription={creatingItems}
+            onCreateItemsFromDescription={async (descriptionText) => {
+              const labels = parseCommaSeparatedLabels(descriptionText);
+              if (!labels.length) {
+                toastError("Add comma-separated text in the description first.");
                 return;
               }
-              await updateTask.mutateAsync({
-                id: taskId,
-                body: {
-                  contentBlocks: [...(task.contentBlocks || []), ...newBlocks],
-                  expectedUpdatedAt: task.updatedAt,
-                },
-              });
-              setMessage(
-                `Added ${newBlocks.length} checkbox item${newBlocks.length === 1 ? "" : "s"}.`,
+              setCreatingItems(true);
+              try {
+                const newBlocks = createCheckboxBlocksFromLabels(
+                  labels,
+                  task.contentBlocks || [],
+                );
+                if (!newBlocks.length) {
+                  toastSuccess("No new items — matching checkboxes already exist.");
+                  return;
+                }
+                await updateTask.mutateAsync({
+                  id: taskId,
+                  body: {
+                    contentBlocks: [...(task.contentBlocks || []), ...newBlocks],
+                    expectedUpdatedAt: task.updatedAt,
+                  },
+                });
+                toastSuccess(
+                  `Added ${newBlocks.length} checkbox item${newBlocks.length === 1 ? "" : "s"}.`,
+                );
+              } catch {
+                // API mutation toast
+              } finally {
+                setCreatingItems(false);
+              }
+            }}
+            scheduleConflicts={scheduleConflicts}
+            onClearScheduleConflicts={() => setScheduleConflicts([])}
+            recordingRecurrence={updateTask.isPending}
+            onRecordRecurrenceCompletion={async (payload) => {
+              try {
+                await updateTask.mutateAsync({
+                  id: taskId,
+                  body: { recordRecurrenceCompletion: payload },
+                });
+                toastSuccess("Occurrence recorded");
+              } catch {
+                // API mutation toast
+              }
+            }}
+            onSubmit={async (values) => {
+              setScheduleConflicts([]);
+              const scheduleCheck = validateSchedule(
+                mergeSchedulePatch(task.schedule || defaultSchedule(), values.schedule),
               );
-            } catch (err) {
-              setError(err.message || "Could not create items");
-            } finally {
-              setCreatingItems(false);
-            }
-          }}
-          scheduleConflicts={scheduleConflicts}
-          onClearScheduleConflicts={() => setScheduleConflicts([])}
-          recordingRecurrence={updateTask.isPending}
-          onRecordRecurrenceCompletion={async (payload) => {
-            setError("");
-            try {
-              await updateTask.mutateAsync({
-                id: taskId,
-                body: { recordRecurrenceCompletion: payload },
-              });
-              setMessage("Occurrence recorded");
-            } catch (err) {
-              setError(err.message || "Could not record occurrence");
-            }
-          }}
-          onSubmit={async (values) => {
-            setError("");
-            setScheduleConflicts([]);
-            setIncompleteSubtasks([]);
-            const scheduleCheck = validateSchedule(
-              mergeSchedulePatch(task.schedule || defaultSchedule(), values.schedule),
-            );
-            if (!scheduleCheck.ok) {
-              setError(scheduleCheck.errors.join(", "));
-              return;
-            }
-            try {
-              await updateTask.mutateAsync({ id: taskId, body: values });
-              setMessage("Task updated");
-            } catch (err) {
-              if (err.conflicts?.length) {
-                setScheduleConflicts(err.conflicts);
+              if (!scheduleCheck.ok) {
+                toastError(scheduleCheck.errors.join(", "));
+                return;
               }
-              if (err.incompleteSubtasks?.length) {
-                setIncompleteSubtasks(err.incompleteSubtasks);
+              try {
+                await updateTask.mutateAsync({ id: taskId, body: values });
+                toastSuccess("Task updated");
+                setEditing(false);
+              } catch (err) {
+                if (err.conflicts?.length) {
+                  setScheduleConflicts(err.conflicts);
+                }
               }
-              if (Array.isArray(err.details)) {
-                setError(err.details.join(", "));
-              } else {
-                setError(err.message || "Update failed");
-              }
-            }
-          }}
-        />
+            }}
+          />
+        ) : (
+          <TaskDetailView task={task} />
+        )}
       </div>
 
       {!task.parentTaskId ? <TaskSubtasksPanel parentTaskId={taskId} /> : null}
@@ -242,6 +222,21 @@ export default function TaskDetailPage() {
         linkedThoughts={task.linkedThoughts || []}
         linkedPlans={task.linkedPlans || []}
       />
+
+      {showReadOnlyFooter ? (
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 px-3 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-card/90 md:left-56 md:px-4">
+          <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-end gap-2">
+            {canCancelTask ? (
+              <Button type="button" variant="secondary" onClick={onCancelTask}>
+                Cancel
+              </Button>
+            ) : null}
+            <Button type="button" variant="primary" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

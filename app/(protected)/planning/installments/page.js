@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useInstallmentCommitments } from "@/hooks/use-planning";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { installmentTotalPaid } from "@/lib/planning/installment-display.js";
 import Spinner from "@/components/ui/spinner";
 import EmptyState from "@/components/ui/empty-state";
 
@@ -45,8 +46,20 @@ export default function InstallmentsPage() {
               >
                 <span className="font-medium">{item.name}</span>
                 <p className="text-xs text-muted-foreground">
-                  {item.status} · Outstanding{" "}
-                  {formatCurrency(item.outstandingBalance, item.currency)}
+                  {item.status}
+                  {item.openEnded ? (
+                    <>
+                      {" "}
+                      · Open-ended · Paid{" "}
+                      {formatCurrency(installmentTotalPaid(item), item.currency)}
+                    </>
+                  ) : (
+                    <>
+                      {" "}
+                      · Outstanding{" "}
+                      {formatCurrency(item.outstandingBalance, item.currency)}
+                    </>
+                  )}
                   {item.nextDueDate
                     ? ` · Next due ${formatDate(item.nextDueDate)}`
                     : ""}

@@ -15,6 +15,13 @@ test("parseMoneyInput rejects non-numeric values", () => {
   assert.ok(errors.length);
 });
 
+test("parseMoneyInput accepts comma thousand separators", () => {
+  const errors = [];
+  const amount = parseMoneyInput("52,800", "amount", errors, { required: true });
+  assert.equal(errors.length, 0);
+  assert.equal(amount, 52800);
+});
+
 test("validateInstallmentCreate rejects typical installment above total", () => {
   const result = validateInstallmentCreate({
     name: "Loan",

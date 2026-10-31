@@ -16,16 +16,15 @@ import SubscriptionFormFields, {
   subscriptionPayloadFromFormData,
 } from "@/components/planning/subscription-form-fields";
 import { validateSubscriptionUpdate } from "@/lib/planning/validate";
-import { formatValidationErrors } from "@/lib/planning/money-fields";
-import { apiErrorMessage } from "@/lib/planning/form-errors";
+import { toastFormError, toastValidationErrors } from "@/lib/planning/form-errors";
 import { useConfirm } from "@/contexts/confirm-context";
+import PauseResumeButton from "@/components/planning/pause-resume-button";
 
 export default function SubscriptionDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const confirm = useConfirm();
   const queryClient = useQueryClient();
-  const [error, setError] = useState("");
   const [editKey, setEditKey] = useState(0);
   const query = useSubscription(id);
 
@@ -84,12 +83,7 @@ export default function SubscriptionDetailPage() {
     if (!ok) {
       return;
     }
-    setError("");
-    try {
-      await remove.mutateAsync();
-    } catch (err) {
-      setError(apiErrorMessage(err));
-    }
+    await remove.mutateAsync();
   };
 
   return (
@@ -118,24 +112,33 @@ export default function SubscriptionDetailPage() {
             · Next billing {formatDate(item.nextBillingDate)} · {item.status}
           </p>
         </div>
-        <Button
-          variant="danger"
-          type="button"
-          onClick={onDelete}
-          disabled={remove.isPending}
-        >
-          Delete
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <PauseResumeButton
+            status={item.status}
+            disabled={update.isPending || remove.isPending}
+            onPause={async () => {
+              await update.mutateAsync({ status: "paused" });
+            }}
+            onResume={async () => {
+              await update.mutateAsync({ status: "active" });
+            }}
+          />
+          <Button
+            variant="danger"
+            type="button"
+            onClick={onDelete}
+            disabled={remove.isPending}
+          >
+            Delete
+          </Button>
+        </div>
       </div>
-
-      {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form
         key={editKey}
         className="surface-card space-y-3"
         onSubmit={async (e) => {
           e.preventDefault();
-          setError("");
           const payload = subscriptionPayloadFromFormData(
             new FormData(e.currentTarget),
             {
@@ -144,14 +147,10 @@ export default function SubscriptionDetailPage() {
           );
           const validated = validateSubscriptionUpdate(payload);
           if (!validated.ok) {
-            setError(formatValidationErrors(validated.errors));
+            toastValidationErrors(validated.errors);
             return;
           }
-          try {
-            await update.mutateAsync(validated.patch);
-          } catch (err) {
-            setError(apiErrorMessage(err));
-          }
+          await update.mutateAsync(validated.patch);
         }}
       >
         <h2 className="text-sm font-semibold">Subscription details</h2>
@@ -201,12 +200,7 @@ export default function SubscriptionDetailPage() {
                       if (!ok) {
                         return;
                       }
-                      setError("");
-                      try {
-                        await removePayment.mutateAsync(payment._id);
-                      } catch (err) {
-                        setError(apiErrorMessage(err));
-                      }
+                      await removePayment.mutateAsync(payment._id);
                     }}
                   >
                     Remove
@@ -221,19 +215,14 @@ export default function SubscriptionDetailPage() {
           className="flex flex-wrap gap-2"
           onSubmit={async (e) => {
             e.preventDefault();
-            setError("");
             const form = e.currentTarget;
             const fd = new FormData(form);
-            try {
-              const paidAt = fd.get("paidAt");
-              await addPayment.mutateAsync({
-                amount: Number(fd.get("amount")),
-                ...(paidAt ? { paidAt: String(paidAt) } : {}),
-              });
-              form.reset();
-            } catch (err) {
-              setError(apiErrorMessage(err));
-            }
+            const paidAt = fd.get("paidAt");
+            await addPayment.mutateAsync({
+              amount: Number(fd.get("amount")),
+              ...(paidAt ? { paidAt: String(paidAt) } : {}),
+            });
+            form.reset();
           }}
         >
           <Input

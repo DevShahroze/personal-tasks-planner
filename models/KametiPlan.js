@@ -8,6 +8,7 @@ const kametiSchema = new mongoose.Schema(
   {
     planName: { type: String, required: true, trim: true },
     totalParticipants: { type: Number, required: true, min: 1 },
+    poolAmountPerRound: { type: Number, default: null, min: 0.01 },
     contributionAmount: { type: Number, required: true, min: 0.01 },
     currency: { type: String, default: DEFAULT_PLANNING_CURRENCY },
     contributionFrequency: {

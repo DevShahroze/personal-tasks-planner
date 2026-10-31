@@ -3,7 +3,10 @@ import { requireAuth } from "@/lib/auth";
 import { jsonError, jsonOk, isValidObjectId } from "@/lib/api-response";
 import { readJsonBody } from "@/lib/security/request";
 import { applyPlanningPayment } from "@/lib/planning/payment-handler";
-import { syncKametiPlan } from "@/lib/planning/kameti";
+import {
+  kametiContributionPaymentDescription,
+  syncKametiPlan,
+} from "@/lib/planning/kameti";
 import KametiPlan from "@/models/KametiPlan";
 
 export async function POST(request, { params }) {
@@ -29,10 +32,19 @@ export async function POST(request, { params }) {
     return jsonError("Kameti plan not found", 404);
   }
 
+  const paymentBody = { ...parsed.body };
+  const roundIndex = record.contributionPayments?.length ?? 0;
+  if (!paymentBody.note?.trim()) {
+    paymentBody.note = kametiContributionPaymentDescription(
+      record.toObject(),
+      roundIndex,
+    );
+  }
+
   const result = await applyPlanningPayment({
     record,
     paymentsField: "contributionPayments",
-    body: parsed.body,
+    body: paymentBody,
     syncFn: syncKametiPlan,
     todayYmd,
   });

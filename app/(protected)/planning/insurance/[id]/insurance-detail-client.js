@@ -20,8 +20,7 @@ import {
   validateInsuranceUpdate,
   validatePlanningPayment,
 } from "@/lib/planning/validate";
-import { formatValidationErrors } from "@/lib/planning/money-fields";
-import { apiErrorMessage } from "@/lib/planning/form-errors";
+import { toastFormError, toastValidationErrors } from "@/lib/planning/form-errors";
 import { validatePaymentAmount } from "@/lib/finance/balance";
 import { useConfirm } from "@/contexts/confirm-context";
 
@@ -32,7 +31,6 @@ export default function InsurancePolicyDetailClient() {
   const clientToday = useClientTodayYmd();
   const todayYmd = clientToday?.ymd || "";
   const queryClient = useQueryClient();
-  const [error, setError] = useState("");
   const [editKey, setEditKey] = useState(0);
   const query = useInsurancePolicy(id);
 
@@ -110,43 +108,31 @@ export default function InsurancePolicyDetailClient() {
             if (!ok) {
               return;
             }
-            setError("");
-            try {
-              await remove.mutateAsync();
-            } catch (err) {
-              setError(apiErrorMessage(err));
-            }
+            await remove.mutateAsync();
           }}
         >
           Delete
         </Button>
       </div>
 
-      {error ? <Alert variant="error">{error}</Alert> : null}
-
       <form
         key={editKey}
         className="surface-card space-y-3"
         onSubmit={async (event) => {
           event.preventDefault();
-          setError("");
           const body = insurancePayloadFromFormData(new FormData(event.currentTarget), {
             includeStatus: true,
           });
           const validated = validateInsuranceUpdate(body);
           if (!validated.ok) {
-            setError(formatValidationErrors(validated.errors));
+            toastValidationErrors(validated.errors);
             return;
           }
           if (!Object.keys(validated.patch).length) {
-            setError("No changes to save.");
+            toastFormError("No changes to save.");
             return;
           }
-          try {
-            await update.mutateAsync(validated.patch);
-          } catch (err) {
-            setError(apiErrorMessage(err));
-          }
+          await update.mutateAsync(validated.patch);
         }}
       >
         <h2 className="text-sm font-semibold">Policy details</h2>
@@ -202,12 +188,7 @@ export default function InsurancePolicyDetailClient() {
                       if (!ok) {
                         return;
                       }
-                      setError("");
-                      try {
-                        await removePayment.mutateAsync(payment._id);
-                      } catch (err) {
-                        setError(apiErrorMessage(err));
-                      }
+                      await removePayment.mutateAsync(payment._id);
                     }}
                   >
                     Remove
@@ -223,7 +204,6 @@ export default function InsurancePolicyDetailClient() {
             className="flex flex-wrap gap-2"
             onSubmit={async (event) => {
               event.preventDefault();
-              setError("");
               const form = event.currentTarget;
               const fd = new FormData(form);
               const paymentCheck = validatePlanningPayment({
@@ -231,7 +211,7 @@ export default function InsurancePolicyDetailClient() {
                 paidAt: fd.get("paidAt") || undefined,
               });
               if (!paymentCheck.ok) {
-                setError(formatValidationErrors(paymentCheck.errors));
+                toastValidationErrors(paymentCheck.errors);
                 return;
               }
               const balanceCheck = validatePaymentAmount(
@@ -239,18 +219,14 @@ export default function InsurancePolicyDetailClient() {
                 item.outstandingBalance,
               );
               if (!balanceCheck.ok) {
-                setError(balanceCheck.error);
+                toastFormError(balanceCheck.error);
                 return;
               }
-              try {
-                await addPayment.mutateAsync({
-                  amount: paymentCheck.value.amount,
-                  paidAt: fd.get("paidAt") || undefined,
-                });
-                form.reset();
-              } catch (err) {
-                setError(apiErrorMessage(err));
-              }
+              await addPayment.mutateAsync({
+                amount: paymentCheck.value.amount,
+                paidAt: fd.get("paidAt") || undefined,
+              });
+              form.reset();
             }}
           >
             <Input

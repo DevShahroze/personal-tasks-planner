@@ -36,6 +36,7 @@ export async function POST(request, { params }) {
     return jsonError("Commitment is not accepting payments", 400);
   }
 
+  record.manualNextDueDate = false;
   const result = await applyPlanningPayment({
     record,
     paymentsField: "payments",

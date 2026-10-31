@@ -23,7 +23,7 @@ export default function ToastHost() {
 
   return (
     <div
-      className="pointer-events-none fixed bottom-3 right-3 z-[100] flex max-w-sm flex-col gap-2"
+      className="pointer-events-none fixed bottom-20 right-3 z-[100] flex max-w-sm flex-col gap-2 md:bottom-3"
       aria-live="polite"
       aria-relevant="additions"
     >

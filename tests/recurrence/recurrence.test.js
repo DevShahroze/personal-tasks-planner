@@ -103,3 +103,21 @@ test("calendar entries distinguish scheduled, deadline, and recurring due", () =
   const kinds = entries.map((entry) => entry.kind).sort();
   assert.deepEqual(kinds, ["deadline", "recurringDue", "scheduled"]);
 });
+
+test("calendar omits taskDate when scheduledStart is on the same day", () => {
+  const task = {
+    _id: "507f1f77bcf86cd799439011",
+    title: "Bank visit",
+    status: "In Progress",
+    priority: "Medium",
+    taskDate: new Date("2026-11-02T12:00:00.000Z"),
+    schedule: {
+      timezone: TZ,
+      scheduledStart: new Date("2026-11-02T04:00:00.000Z"),
+    },
+  };
+  const entries = buildCalendarEntriesForTask(task);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].kind, "scheduled");
+  assert.equal(entries[0].ymd, "2026-11-02");
+});

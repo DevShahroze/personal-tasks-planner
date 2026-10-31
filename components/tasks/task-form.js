@@ -71,6 +71,7 @@ export default function TaskForm({
   onClearScheduleConflicts,
   onRecordRecurrenceCompletion,
   recordingRecurrence,
+  onCancelEdit,
 }) {
   const formId = "task-form";
   const isEditForm = Boolean(taskId);
@@ -81,9 +82,13 @@ export default function TaskForm({
   const [recurrenceState, setRecurrenceState] = useState(() =>
     buildInitialRecurrenceState(initialValues, scheduleState.timezone),
   );
-  const [taskDate, setTaskDate] = useState(() =>
-    dateInputValue(initialValues?.taskDate),
-  );
+  const [taskDate, setTaskDate] = useState(() => {
+    const fromTaskDate = dateInputValue(initialValues?.taskDate);
+    if (fromTaskDate) {
+      return fromTaskDate;
+    }
+    return dateInputValue(initialValues?.schedule?.scheduledStart) || "";
+  });
   const [taskDateWarning, setTaskDateWarning] = useState("");
   const [categoryId, setCategoryId] = useState(() => initialCategoryId(initialValues));
 
@@ -91,10 +96,10 @@ export default function TaskForm({
     taskDate || (!isEditForm && clientToday?.ymd ? clientToday.ymd : "");
 
   const schedulePayload = useMemo(() => {
-    const stateForSchedule =
-      scheduleState.mode === "fixed" && !scheduleState.scheduledDate && taskDateForForm
-        ? { ...scheduleState, scheduledDate: taskDateForForm }
-        : scheduleState;
+    const stateForSchedule = {
+      ...scheduleState,
+      scheduledDate: scheduleState.scheduledDate || taskDateForForm,
+    };
     return scheduleFromFormState(stateForSchedule);
   }, [scheduleState, taskDateForForm]);
 
@@ -109,6 +114,16 @@ export default function TaskForm({
 
   const actionButtons = (
     <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+      {onCancelEdit ? (
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={submitting || deleting}
+          onClick={onCancelEdit}
+        >
+          Cancel
+        </Button>
+      ) : null}
       {onDelete ? (
         <Button
           type="button"
@@ -227,9 +242,52 @@ export default function TaskForm({
                   type="date"
                   name="taskDateDisplay"
                   value={taskDateForForm}
-                  onChange={(event) => setTaskDate(event.target.value)}
+                  onChange={(event) => {
+                    const ymd = event.target.value;
+                    setTaskDate(ymd);
+                    setScheduleState((prev) => ({
+                      ...prev,
+                      scheduledDate: ymd,
+                    }));
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">
+                  For a meeting or call, set the date and start time below.
+                </span>
+              </label>
+              <label className="block space-y-1 text-sm">
+                <span>Start time</span>
+                <Input
+                  type="time"
+                  value={scheduleState.scheduledStartTime}
+                  onChange={(event) =>
+                    setScheduleState((prev) => ({
+                      ...prev,
+                      scheduledStartTime: event.target.value,
+                      scheduledDate: prev.scheduledDate || taskDateForForm,
+                    }))
+                  }
                 />
               </label>
+              <label className="block space-y-1 text-sm">
+                <span>End time</span>
+                <Input
+                  type="time"
+                  value={scheduleState.scheduledEndTime}
+                  onChange={(event) =>
+                    setScheduleState((prev) => ({
+                      ...prev,
+                      scheduledEndTime: event.target.value,
+                      scheduledDate: prev.scheduledDate || taskDateForForm,
+                    }))
+                  }
+                />
+                <span className="text-xs text-muted-foreground">
+                  Optional — defaults to one hour after start.
+                </span>
+              </label>
+            </div>
+            <div className={detailFieldGrid}>
               <label className="block space-y-1 text-sm">
                 <span>Timeline start</span>
                 <Input
@@ -265,6 +323,7 @@ export default function TaskForm({
                 scheduleForValidation={schedulePayload}
                 onSelectYmd={(ymd, warning) => {
                   setTaskDate(ymd);
+                  setScheduleState((prev) => ({ ...prev, scheduledDate: ymd }));
                   setTaskDateWarning(warning || "");
                 }}
               />
@@ -286,13 +345,13 @@ export default function TaskForm({
           }
         />
 
-        <TaskScheduleFields
-          taskId={taskId}
-          initialValues={initialValues}
-          scheduleState={scheduleState}
-          setScheduleState={setScheduleState}
-          conflicts={scheduleConflicts}
-        />
+        <FormSection title="Visit availability">
+          <TaskScheduleFields
+            scheduleState={scheduleState}
+            setScheduleState={setScheduleState}
+            conflicts={scheduleConflicts}
+          />
+        </FormSection>
 
         {!isEditForm ? (
           <div className="border-t border-border pt-2">{actionButtons}</div>

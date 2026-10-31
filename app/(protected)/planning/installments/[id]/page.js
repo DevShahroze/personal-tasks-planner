@@ -21,11 +21,15 @@ import {
   validateInstallmentUpdate,
   validateInstallmentPaymentLog,
 } from "@/lib/planning/validate";
-import { formatValidationErrors } from "@/lib/planning/money-fields";
-import { apiErrorMessage } from "@/lib/planning/form-errors";
+import { toastFormError, toastValidationErrors } from "@/lib/planning/form-errors";
 import { validatePaymentAmount } from "@/lib/finance/balance";
+import {
+  installmentIsOpenEnded,
+  installmentTotalPaid,
+} from "@/lib/planning/installment-display.js";
 import StickyPageFooter from "@/components/layout/sticky-page-footer";
 import { useConfirm } from "@/contexts/confirm-context";
+import PauseResumeButton from "@/components/planning/pause-resume-button";
 
 export default function InstallmentDetailPage() {
   const params = useParams();
@@ -35,7 +39,6 @@ export default function InstallmentDetailPage() {
   const clientToday = useClientTodayYmd();
   const todayYmd = clientToday?.ymd || "";
   const queryClient = useQueryClient();
-  const [error, setError] = useState("");
   const [editKey, setEditKey] = useState(0);
   const [amount, setAmount] = useState("");
   const [paidAt, setPaidAt] = useState("");
@@ -86,6 +89,8 @@ export default function InstallmentDetailPage() {
   }
 
   const item = detailQuery.data;
+  const openEnded = installmentIsOpenEnded(item);
+  const totalPaid = installmentTotalPaid(item);
 
   const onDelete = async () => {
     const ok = await confirm({
@@ -98,12 +103,7 @@ export default function InstallmentDetailPage() {
     if (!ok) {
       return;
     }
-    setError("");
-    try {
-      await remove.mutateAsync();
-    } catch (err) {
-      setError(apiErrorMessage(err));
-    }
+    await remove.mutateAsync();
   };
 
   return (
@@ -117,13 +117,15 @@ export default function InstallmentDetailPage() {
         </p>
         <h1 className="page-title">{item.name}</h1>
         <p className="page-lead">
-          {item.status} · Outstanding{" "}
-          {formatCurrency(item.outstandingBalance, item.currency)} · Next due{" "}
-          {formatDate(item.nextDueDate)}
+          {item.status}
+          {openEnded ? (
+            <> · Open-ended · Paid so far {formatCurrency(totalPaid, item.currency)}</>
+          ) : (
+            <> · Outstanding {formatCurrency(item.outstandingBalance, item.currency)}</>
+          )}{" "}
+          · Next due {formatDate(item.nextDueDate)}
         </p>
       </div>
-
-      {error ? <Alert variant="error">{error}</Alert> : null}
 
       <form
         id="installment-edit-form"
@@ -131,7 +133,6 @@ export default function InstallmentDetailPage() {
         className="surface-card space-y-3"
         onSubmit={async (event) => {
           event.preventDefault();
-          setError("");
           const body = installmentPayloadFromFormData(
             new FormData(event.currentTarget),
             {
@@ -140,14 +141,10 @@ export default function InstallmentDetailPage() {
           );
           const validated = validateInstallmentUpdate(body);
           if (!validated.ok) {
-            setError(formatValidationErrors(validated.errors));
+            toastValidationErrors(validated.errors);
             return;
           }
-          try {
-            await update.mutateAsync(validated.patch);
-          } catch (err) {
-            setError(apiErrorMessage(err));
-          }
+          await update.mutateAsync(validated.patch);
         }}
       >
         <h2 className="text-sm font-semibold">Commitment details</h2>
@@ -167,9 +164,15 @@ export default function InstallmentDetailPage() {
             Typical installment: {formatCurrency(item.installmentAmount, item.currency)}
           </p>
         ) : (
-          <p className="text-muted-foreground">Variable installment amounts</p>
+          <p className="text-muted-foreground">Variable payment amounts each period</p>
         )}
-        <p>Total: {formatCurrency(item.totalAmount, item.currency)}</p>
+        {openEnded ? (
+          <p>
+            Total paid so far: {formatCurrency(totalPaid, item.currency)} · No fixed cap
+          </p>
+        ) : (
+          <p>Total: {formatCurrency(item.totalAmount, item.currency)}</p>
+        )}
       </div>
 
       <div className="surface-card space-y-3">
@@ -194,33 +197,30 @@ export default function InstallmentDetailPage() {
             className="flex flex-wrap gap-2"
             onSubmit={async (event) => {
               event.preventDefault();
-              setError("");
               const paymentCheck = validateInstallmentPaymentLog({
                 amount,
                 paidAt: paidAt || undefined,
                 paymentKind,
               });
               if (!paymentCheck.ok) {
-                setError(formatValidationErrors(paymentCheck.errors));
+                toastValidationErrors(paymentCheck.errors);
                 return;
               }
-              const balanceCheck = validatePaymentAmount(
-                amount,
-                item.outstandingBalance,
-              );
-              if (!balanceCheck.ok) {
-                setError(balanceCheck.error);
-                return;
+              if (!openEnded) {
+                const balanceCheck = validatePaymentAmount(
+                  amount,
+                  item.outstandingBalance,
+                );
+                if (!balanceCheck.ok) {
+                  toastFormError(balanceCheck.error);
+                  return;
+                }
               }
-              try {
-                await addPayment.mutateAsync({
-                  amount: paymentCheck.value.amount,
-                  paidAt: paidAt || undefined,
-                  paymentKind,
-                });
-              } catch (err) {
-                setError(apiErrorMessage(err));
-              }
+              await addPayment.mutateAsync({
+                amount: paymentCheck.value.amount,
+                paidAt: paidAt || undefined,
+                paymentKind,
+              });
             }}
           >
             <Select
@@ -270,6 +270,16 @@ export default function InstallmentDetailPage() {
         >
           Cancel
         </Button>
+        <PauseResumeButton
+          status={item.status}
+          disabled={update.isPending}
+          onPause={async () => {
+            await update.mutateAsync({ status: "paused" });
+          }}
+          onResume={async () => {
+            await update.mutateAsync({ status: "active" });
+          }}
+        />
         <Button
           type="button"
           variant="danger"

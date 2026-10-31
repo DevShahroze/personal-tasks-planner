@@ -5,10 +5,10 @@ import Link from "next/link";
 import TaskMonthCalendar from "@/components/calendar/task-month-calendar";
 import { useTaskCalendar } from "@/hooks/use-task-calendar";
 import { useClientTodayYmd } from "@/hooks/use-client-today";
-import { DATE_KIND_LABEL } from "@/lib/calendar/constants";
+import { DATE_KIND_LABEL, CALENDAR_ENTRY_STATUS_LABEL } from "@/lib/calendar/constants";
 import { DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants";
 import EmptyState from "@/components/ui/empty-state";
-import { formatYmd } from "@/lib/format";
+import { formatYmdLong } from "@/lib/format";
 
 export default function DashboardTaskCalendar() {
   const clientToday = useClientTodayYmd();
@@ -62,7 +62,7 @@ export default function DashboardTaskCalendar() {
         />
 
         <div>
-          <p className="text-sm font-medium">Items on {formatYmd(selected)}</p>
+          <p className="text-sm font-medium">Items on {formatYmdLong(selected)}</p>
           {!selectedEntries.length ? (
             <div className="mt-3">
               <EmptyState
@@ -78,17 +78,23 @@ export default function DashboardTaskCalendar() {
                   (entry.taskId
                     ? `/tasks/${entry.taskId}`
                     : `/financial-records/${entry.recordId}`);
-                const key = entry.taskId
-                  ? `${entry.taskId}-${entry.kind}`
-                  : `${entry.recordId}-${entry.kind}`;
+                const key = entry.href
+                  ? `${entry.href}-${entry.kind}`
+                  : entry.taskId
+                    ? `${entry.taskId}-${entry.kind}`
+                    : `${entry.recordId}-${entry.kind}`;
+                const statusLabel = entry.status
+                  ? CALENDAR_ENTRY_STATUS_LABEL[entry.status] ||
+                    entry.status.replace(/_/g, " ")
+                  : "";
                 return (
                   <li key={key} className="py-2 text-sm">
                     <Link href={href} className="font-medium hover:underline">
                       {entry.title}
                     </Link>
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {entry.status ? `${entry.status} · ` : ""}
-                      {DATE_KIND_LABEL[entry.kind] || entry.kind}
+                      {statusLabel ? `${statusLabel} · ` : ""}
+                      {entry.detail || DATE_KIND_LABEL[entry.kind] || entry.kind}
                       {entry.priority ? ` · ${entry.priority}` : ""}
                       {entry.time ? ` · ${entry.time}` : ""}
                     </p>

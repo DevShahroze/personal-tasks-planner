@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo } from "react";
 import { useCategoriesSlice } from "@/contexts/slices/categories-slice";
+import { useAvailabilityTemplatesSlice } from "@/contexts/slices/availability-templates-slice";
 
 const AppDataContext = createContext(null);
 
@@ -11,12 +12,14 @@ const AppDataContext = createContext(null);
  */
 export function AppDataProvider({ children }) {
   const categories = useCategoriesSlice();
+  const availabilityTemplates = useAvailabilityTemplatesSlice();
 
   const value = useMemo(
     () => ({
       categories,
+      availabilityTemplates,
     }),
-    [categories],
+    [categories, availabilityTemplates],
   );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
@@ -32,4 +35,8 @@ export function useAppData() {
 
 export function useAppCategories() {
   return useAppData().categories;
+}
+
+export function useAppAvailabilityTemplates() {
+  return useAppData().availabilityTemplates;
 }

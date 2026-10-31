@@ -110,10 +110,9 @@ See [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) for interactive checkboxe
 
 ## Tasks (detail page)
 
-- Opening a task shows the **edit form** immediately (no separate “Edit details” mode).
-- **Update task** / **Delete** sit in a **fixed bottom bar** (viewport footer, aligned with the main column).
-- Optional **Amount spent** + currency on the form; optional **Create items** builds deduplicated checkbox blocks from the description (title-case labels, lowercase **slug** keys).
-- **Interactive content** below the form still saves on its own schedule (debounced PATCH); the main form saves only when you click **Update task**.
+- Opening a task shows a **read-only summary** of fields (basics, dates, spending, recurrence, visit availability).
+- Click **Edit** to change details; **Update task** saves and returns to read-only view. **Cancel** discards the edit session without leaving the page.
+- **Delete** is available while editing (footer). Subtasks, visits, notes, content blocks, and links stay editable below the summary.
 
 ## Categories
 
@@ -125,7 +124,9 @@ Destructive or irreversible actions (delete task, remove payment, cancel task, e
 
 ## Scheduling, recurrence, and calendar
 
-- Task **schedule** (fixed / flexible / unscheduled), availability templates, and conflict checks — see [ARCHITECTURE.md](./ARCHITECTURE.md).
+- Task **date** plus optional **start** / **end** time schedule a meeting or call (no separate “fixed/flexible” mode in the UI).
+- Optional **Visit availability** (checkbox): weekdays, allowed hours, templates, and **Suggest time slots** for open-ended visit-style work.
+- Task **schedule** (fixed/flexible/unscheduled), availability templates, and conflict checks — see [ARCHITECTURE.md](./ARCHITECTURE.md).
 - **Recurring** tasks keep one document; `nextDueDate` is calculated on the server. Optional `SCHEDULE_PUBLIC_HOLIDAYS` in `.env` for holiday exclusion.
 - Dashboard and task forms use a shared month calendar (`lib/calendar/task-entries.js`: **task date**, scheduled, deadline, recurring due, plus planning/financial markers via `uniqueDayMarkers`).
 - Render errors in the shell or calendar widgets are caught by **error boundaries** (`components/error-boundary.js`).

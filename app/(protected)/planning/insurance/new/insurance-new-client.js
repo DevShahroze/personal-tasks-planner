@@ -6,19 +6,16 @@ import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { planningApi } from "@/lib/api-client";
 import Button from "@/components/ui/button";
-import Alert from "@/components/ui/alert";
 import InsuranceFormFields, {
   insurancePayloadFromFormData,
 } from "@/components/planning/insurance-form-fields";
 import { validateInsuranceCreate } from "@/lib/planning/validate";
-import { formatValidationErrors } from "@/lib/planning/money-fields";
-import { apiErrorMessage } from "@/lib/planning/form-errors";
+import { toastValidationErrors } from "@/lib/planning/form-errors";
 
 export default function NewInsurancePolicyClient() {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const [error, setError] = useState("");
   const [formKey, setFormKey] = useState(0);
   const create = useMutation({
     mutationFn: planningApi.insurance.create,
@@ -32,7 +29,6 @@ export default function NewInsurancePolicyClient() {
     const onPageShow = (event) => {
       if (event.persisted) {
         setFormKey((value) => value + 1);
-        setError("");
       }
     };
     window.addEventListener("pageshow", onPageShow);
@@ -48,14 +44,12 @@ export default function NewInsurancePolicyClient() {
         / New
       </p>
       <h1 className="page-title">New insurance policy</h1>
-      {error ? <Alert variant="error">{error}</Alert> : null}
       <form
         key={`${pathname}-${formKey}`}
         autoComplete="off"
         className="surface-card space-y-3"
         onSubmit={async (event) => {
           event.preventDefault();
-          setError("");
           const payload = insurancePayloadFromFormData(
             new FormData(event.currentTarget),
             {
@@ -64,17 +58,12 @@ export default function NewInsurancePolicyClient() {
           );
           const validated = validateInsuranceCreate(payload);
           if (!validated.ok) {
-            setError(formatValidationErrors(validated.errors));
+            toastValidationErrors(validated.errors);
             return;
           }
-          try {
-            await create.mutateAsync(validated.value);
-            setFormKey((value) => value + 1);
-            setError("");
-            router.push("/planning/insurance");
-          } catch (err) {
-            setError(apiErrorMessage(err));
-          }
+          await create.mutateAsync(validated.value);
+          setFormKey((value) => value + 1);
+          router.push("/planning/insurance");
         }}
       >
         <InsuranceFormFields idPrefix="new-insurance" showPrepaid />

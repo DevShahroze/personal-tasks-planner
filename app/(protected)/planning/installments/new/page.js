@@ -2,28 +2,24 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { planningApi } from "@/lib/api-client";
 import Button from "@/components/ui/button";
-import Alert from "@/components/ui/alert";
 import InstallmentFormFields, {
   installmentPayloadFromFormData,
 } from "@/components/planning/installment-form-fields";
 import { validateInstallmentCreate } from "@/lib/planning/validate";
-import { formatValidationErrors } from "@/lib/planning/money-fields";
-import { apiErrorMessage } from "@/lib/planning/form-errors";
+import { toastValidationErrors } from "@/lib/planning/form-errors";
 
 export default function NewInstallmentPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [error, setError] = useState("");
   const create = useMutation({
     mutationFn: planningApi.installments.create,
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["planning", "installments"] });
       queryClient.invalidateQueries({ queryKey: ["tasks", "calendar"] });
-      router.push(`/planning/installments/${data._id}`);
+      router.push("/planning/installments");
     },
   });
 
@@ -43,33 +39,32 @@ export default function NewInstallmentPage() {
         </p>
       </div>
 
-      {error ? <Alert variant="error">{error}</Alert> : null}
-
       <form
         className="surface-card space-y-4"
         onSubmit={async (event) => {
           event.preventDefault();
-          setError("");
           const payload = installmentPayloadFromFormData(
             new FormData(event.currentTarget),
             {
               includePrepaid: true,
               includeDownPayment: true,
+              includeStartPaused: true,
             },
           );
           const validated = validateInstallmentCreate(payload);
           if (!validated.ok) {
-            setError(formatValidationErrors(validated.errors));
+            toastValidationErrors(validated.errors);
             return;
           }
-          try {
-            await create.mutateAsync(payload);
-          } catch (err) {
-            setError(apiErrorMessage(err));
-          }
+          await create.mutateAsync(validated.value);
         }}
       >
-        <InstallmentFormFields idPrefix="new-installment" showPrepaid showDownPayment />
+        <InstallmentFormFields
+          idPrefix="new-installment"
+          showPrepaid
+          showDownPayment
+          showStartPaused
+        />
 
         <Button type="submit" disabled={create.isPending}>
           {create.isPending ? "Creating…" : "Create commitment"}

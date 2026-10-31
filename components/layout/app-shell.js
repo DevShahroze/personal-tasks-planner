@@ -12,6 +12,8 @@ import {
   TaskProcessorNavStatus,
 } from "@/contexts/task-processor-context";
 import PageGoBack from "@/components/layout/page-go-back";
+import FloatingToolsWidget from "@/components/tools/floating-tools-widget";
+import { NAV_LINK_ICONS } from "@/components/nav/nav-link-icons";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -29,18 +31,20 @@ function NavLinks({ onNavigate, className = "" }) {
     <nav className={`space-y-0.5 ${className}`}>
       {navItems.map((item) => {
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const Icon = NAV_LINK_ICONS[item.href];
         return (
           <Link
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            className={`block rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-150 ${
+            className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors duration-150 ${
               active
                 ? "bg-primary text-primary-foreground"
                 : "text-sidebar-foreground hover:bg-muted"
             }`}
           >
-            {item.label}
+            {Icon ? <Icon className="h-4 w-4 shrink-0 opacity-90" /> : null}
+            <span>{item.label}</span>
           </Link>
         );
       })}
@@ -101,7 +105,7 @@ export default function AppShell({ children }) {
           </p>
         </div>
         <div className="flex-1" />
-        <TaskProcessorNavStatus className="hidden max-w-[14rem] sm:block" />
+        <TaskProcessorNavStatus className="hidden max-w-[18rem] sm:flex" />
         <ThemeToggle />
         <Button
           type="button"
@@ -158,6 +162,8 @@ export default function AppShell({ children }) {
           </div>
         </div>
       ) : null}
+
+      <FloatingToolsWidget />
     </div>
   );
 }

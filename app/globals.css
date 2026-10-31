@@ -107,6 +107,16 @@ body {
   line-height: 1.45;
 }
 
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
 @layer components {
   .page-stack {
     display: flex;

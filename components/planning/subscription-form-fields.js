@@ -11,6 +11,9 @@ import {
   SUBSCRIPTION_STATUSES,
 } from "@/lib/planning/constants";
 import PrepaidPaymentsFields from "@/components/planning/prepaid-payments-fields";
+import StartPausedField, {
+  startPausedFromFormData,
+} from "@/components/planning/start-paused-field";
 
 function frequencyLabel(value) {
   if (value === "custom") {
@@ -104,6 +107,7 @@ export default function SubscriptionFormFields({
   defaults = null,
   showPrepaid = false,
   showStatus = false,
+  showStartPaused = false,
   currency = DEFAULT_PLANNING_CURRENCY,
 }) {
   const [amount, setAmount] = useState(
@@ -274,6 +278,23 @@ export default function SubscriptionFormFields({
         ) : null}
       </div>
 
+      {showStatus && !manualBilling ? (
+        <div className="space-y-1 md:max-w-xs">
+          <FieldLabel
+            htmlFor={`${idPrefix}-next-billing-date`}
+            label="Next billing date"
+            info="When the next charge is due on your calendar. After you log a payment, this advances from your schedule unless you change it here."
+          />
+          <Input
+            id={`${idPrefix}-next-billing-date`}
+            name="nextBillingDate"
+            type="date"
+            value={nextPayDate}
+            onChange={(event) => setNextPayDate(event.target.value)}
+          />
+        </div>
+      ) : null}
+
       {!manualBilling && frequency === "custom" ? (
         <div className="space-y-1 md:max-w-xs">
           <FieldLabel
@@ -332,13 +353,15 @@ export default function SubscriptionFormFields({
       {showPrepaid && !manualBilling ? (
         <PrepaidPaymentsFields periodAmountLabel="the billing amount each period" />
       ) : null}
+
+      {showStartPaused ? <StartPausedField idPrefix={idPrefix} /> : null}
     </div>
   );
 }
 
 export function subscriptionPayloadFromFormData(
   formData,
-  { includePrepaid = false, includeStatus = false } = {},
+  { includePrepaid = false, includeStatus = false, includeStartPaused = false } = {},
 ) {
   const payload = {
     serviceName: formData.get("serviceName"),
@@ -356,14 +379,16 @@ export function subscriptionPayloadFromFormData(
     payload.customIntervalDays = customDays;
   }
   if (includePrepaid) {
+    payload.prepaidLumpSum = formData.get("prepaidLumpSum") || null;
     payload.prepaidPaymentsCount = formData.get("prepaidPaymentsCount") || 0;
   }
   if (includeStatus) {
     payload.status = formData.get("status");
     payload.autoRenew = formData.get("autoRenew") === "on";
-    if (payload.manualBilling) {
-      payload.nextBillingDate = formData.get("nextBillingDate") || null;
-    }
+    payload.nextBillingDate = formData.get("nextBillingDate") || null;
+  }
+  if (includeStartPaused) {
+    payload.startPaused = startPausedFromFormData(formData);
   }
   return payload;
 }

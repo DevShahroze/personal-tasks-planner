@@ -38,6 +38,7 @@ export async function POST(request, { params }) {
   }
 
   record.paymentHistory.push(validated.value);
+  record.manualNextBillingDate = false;
   recomputeSubscriptionNextBilling(record);
   syncSubscription(record, new Date().toISOString().slice(0, 10));
   await record.save();

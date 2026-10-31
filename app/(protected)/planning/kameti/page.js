@@ -35,9 +35,12 @@ export default function KametiListPage() {
                 href={`/planning/kameti/${item._id}`}
                 className="block hover:underline"
               >
-                {item.planName} · {item.status}
+                {item.planName} · {item.status.replace(/_/g, " ")}
                 <span className="block text-xs text-muted-foreground">
-                  Remaining{" "}
+                  {item.contributionsPaidCount ??
+                    item.contributionPayments?.length ??
+                    0}
+                  /{item.totalParticipants} rounds · Remaining{" "}
                   {formatCurrency(item.remainingContributionsOwed, item.currency)}
                 </span>
               </Link>

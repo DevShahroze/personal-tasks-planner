@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Input from "@/components/ui/input";
 import Textarea from "@/components/ui/textarea";
 import Select from "@/components/ui/select";
@@ -7,6 +8,9 @@ import FieldLabel from "@/components/ui/field-label";
 import { PAYMENT_FREQUENCIES } from "@/lib/schedules/frequency";
 import { INSTALLMENT_STATUSES } from "@/lib/planning/constants";
 import PrepaidPaymentsFields from "@/components/planning/prepaid-payments-fields";
+import StartPausedField, {
+  startPausedFromFormData,
+} from "@/components/planning/start-paused-field";
 
 function frequencyLabel(value) {
   if (value === "custom") {
@@ -32,7 +36,10 @@ export default function InstallmentFormFields({
   showPrepaid = false,
   showDownPayment = false,
   showStatus = false,
+  showStartPaused = false,
 }) {
+  const [openEnded, setOpenEnded] = useState(Boolean(defaults?.openEnded));
+
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -64,25 +71,46 @@ export default function InstallmentFormFields({
         />
       </div>
 
-      <div className="space-y-1">
-        <FieldLabel
-          htmlFor={`${idPrefix}-total`}
-          label="Total amount"
-          required
-          info="Full commitment amount (principal or total price). Outstanding balance is reduced as you log payments."
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="openEnded"
+          checked={openEnded}
+          onChange={(event) => setOpenEnded(event.target.checked)}
+          className="mt-0.5 rounded border-border"
         />
-        <Input
-          id={`${idPrefix}-total`}
-          name="totalAmount"
-          type="number"
-          step="0.01"
-          min="0.01"
-          required
-          defaultValue={defaults?.totalAmount ?? ""}
-        />
-      </div>
+        <span>
+          <span className="font-medium">Open-ended contribution</span>
+          <span className="block text-xs text-muted-foreground">
+            No fixed total (e.g. plots, construction). Log variable amounts each month;
+            calendar reminders continue until you cancel or set an end date.
+          </span>
+        </span>
+      </label>
 
-      {showDownPayment ? (
+      {!openEnded ? (
+        <div className="space-y-1">
+          <FieldLabel
+            htmlFor={`${idPrefix}-total`}
+            label="Total amount"
+            required
+            info="Full commitment amount (principal or total price). Outstanding balance is reduced as you log payments."
+          />
+          <Input
+            id={`${idPrefix}-total`}
+            name="totalAmount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            required
+            defaultValue={defaults?.totalAmount ?? ""}
+          />
+        </div>
+      ) : (
+        <input type="hidden" name="totalAmount" value="" />
+      )}
+
+      {showDownPayment && !openEnded ? (
         <>
           <div className="space-y-1">
             <FieldLabel
@@ -154,14 +182,18 @@ export default function InstallmentFormFields({
           <FieldLabel
             htmlFor={`${idPrefix}-start`}
             label="Start date"
-            required
-            info="Date of the first installment (or the first period you are tracking). Used for the payment schedule."
+            required={!openEnded}
+            info={
+              openEnded
+                ? "Optional. Set when tracking began, or leave empty and use next payment due for calendar reminders."
+                : "Date of the first installment (or the first period you are tracking). Used for the payment schedule."
+            }
           />
           <Input
             id={`${idPrefix}-start`}
             name="startDate"
             type="date"
-            required
+            required={!openEnded}
             defaultValue={dateInputValue(defaults?.startDate)}
           />
         </div>
@@ -200,6 +232,22 @@ export default function InstallmentFormFields({
 
       {showStatus ? (
         <div className="space-y-1">
+          <FieldLabel
+            htmlFor={`${idPrefix}-next-due`}
+            label="Next payment due"
+            info="Calendar reminder for the next installment. Logging a payment advances this automatically unless you set it manually."
+          />
+          <Input
+            id={`${idPrefix}-next-due`}
+            name="nextDueDate"
+            type="date"
+            defaultValue={dateInputValue(defaults?.nextDueDate)}
+          />
+        </div>
+      ) : null}
+
+      {showStatus ? (
+        <div className="space-y-1">
           <FieldLabel htmlFor={`${idPrefix}-status`} label="Status" />
           <Select
             id={`${idPrefix}-status`}
@@ -221,21 +269,32 @@ export default function InstallmentFormFields({
           variableAmounts
         />
       ) : null}
+
+      {showStartPaused ? <StartPausedField idPrefix={idPrefix} /> : null}
     </div>
   );
 }
 
 export function installmentPayloadFromFormData(
   formData,
-  { includePrepaid = false, includeDownPayment = false, includeStatus = false } = {},
+  {
+    includePrepaid = false,
+    includeDownPayment = false,
+    includeStatus = false,
+    includeStartPaused = false,
+  } = {},
 ) {
+  const openEnded = formData.get("openEnded") === "on";
   const payload = {
     name: formData.get("name"),
     description: formData.get("description"),
-    totalAmount: formData.get("totalAmount"),
+    openEnded,
+    totalAmount: openEnded ? null : formData.get("totalAmount"),
     installmentAmount: formData.get("installmentAmount") || null,
     frequency: formData.get("frequency") || "monthly",
-    startDate: formData.get("startDate"),
+    startDate: openEnded
+      ? formData.get("startDate") || null
+      : formData.get("startDate"),
     endDate: formData.get("endDate") || null,
     totalInstallments: formData.get("totalInstallments") || null,
   };
@@ -244,11 +303,16 @@ export function installmentPayloadFromFormData(
     payload.downPaymentDate = formData.get("downPaymentDate") || null;
   }
   if (includePrepaid) {
+    payload.prepaidLumpSum = formData.get("prepaidLumpSum") || null;
     payload.prepaidPaymentsCount = formData.get("prepaidPaymentsCount") || 0;
     payload.prepaidPaymentAmounts = formData.get("prepaidPaymentAmounts") || "";
   }
   if (includeStatus) {
     payload.status = formData.get("status");
+    payload.nextDueDate = formData.get("nextDueDate") || null;
+  }
+  if (includeStartPaused) {
+    payload.startPaused = startPausedFromFormData(formData);
   }
   return payload;
 }

@@ -1,12 +1,12 @@
-import { useQuery } from "@tanstack/react-query";
-import { availabilityTemplatesApi } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-client";
-import { catalogQueryOptions } from "@/lib/query-cache";
+import { useAppAvailabilityTemplates } from "@/contexts/app-data-context";
 
 export function useAvailabilityTemplates() {
-  return useQuery({
-    queryKey: queryKeys.availabilityTemplates,
-    queryFn: () => availabilityTemplatesApi.list(),
-    ...catalogQueryOptions(),
-  });
+  const availabilityTemplates = useAppAvailabilityTemplates();
+  return {
+    data: { items: availabilityTemplates.items },
+    isLoading: availabilityTemplates.isLoading,
+    isError: availabilityTemplates.isError,
+    error: availabilityTemplates.error,
+    refetch: availabilityTemplates.refetch,
+  };
 }

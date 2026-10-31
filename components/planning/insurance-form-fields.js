@@ -249,6 +249,7 @@ export function insurancePayloadFromFormData(
     payload.endDate = endDate;
   }
   if (includePrepaid) {
+    payload.prepaidLumpSum = formData.get("prepaidLumpSum") || null;
     payload.prepaidPaymentsCount = formData.get("prepaidPaymentsCount") || 0;
   }
   if (includeStatus) {

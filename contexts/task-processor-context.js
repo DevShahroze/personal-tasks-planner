@@ -1,8 +1,11 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useState } from "react";
 import Alert from "@/components/ui/alert";
+import Button from "@/components/ui/button";
 import { useTaskProcessorSlice } from "@/contexts/slices/task-processor-slice";
+import { useConfirm } from "@/contexts/confirm-context";
+import { taskProcessorApi } from "@/lib/api-client";
 
 const TaskProcessorContext = createContext(null);
 
@@ -45,20 +48,58 @@ function TaskProcessorShellGate({ children }) {
 }
 
 export function TaskProcessorNavStatus({ className = "" }) {
-  const { navLastRunLabel, active } = useTaskProcessor();
+  const { navLastRunLabel, active, driveProcessor } = useTaskProcessor();
+  const confirm = useConfirm();
+  const [manualPending, setManualPending] = useState(false);
+
+  const onManualRun = async () => {
+    if (active || manualPending) {
+      return;
+    }
+    const ok = await confirm({
+      title: "Run task rollover now?",
+      description:
+        "Incomplete To Do and In Progress tasks scheduled on past days (through today) will move to the next day. Editing is paused while this runs.",
+      confirmLabel: "Run rollover",
+      variant: "primary",
+    });
+    if (!ok) {
+      return;
+    }
+    setManualPending(true);
+    try {
+      await taskProcessorApi.manualRun();
+      await driveProcessor();
+    } catch {
+      // driveProcessor refreshes status on failure
+    } finally {
+      setManualPending(false);
+    }
+  };
 
   return (
-    <p
-      className={`truncate text-[0.6875rem] text-muted-foreground ${className}`}
-      title={
-        active
-          ? "Daily task processor is running"
-          : `Last daily task processor run: ${navLastRunLabel}`
-      }
-    >
-      <span className="font-medium text-foreground/80">Last rollover:</span>{" "}
-      {navLastRunLabel}
-    </p>
+    <div className={`flex min-w-0 items-center gap-2 ${className}`}>
+      <p
+        className="min-w-0 flex-1 truncate text-[0.6875rem] text-muted-foreground"
+        title={
+          active
+            ? "Daily task processor is running"
+            : `Last daily task processor run: ${navLastRunLabel}`
+        }
+      >
+        <span className="font-medium text-foreground/80">Last rollover:</span>{" "}
+        {navLastRunLabel}
+      </p>
+      <Button
+        type="button"
+        variant="secondary"
+        className="shrink-0 px-2 py-0.5 text-[0.6875rem]"
+        disabled={active || manualPending}
+        onClick={onManualRun}
+      >
+        {manualPending || active ? "Running…" : "Run"}
+      </Button>
+    </div>
   );
 }
 

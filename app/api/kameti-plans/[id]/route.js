@@ -16,11 +16,18 @@ export async function GET(request, { params }) {
     return jsonError("Invalid id", 400);
   }
   await connectDB();
-  const doc = await KametiPlan.findById(id).lean();
+  const doc = await KametiPlan.findById(id);
   if (!doc) {
     return jsonError("Kameti plan not found", 404);
   }
-  return jsonOk(doc);
+  const todayYmd =
+    new URL(request.url).searchParams.get("todayYmd") ||
+    new Date().toISOString().slice(0, 10);
+  syncKametiPlan(doc, todayYmd);
+  if (doc.isModified()) {
+    await doc.save();
+  }
+  return jsonOk(doc.toObject());
 }
 
 export async function PATCH(request, { params }) {
@@ -36,14 +43,14 @@ export async function PATCH(request, { params }) {
   if (parsed.error) {
     return parsed.error;
   }
-  const validated = validateKametiUpdate(parsed.body);
-  if (!validated.ok) {
-    return jsonError("Validation failed", 422, validated.errors);
-  }
   await connectDB();
   const doc = await KametiPlan.findById(id);
   if (!doc) {
     return jsonError("Kameti plan not found", 404);
+  }
+  const validated = validateKametiUpdate(parsed.body, doc.toObject());
+  if (!validated.ok) {
+    return jsonError("Validation failed", 422, validated.errors);
   }
   Object.assign(doc, validated.patch);
   syncKametiPlan(doc, new Date().toISOString().slice(0, 10));

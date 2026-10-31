@@ -14,6 +14,7 @@ const subscriptionSchema = new mongoose.Schema(
     billingFrequency: { type: String, enum: PAYMENT_FREQUENCIES, default: "monthly" },
     customIntervalDays: { type: Number, default: null },
     nextBillingDate: { type: Date, default: null, index: true },
+    manualNextBillingDate: { type: Boolean, default: false },
     startDate: { type: Date, required: true, index: true },
     renewalDate: { type: Date, default: null },
     cancellationDate: { type: Date, default: null },

@@ -64,3 +64,43 @@ test("financial calendar entries include expected dates", () => {
   assert.equal(entries[0].kind, "financialExpected");
   assert.equal(entries[0].href, "/financial-records/507f1f77bcf86cd799439011");
 });
+
+test("money lent rolls to today on calendar when expected date passed", () => {
+  const entries = buildCalendarEntriesForFinancialRecord(
+    {
+      _id: "507f1f77bcf86cd799439011",
+      type: "money_lent",
+      partyName: "Ali",
+      expectedDate: new Date("2026-06-10T00:00:00.000Z"),
+      outstandingBalance: 1000,
+      status: "pending",
+    },
+    {
+      todayYmd: "2026-06-15",
+      monthFirstYmd: "2026-06-01",
+      monthLastYmd: "2026-06-30",
+    },
+  );
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].ymd, "2026-06-15");
+});
+
+test("payable does not roll to today when expected date passed", () => {
+  const entries = buildCalendarEntriesForFinancialRecord(
+    {
+      _id: "507f1f77bcf86cd799439011",
+      type: "payable",
+      partyName: "Shop",
+      expectedDate: new Date("2026-06-10T00:00:00.000Z"),
+      outstandingBalance: 500,
+      status: "pending",
+    },
+    {
+      todayYmd: "2026-06-15",
+      monthFirstYmd: "2026-06-01",
+      monthLastYmd: "2026-06-30",
+    },
+  );
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].ymd, "2026-06-10");
+});

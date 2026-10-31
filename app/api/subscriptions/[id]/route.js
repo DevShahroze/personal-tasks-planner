@@ -53,12 +53,11 @@ export async function PATCH(request, { params }) {
     "billingFrequency",
     "customIntervalDays",
     "startDate",
-    "nextBillingDate",
     "manualBilling",
   ];
   const scheduleChanged = scheduleKeys.some((key) => key in validated.patch);
   Object.assign(doc, validated.patch);
-  if (scheduleChanged) {
+  if (scheduleChanged && !doc.manualNextBillingDate) {
     recomputeSubscriptionNextBilling(doc);
   }
   syncSubscription(doc, new Date().toISOString().slice(0, 10));

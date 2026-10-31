@@ -2,7 +2,7 @@ import { connectDB } from "@/lib/mongodb";
 import { requireAuth } from "@/lib/auth";
 import { jsonError, jsonOk } from "@/lib/api-response";
 import { zonedDateTimeToUtc } from "@/lib/scheduling/time";
-import { isValidTimeZone } from "@/lib/scheduling/time";
+import { isValidTimeZone, ymdInTimeZone } from "@/lib/scheduling/time";
 import { DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants.js";
 import { monthBounds } from "@/lib/calendar/constants.js";
 import { indexEntriesByYmd } from "@/lib/calendar/task-entries.js";
@@ -77,6 +77,53 @@ export async function GET(request) {
     return jsonError("Could not build calendar range", 400);
   }
 
+  const todayYmd = ymdInTimeZone(new Date(), timeZone);
+  const todayStart = zonedDateTimeToUtc(todayYmd, "00:00", timeZone);
+  const financialCalendarOr = [{ expectedDate: { $gte: rangeStart, $lte: rangeEnd } }];
+  if (todayStart && todayStart >= rangeStart && todayStart <= rangeEnd) {
+    financialCalendarOr.push({
+      type: { $in: ["money_lent", "money_borrowed"] },
+      expectedDate: { $lt: todayStart },
+    });
+  }
+
+  const kametiCalendarOr = [
+    { nextContributionDueDate: { $gte: rangeStart, $lte: rangeEnd } },
+    { expectedPayoutDate: { $gte: rangeStart, $lte: rangeEnd } },
+  ];
+  if (todayStart && todayStart >= rangeStart && todayStart <= rangeEnd) {
+    kametiCalendarOr.push({
+      remainingContributionsOwed: { $gt: 0 },
+      nextContributionDueDate: { $lt: todayStart },
+    });
+  }
+
+  const planningCalendarOptions = {
+    timeZone,
+    todayYmd,
+    monthFirstYmd: firstDay,
+    monthLastYmd: lastDay,
+  };
+
+  const installmentCalendarOr = [{ nextDueDate: { $gte: rangeStart, $lte: rangeEnd } }];
+  if (todayStart && todayStart >= rangeStart && todayStart <= rangeEnd) {
+    installmentCalendarOr.push({
+      status: { $nin: ["cancelled", "completed", "paused"] },
+      $or: [{ outstandingBalance: { $gt: 0 } }, { openEnded: true }],
+      nextDueDate: { $lt: todayStart },
+    });
+  }
+
+  const subscriptionCalendarOr = [
+    { nextBillingDate: { $gte: rangeStart, $lte: rangeEnd } },
+  ];
+  if (todayStart && todayStart >= rangeStart && todayStart <= rangeEnd) {
+    subscriptionCalendarOr.push({
+      status: "active",
+      nextBillingDate: { $lt: todayStart },
+    });
+  }
+
   await connectDB();
 
   const [
@@ -108,26 +155,23 @@ export async function GET(request) {
     ).lean(),
     FinancialRecord.find(
       {
-        expectedDate: { $gte: rangeStart, $lte: rangeEnd },
         status: { $ne: "settled" },
         outstandingBalance: { $gt: 0 },
+        $or: financialCalendarOr,
       },
       { type: 1, partyName: 1, expectedDate: 1, outstandingBalance: 1, status: 1 },
     ).lean(),
     InstallmentCommitment.find({
-      status: { $nin: ["cancelled", "completed"] },
-      nextDueDate: { $gte: rangeStart, $lte: rangeEnd },
+      status: { $nin: ["cancelled", "completed", "paused"] },
+      $or: installmentCalendarOr,
     }).lean(),
     KametiPlan.find({
-      status: { $ne: "cancelled" },
-      $or: [
-        { nextContributionDueDate: { $gte: rangeStart, $lte: rangeEnd } },
-        { expectedPayoutDate: { $gte: rangeStart, $lte: rangeEnd } },
-      ],
+      status: { $nin: ["cancelled", "paused"] },
+      $or: kametiCalendarOr,
     }).lean(),
     Subscription.find({
-      status: { $in: ["active", "paused"] },
-      nextBillingDate: { $gte: rangeStart, $lte: rangeEnd },
+      status: "active",
+      $or: subscriptionCalendarOr,
     }).lean(),
     InsurancePolicy.find({
       status: { $nin: ["cancelled", "completed"] },
@@ -144,10 +188,27 @@ export async function GET(request) {
 
   const days = mergeAllPlanningCalendarMaps(
     indexEntriesByYmd(tasks),
-    indexFinancialEntriesByYmd(financialRecords),
-    indexPlanningEntriesByYmd(installments, buildInstallmentCalendarEntries),
-    indexPlanningEntriesByYmd(kametiPlans, buildKametiCalendarEntries),
-    indexPlanningEntriesByYmd(subscriptions, buildSubscriptionCalendarEntries),
+    indexFinancialEntriesByYmd(financialRecords, {
+      timeZone,
+      todayYmd,
+      monthFirstYmd: firstDay,
+      monthLastYmd: lastDay,
+    }),
+    indexPlanningEntriesByYmd(
+      installments,
+      buildInstallmentCalendarEntries,
+      planningCalendarOptions,
+    ),
+    indexPlanningEntriesByYmd(
+      kametiPlans,
+      buildKametiCalendarEntries,
+      planningCalendarOptions,
+    ),
+    indexPlanningEntriesByYmd(
+      subscriptions,
+      buildSubscriptionCalendarEntries,
+      planningCalendarOptions,
+    ),
     indexPlanningEntriesByYmd(insurancePolicies, buildInsuranceCalendarEntries),
     indexPlanningEntriesByYmd(applications, buildApplicationCalendarEntries),
     indexPlanningEntriesByYmd(tours, buildTourCalendarEntries),

@@ -112,6 +112,10 @@ export function TaskRecurrenceFields({
   nextDuePreview,
   needsStartingDate,
 }) {
+  const [procedureOpen, setProcedureOpen] = useState(() =>
+    hasProcedureFields(recurrenceState),
+  );
+
   const toggleRecurring = (enabled) => {
     setRecurrenceState((prev) => {
       if (!enabled) {
@@ -119,7 +123,7 @@ export function TaskRecurrenceFields({
       }
       const next = { ...prev, enabled: true };
       if (suggestedStartYmd && !next.lastProcedureDate && !next.lastCompletedDate) {
-        next.lastProcedureDate = suggestedStartYmd;
+        next.lastCompletedDate = suggestedStartYmd;
       }
       return next;
     });
@@ -127,7 +131,7 @@ export function TaskRecurrenceFields({
 
   return (
     <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-      <p className="text-sm font-semibold tracking-tight">Recurrence & procedures</p>
+      <p className="text-sm font-semibold tracking-tight">Recurrence</p>
 
       <label className="flex items-center gap-2 text-sm">
         <input
@@ -178,7 +182,7 @@ export function TaskRecurrenceFields({
                 ))}
               </Select>
             </label>
-            <label className="block space-y-1 text-sm">
+            <label className="block space-y-1 text-sm md:col-span-2">
               <span>Last completed</span>
               <Input
                 type="date"
@@ -187,19 +191,6 @@ export function TaskRecurrenceFields({
                   setRecurrenceState((prev) => ({
                     ...prev,
                     lastCompletedDate: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block space-y-1 text-sm">
-              <span>Last procedure / visit</span>
-              <Input
-                type="date"
-                value={recurrenceState.lastProcedureDate}
-                onChange={(event) =>
-                  setRecurrenceState((prev) => ({
-                    ...prev,
-                    lastProcedureDate: event.target.value,
                   }))
                 }
               />
@@ -221,7 +212,7 @@ export function TaskRecurrenceFields({
 
           {needsStartingDate ? (
             <Alert variant="info">
-              Add a last visit or last completed date to calculate the next due date.
+              Add a last completed date to calculate the next due date.
             </Alert>
           ) : null}
           {nextDuePreview ? (
@@ -230,60 +221,97 @@ export function TaskRecurrenceFields({
             </p>
           ) : null}
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="block space-y-1 text-sm">
-              <span>Procedure status</span>
-              <Select
-                value={recurrenceState.procedureStatus}
-                onChange={(event) =>
-                  setRecurrenceState((prev) => ({
-                    ...prev,
-                    procedureStatus: event.target.value,
-                  }))
-                }
-              >
-                {PROCEDURE_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            <label className="block space-y-1 text-sm">
-              <span>Next appointment (booked)</span>
-              <Input
-                type="date"
-                disabled={recurrenceState.procedureStatus !== "decided"}
-                value={recurrenceState.nextAppointmentDate}
-                onChange={(event) =>
-                  setRecurrenceState((prev) => ({
-                    ...prev,
-                    nextAppointmentDate: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block space-y-1 text-sm md:col-span-2">
-              <span>Procedure details</span>
-              <Textarea
-                rows={2}
-                value={recurrenceState.procedureDetails}
-                onChange={(event) =>
-                  setRecurrenceState((prev) => ({
-                    ...prev,
-                    procedureDetails: event.target.value,
-                  }))
-                }
-              />
-            </label>
-          </div>
-
           {taskId && onRecordCompletion ? (
             <RecordOccurrenceForm onSubmit={onRecordCompletion} recording={recording} />
           ) : null}
+
+          <div className="border-t border-border pt-3">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-auto px-0 py-1 text-xs font-medium"
+              onClick={() => setProcedureOpen((open) => !open)}
+            >
+              {procedureOpen ? "Hide procedure fields" : "Procedure / visit details…"}
+            </Button>
+            {procedureOpen ? (
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <label className="block space-y-1 text-sm md:col-span-2">
+                  <span>Last procedure / visit</span>
+                  <Input
+                    type="date"
+                    value={recurrenceState.lastProcedureDate}
+                    onChange={(event) =>
+                      setRecurrenceState((prev) => ({
+                        ...prev,
+                        lastProcedureDate: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="block space-y-1 text-sm">
+                  <span>Procedure status</span>
+                  <Select
+                    value={recurrenceState.procedureStatus}
+                    onChange={(event) =>
+                      setRecurrenceState((prev) => ({
+                        ...prev,
+                        procedureStatus: event.target.value,
+                      }))
+                    }
+                  >
+                    {PROCEDURE_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+                <label className="block space-y-1 text-sm">
+                  <span>Next appointment (booked)</span>
+                  <Input
+                    type="date"
+                    disabled={recurrenceState.procedureStatus !== "decided"}
+                    value={recurrenceState.nextAppointmentDate}
+                    onChange={(event) =>
+                      setRecurrenceState((prev) => ({
+                        ...prev,
+                        nextAppointmentDate: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="block space-y-1 text-sm md:col-span-2">
+                  <span>Procedure details</span>
+                  <Textarea
+                    rows={2}
+                    value={recurrenceState.procedureDetails}
+                    onChange={(event) =>
+                      setRecurrenceState((prev) => ({
+                        ...prev,
+                        procedureDetails: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
         </>
       ) : null}
     </div>
+  );
+}
+
+function hasProcedureFields(state) {
+  if (!state?.enabled) {
+    return false;
+  }
+  return Boolean(
+    state.procedureDetails?.trim() ||
+    state.procedureStatus === "decided" ||
+    state.nextAppointmentDate ||
+    state.lastProcedureDate,
   );
 }
 

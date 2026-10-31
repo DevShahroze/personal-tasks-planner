@@ -11,19 +11,28 @@ const installmentSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     description: { type: String, default: "", maxlength: MAX_DESCRIPTION_LENGTH },
-    totalAmount: { type: Number, required: true, min: 0.01 },
+    openEnded: { type: Boolean, default: false },
+    totalAmount: {
+      type: Number,
+      default: null,
+      min: 0.01,
+      required: function installmentTotalAmountRequired() {
+        return !this.openEnded;
+      },
+    },
     downPaymentAmount: { type: Number, default: null, min: 0.01 },
     downPaymentDate: { type: Date, default: null },
     installmentAmount: { type: Number, default: null, min: 0.01 },
     currency: { type: String, default: DEFAULT_PLANNING_CURRENCY },
     frequency: { type: String, enum: PAYMENT_FREQUENCIES, default: "monthly" },
     customIntervalDays: { type: Number, default: null },
-    startDate: { type: Date, required: true, index: true },
+    startDate: { type: Date, default: null, index: true },
     endDate: { type: Date, default: null, index: true },
     nextDueDate: { type: Date, default: null, index: true },
+    manualNextDueDate: { type: Boolean, default: false },
     totalInstallments: { type: Number, default: null },
     installmentsPaid: { type: Number, default: 0 },
-    outstandingBalance: { type: Number, required: true, min: 0 },
+    outstandingBalance: { type: Number, default: 0, min: 0 },
     status: {
       type: String,
       enum: INSTALLMENT_STATUSES,
@@ -38,5 +47,10 @@ const installmentSchema = new mongoose.Schema(
 
 installmentSchema.index({ updatedAt: -1 });
 
-export default mongoose.models.InstallmentCommitment ||
-  mongoose.model("InstallmentCommitment", installmentSchema);
+const MODEL_NAME = "InstallmentCommitment";
+
+if (mongoose.models[MODEL_NAME]) {
+  delete mongoose.models[MODEL_NAME];
+}
+
+export default mongoose.model(MODEL_NAME, installmentSchema);

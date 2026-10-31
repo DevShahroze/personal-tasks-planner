@@ -2,82 +2,63 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { planningApi } from "@/lib/api-client";
 import Button from "@/components/ui/button";
-import Input from "@/components/ui/input";
-import Alert from "@/components/ui/alert";
+import KametiFormFields, {
+  kametiPayloadFromFormData,
+} from "@/components/planning/kameti-form-fields";
 import { validateKametiCreate } from "@/lib/planning/validate";
-import { formatValidationErrors } from "@/lib/planning/money-fields";
-import { apiErrorMessage } from "@/lib/planning/form-errors";
-import PrepaidPaymentsFields from "@/components/planning/prepaid-payments-fields";
+import { toastValidationErrors } from "@/lib/planning/form-errors";
 
 export default function NewKametiPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [error, setError] = useState("");
   const create = useMutation({
     mutationFn: planningApi.kameti.create,
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["planning", "kameti"] });
-      router.push(`/planning/kameti/${data._id}`);
+      queryClient.invalidateQueries({ queryKey: ["tasks", "calendar"] });
+      router.push("/planning/kameti");
     },
   });
 
   return (
     <div className="page-stack mx-auto max-w-xl">
-      <Link href="/planning/kameti" className="text-sm hover:underline">
-        ← Kameti
-      </Link>
-      {error ? <Alert variant="error">{error}</Alert> : null}
+      <div>
+        <p className="text-sm text-muted-foreground">
+          <Link href="/planning/kameti" className="hover:underline">
+            Kameti
+          </Link>{" "}
+          / New
+        </p>
+        <h1 className="page-title">New Kameti plan</h1>
+        <p className="page-lead">
+          Track a rotating savings pool: regular contributions from each member and an
+          expected payout date on your calendar.
+        </p>
+      </div>
+
       <form
-        className="surface-card space-y-2"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError("");
-          const fd = new FormData(e.currentTarget);
-          const payload = {
-            planName: fd.get("planName"),
-            totalParticipants: fd.get("totalParticipants"),
-            contributionAmount: fd.get("contributionAmount"),
-            contributionFrequency: fd.get("contributionFrequency") || "monthly",
-            startDate: fd.get("startDate"),
-            expectedPayoutDate: fd.get("expectedPayoutDate") || null,
-            prepaidPaymentsCount: fd.get("prepaidPaymentsCount") || 0,
-          };
+        className="surface-card space-y-4"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          const payload = kametiPayloadFromFormData(new FormData(event.currentTarget), {
+            includePrepaid: true,
+            includeStartPaused: true,
+          });
           const validated = validateKametiCreate(payload);
           if (!validated.ok) {
-            setError(formatValidationErrors(validated.errors));
+            toastValidationErrors(validated.errors);
             return;
           }
-          try {
-            await create.mutateAsync(payload);
-          } catch (err) {
-            setError(apiErrorMessage(err));
-          }
+          await create.mutateAsync(validated.value);
         }}
       >
-        <Input name="planName" placeholder="Plan name" required />
-        <Input
-          name="totalParticipants"
-          type="number"
-          min="1"
-          placeholder="Participants"
-          required
-        />
-        <Input
-          name="contributionAmount"
-          type="number"
-          step="0.01"
-          min="0.01"
-          placeholder="Contribution"
-          required
-        />
-        <Input name="startDate" type="date" required />
-        <Input name="expectedPayoutDate" type="date" />
-        <PrepaidPaymentsFields periodAmountLabel="the contribution amount" />
-        <Button type="submit">Create</Button>
+        <KametiFormFields idPrefix="new-kameti" showStartPaused />
+        <Button type="submit" disabled={create.isPending}>
+          {create.isPending ? "Creating…" : "Create plan"}
+        </Button>
       </form>
     </div>
   );

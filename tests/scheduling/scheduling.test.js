@@ -11,7 +11,14 @@ import {
   normalizeStoredSchedule,
 } from "../../lib/scheduling/defaults.js";
 import { suggestFlexibleSlots } from "../../lib/scheduling/slots.js";
-import { intervalWithinAvailability } from "../../lib/scheduling/availability.js";
+import {
+  intervalWithinAvailability,
+  availabilityWindowForDay,
+} from "../../lib/scheduling/availability.js";
+import {
+  inferScheduleModeFromFormState,
+  scheduleFromFormState,
+} from "../../lib/scheduling/client-form.js";
 
 const TZ = "Asia/Karachi";
 
@@ -186,4 +193,63 @@ test("unscheduled mode rejects scheduled timestamps", () => {
     scheduledEnd: end,
   });
   assert.equal(result.ok, false);
+});
+
+test("scheduleFromFormState infers fixed from task date and start time", () => {
+  const schedule = scheduleFromFormState({
+    visitAvailabilityEnabled: false,
+    scheduledDate: "2026-06-02",
+    scheduledStartTime: "10:00",
+    scheduledEndTime: "11:00",
+    timezone: TZ,
+    daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+    startTime: "09:00",
+    endTime: "17:00",
+    excludePublicHolidays: false,
+    avoidConflicts: true,
+    availabilityTemplateId: "",
+    durationMinutes: "",
+    earliestDate: "",
+    dueDate: "",
+    selectedSlot: null,
+    timeSlots: [],
+  });
+  assert.equal(schedule.mode, "fixed");
+  assert.ok(schedule.scheduledStart);
+  assert.ok(schedule.scheduledEnd);
+});
+
+test("scheduleFromFormState infers flexible when visit availability is enabled", () => {
+  assert.equal(
+    inferScheduleModeFromFormState({
+      visitAvailabilityEnabled: true,
+      scheduledDate: "",
+      scheduledStartTime: "",
+    }),
+    "flexible",
+  );
+  assert.equal(
+    inferScheduleModeFromFormState({
+      visitAvailabilityEnabled: false,
+      scheduledDate: "2026-06-02",
+      scheduledStartTime: "09:00",
+    }),
+    "fixed",
+  );
+});
+
+test("availabilityWindowForDay uses custom time slots when set", () => {
+  const windows = availabilityWindowForDay(
+    "2026-06-02",
+    {
+      startTime: "00:00",
+      endTime: "23:59",
+      timeSlots: [
+        { startTime: "09:00", endTime: "12:00" },
+        { startTime: "14:00", endTime: "16:00" },
+      ],
+    },
+    TZ,
+  );
+  assert.equal(windows?.length, 2);
 });

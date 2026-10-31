@@ -30,6 +30,7 @@ export default function FinancialRecordsPage() {
 
   const recordsQuery = useFinancialRecords(filters, Boolean(todayYmd));
   const items = recordsQuery.data?.items || [];
+  const outstandingTotals = recordsQuery.data?.summary?.outstandingByCurrency || [];
 
   return (
     <div className="page-stack mx-auto max-w-4xl">
@@ -78,35 +79,64 @@ export default function FinancialRecordsPage() {
           description="Create a financial record to get started."
         />
       ) : (
-        <ul className="divide-y divide-border rounded-md border border-border bg-card">
-          {items.map((record) => (
-            <li key={record._id} className="px-3 py-2">
-              <Link
-                href={`/financial-records/${record._id}`}
-                className="block hover:underline"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium">
-                    {record.partyName} · {FINANCIAL_TYPE_LABEL[record.type]}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {FINANCIAL_STATUS_LABEL[record.status]}
-                    {record.overdue ? " · Overdue" : ""}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Outstanding{" "}
-                  {formatCurrency(record.outstandingBalance, record.currency)} of{" "}
-                  {formatCurrency(record.originalAmount, record.currency)}
-                  {record.expectedDate
-                    ? ` · Expected ${formatDate(record.expectedDate)}`
-                    : ""}
-                  {record.taskId?.title ? ` · Task: ${record.taskId.title}` : ""}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <>
+          {outstandingTotals.length ? (
+            <section className="dashboard-panel">
+              <div className="dashboard-panel-header">Total outstanding</div>
+              <div className="dashboard-panel-body space-y-2">
+                {outstandingTotals.map((row) => (
+                  <div
+                    key={row.currency}
+                    className="flex flex-wrap items-baseline justify-between gap-2"
+                  >
+                    <span className="text-sm text-muted-foreground">
+                      {outstandingTotals.length > 1 ? row.currency : "All records"}
+                    </span>
+                    <span className="text-lg font-semibold tabular-nums">
+                      {formatCurrency(row.outstanding, row.currency)}
+                    </span>
+                  </div>
+                ))}
+                {recordsQuery.data?.total != null &&
+                recordsQuery.data.total > items.length ? (
+                  <p className="text-xs text-muted-foreground">
+                    Totals include all {recordsQuery.data.total} matching records.
+                  </p>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+
+          <ul className="divide-y divide-border rounded-md border border-border bg-card">
+            {items.map((record) => (
+              <li key={record._id} className="px-3 py-2">
+                <Link
+                  href={`/financial-records/${record._id}`}
+                  className="block hover:underline"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium">
+                      {record.partyName} · {FINANCIAL_TYPE_LABEL[record.type]}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {FINANCIAL_STATUS_LABEL[record.status]}
+                      {record.overdue ? " · Overdue" : ""}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Outstanding{" "}
+                    {formatCurrency(record.outstandingBalance, record.currency)} of{" "}
+                    {formatCurrency(record.originalAmount, record.currency)}
+                    {record.expectedDate
+                      ? ` · Expected ${formatDate(record.expectedDate)}`
+                      : ""}
+                    {record.taskId?.title ? ` · Task: ${record.taskId.title}` : ""}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

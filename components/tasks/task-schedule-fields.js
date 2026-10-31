@@ -1,14 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { SCHEDULE_MODES, DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants";
+import { useMemo } from "react";
 import {
   formStateFromSchedule,
   formatScheduleInstant,
   scheduleFromFormState,
 } from "@/lib/scheduling/client-form";
 import { useAvailabilityTemplates } from "@/hooks/use-availability-templates";
-import { tasksApi } from "@/lib/api-client";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
@@ -29,24 +27,17 @@ export function buildInitialScheduleState(initialValues) {
 }
 
 export default function TaskScheduleFields({
-  taskId,
-  initialValues,
   scheduleState,
   setScheduleState,
   conflicts,
 }) {
   const templatesQuery = useAvailabilityTemplates();
-  const [slotMessage, setSlotMessage] = useState("");
-  const [slotLoading, setSlotLoading] = useState(false);
-  const [slotOptions, setSlotOptions] = useState([]);
 
   const templates = templatesQuery.data?.items || [];
-  const showAvailability =
-    scheduleState.mode === "flexible" || scheduleState.mode === "fixed";
-  const showFixedTimes = scheduleState.mode === "fixed";
-  const showFlexibleDates = scheduleState.mode === "flexible";
-
+  const visitEnabled = scheduleState.visitAvailabilityEnabled;
   const conflictList = useMemo(() => conflicts || [], [conflicts]);
+  const timeSlots = scheduleState.timeSlots || [];
+  const hasCustomSlots = timeSlots.length > 0;
 
   const applyTemplate = (templateId) => {
     const template = templates.find((item) => String(item._id) === templateId);
@@ -54,6 +45,8 @@ export default function TaskScheduleFields({
       const next = {
         ...prev,
         availabilityTemplateId: templateId,
+        visitAvailabilityEnabled: true,
+        timeSlots: [],
       };
       if (template) {
         next.daysOfWeek = [...template.daysOfWeek];
@@ -66,101 +59,51 @@ export default function TaskScheduleFields({
     });
   };
 
-  const loadSlots = async () => {
-    if (!taskId) {
-      setSlotMessage("Save the task first to load slot suggestions.");
-      return;
-    }
-    setSlotLoading(true);
-    setSlotMessage("");
-    try {
-      const schedule = scheduleFromFormState(scheduleState);
-      const result = await tasksApi.scheduleSlots(taskId, { schedule });
-      setSlotOptions(result.slots || []);
-      setSlotMessage(result.message || "");
-    } catch (err) {
-      setSlotOptions([]);
-      setSlotMessage(err.message || "Could not load slot suggestions");
-    } finally {
-      setSlotLoading(false);
-    }
+  const updateTimeSlot = (index, field, value) => {
+    setScheduleState((prev) => {
+      const slots = [...(prev.timeSlots || [])];
+      slots[index] = { ...slots[index], [field]: value };
+      return { ...prev, timeSlots: slots };
+    });
+  };
+
+  const addTimeSlot = () => {
+    setScheduleState((prev) => ({
+      ...prev,
+      timeSlots: [...(prev.timeSlots || []), { startTime: "", endTime: "" }],
+    }));
+  };
+
+  const removeTimeSlot = (index) => {
+    setScheduleState((prev) => ({
+      ...prev,
+      timeSlots: (prev.timeSlots || []).filter((_, i) => i !== index),
+    }));
   };
 
   return (
-    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
-      <p className="text-sm font-semibold tracking-tight">Scheduling</p>
-
-      <label className="block space-y-1 text-sm">
-        <span>Mode</span>
-        <Select
-          value={scheduleState.mode}
+    <div className="space-y-4">
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="mt-0.5"
+          checked={visitEnabled}
           onChange={(event) => {
-            const mode = event.target.value;
-            setScheduleState((prev) => ({ ...prev, mode, selectedSlot: null }));
+            setScheduleState((prev) => ({
+              ...prev,
+              visitAvailabilityEnabled: event.target.checked,
+            }));
           }}
-        >
-          {SCHEDULE_MODES.map((mode) => (
-            <option key={mode} value={mode}>
-              {mode.charAt(0).toUpperCase() + mode.slice(1)}
-            </option>
-          ))}
-        </Select>
+        />
+        <span>
+          <span className="font-medium">Enable for this task</span>
+          <span className="mt-0.5 block text-xs text-muted-foreground">
+            Choose which weekdays and times you can visit or work on this task.
+          </span>
+        </span>
       </label>
 
-      {(showFlexibleDates || showFixedTimes) && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="block space-y-1 text-sm">
-            <span>Earliest date</span>
-            <Input
-              type="date"
-              value={scheduleState.earliestDate}
-              onChange={(event) =>
-                setScheduleState((prev) => ({
-                  ...prev,
-                  earliestDate: event.target.value,
-                }))
-              }
-            />
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span>Deadline</span>
-            <Input
-              type="date"
-              value={scheduleState.dueDate}
-              onChange={(event) =>
-                setScheduleState((prev) => ({ ...prev, dueDate: event.target.value }))
-              }
-            />
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span>Duration (minutes)</span>
-            <Input
-              type="number"
-              min="1"
-              step="1"
-              value={scheduleState.durationMinutes}
-              onChange={(event) =>
-                setScheduleState((prev) => ({
-                  ...prev,
-                  durationMinutes: event.target.value,
-                }))
-              }
-            />
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span>Timezone</span>
-            <Input
-              value={scheduleState.timezone}
-              onChange={(event) =>
-                setScheduleState((prev) => ({ ...prev, timezone: event.target.value }))
-              }
-              placeholder={DEFAULT_SCHEDULE_TIMEZONE}
-            />
-          </label>
-        </div>
-      )}
-
-      {showAvailability ? (
+      {visitEnabled ? (
         <>
           <label className="block space-y-1 text-sm">
             <span>Availability template</span>
@@ -215,6 +158,7 @@ export default function TaskScheduleFields({
               <Input
                 type="time"
                 value={scheduleState.startTime}
+                disabled={hasCustomSlots}
                 onChange={(event) =>
                   setScheduleState((prev) => ({
                     ...prev,
@@ -228,12 +172,69 @@ export default function TaskScheduleFields({
               <Input
                 type="time"
                 value={scheduleState.endTime}
+                disabled={hasCustomSlots}
                 onChange={(event) =>
                   setScheduleState((prev) => ({ ...prev, endTime: event.target.value }))
                 }
               />
             </label>
           </div>
+          {hasCustomSlots ? (
+            <p className="text-xs text-muted-foreground">
+              Allowed from/until are disabled while custom time slots are set. Remove
+              all slots to use a single daily window instead.
+            </p>
+          ) : null}
+
+          <fieldset className="space-y-2 text-sm">
+            <legend className="text-sm">Time slots</legend>
+            <p className="text-xs text-muted-foreground">
+              Add one or more windows when this task can be done (on the allowed
+              weekdays).
+            </p>
+            {timeSlots.length ? (
+              <ul className="space-y-2">
+                {timeSlots.map((slot, index) => (
+                  <li
+                    key={`slot-${index}`}
+                    className="flex flex-wrap items-end gap-2 rounded border border-border p-2"
+                  >
+                    <label className="block space-y-1">
+                      <span className="text-xs text-muted-foreground">From</span>
+                      <Input
+                        type="time"
+                        value={slot.startTime}
+                        onChange={(event) =>
+                          updateTimeSlot(index, "startTime", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="text-xs text-muted-foreground">Until</span>
+                      <Input
+                        type="time"
+                        value={slot.endTime}
+                        onChange={(event) =>
+                          updateTimeSlot(index, "endTime", event.target.value)
+                        }
+                      />
+                    </label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="shrink-0"
+                      onClick={() => removeTimeSlot(index)}
+                    >
+                      Remove
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <Button type="button" variant="secondary" onClick={addTimeSlot}>
+              Add time slot
+            </Button>
+          </fieldset>
 
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -264,105 +265,6 @@ export default function TaskScheduleFields({
         />
         Avoid scheduling conflicts
       </label>
-
-      {showFixedTimes ? (
-        <div className="grid gap-4 md:grid-cols-3">
-          <label className="block space-y-1 text-sm">
-            <span>Scheduled date</span>
-            <Input
-              type="date"
-              value={scheduleState.scheduledDate}
-              onChange={(event) =>
-                setScheduleState((prev) => ({
-                  ...prev,
-                  scheduledDate: event.target.value,
-                }))
-              }
-            />
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span>Start time</span>
-            <Input
-              type="time"
-              value={scheduleState.scheduledStartTime}
-              onChange={(event) =>
-                setScheduleState((prev) => ({
-                  ...prev,
-                  scheduledStartTime: event.target.value,
-                }))
-              }
-            />
-          </label>
-          <label className="block space-y-1 text-sm">
-            <span>End time</span>
-            <Input
-              type="time"
-              value={scheduleState.scheduledEndTime}
-              onChange={(event) =>
-                setScheduleState((prev) => ({
-                  ...prev,
-                  scheduledEndTime: event.target.value,
-                }))
-              }
-            />
-          </label>
-        </div>
-      ) : null}
-
-      {scheduleState.mode === "flexible" ? (
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={slotLoading}
-              onClick={loadSlots}
-            >
-              {slotLoading ? "Loading…" : "Suggest time slots"}
-            </Button>
-            {!taskId ? (
-              <p className="text-xs text-muted-foreground">
-                Save the task first to fetch suggestions against existing bookings.
-              </p>
-            ) : null}
-          </div>
-          {slotMessage ? (
-            <p className="text-sm text-muted-foreground">{slotMessage}</p>
-          ) : null}
-          {slotOptions.length ? (
-            <ul className="space-y-2 text-sm">
-              {slotOptions.map((slot) => {
-                const key = `${slot.scheduledStart}-${slot.scheduledEnd}`;
-                const selected =
-                  scheduleState.selectedSlot?.scheduledStart === slot.scheduledStart;
-                return (
-                  <li key={key}>
-                    <label className="flex cursor-pointer items-center gap-2 rounded border border-border px-2 py-1">
-                      <input
-                        type="radio"
-                        name="flex-slot"
-                        checked={selected}
-                        onChange={() =>
-                          setScheduleState((prev) => ({
-                            ...prev,
-                            selectedSlot: slot,
-                          }))
-                        }
-                      />
-                      {formatScheduleInstant(
-                        slot.scheduledStart,
-                        scheduleState.timezone,
-                      )}{" "}
-                      –{" "}
-                      {formatScheduleInstant(slot.scheduledEnd, scheduleState.timezone)}
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
-        </div>
-      ) : null}
 
       {conflictList.length ? (
         <Alert variant="error">

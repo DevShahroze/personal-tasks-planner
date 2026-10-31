@@ -12,6 +12,7 @@ import { isFinancialOverdue } from "@/lib/finance/balance";
 import {
   FINANCIAL_RECORD_STATUSES,
   FINANCIAL_RECORD_TYPES,
+  DEFAULT_FINANCIAL_CURRENCY,
 } from "@/lib/finance/constants";
 import FinancialRecord from "@/models/FinancialRecord";
 
@@ -75,11 +76,28 @@ export async function GET(request) {
 
   const total = await FinancialRecord.countDocuments(filter);
 
+  const outstandingByCurrency = await FinancialRecord.aggregate([
+    { $match: filter },
+    {
+      $group: {
+        _id: "$currency",
+        outstanding: { $sum: "$outstandingBalance" },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
   return jsonOk({
     items,
     page,
     limit,
     total,
+    summary: {
+      outstandingByCurrency: outstandingByCurrency.map((row) => ({
+        currency: row._id || DEFAULT_FINANCIAL_CURRENCY,
+        outstanding: row.outstanding,
+      })),
+    },
   });
 }
 

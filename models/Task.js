@@ -110,6 +110,15 @@ const taskSchema = new mongoose.Schema(
         startTime: { type: String, default: "00:00" },
         endTime: { type: String, default: "23:59" },
         excludePublicHolidays: { type: Boolean, default: false },
+        timeSlots: {
+          type: [
+            {
+              startTime: { type: String, required: true },
+              endTime: { type: String, required: true },
+            },
+          ],
+          default: () => [],
+        },
       },
       avoidConflicts: { type: Boolean, default: true },
     },
