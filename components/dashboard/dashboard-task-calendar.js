@@ -9,6 +9,7 @@ import { DATE_KIND_LABEL, CALENDAR_ENTRY_STATUS_LABEL } from "@/lib/calendar/con
 import { DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants";
 import EmptyState from "@/components/ui/empty-state";
 import { formatYmdLong } from "@/lib/format";
+import { buildCalendarDayListRows } from "@/lib/calendar/day-list-rows";
 
 export default function DashboardTaskCalendar() {
   const clientToday = useClientTodayYmd();
@@ -34,6 +35,11 @@ export default function DashboardTaskCalendar() {
     }
     return calendarQuery.data?.days?.[selected] || [];
   }, [calendarQuery.data?.days, selected]);
+
+  const selectedDayRows = useMemo(
+    () => buildCalendarDayListRows(selectedEntries),
+    [selectedEntries],
+  );
 
   if (!clientToday || !activeView) {
     return (
@@ -74,7 +80,7 @@ export default function DashboardTaskCalendar() {
             </div>
           ) : (
             <ul className="mt-3 divide-y divide-border">
-              {selectedEntries.map((entry) => {
+              {selectedDayRows.map(({ entry, indent, isParentHeader }) => {
                 const href =
                   entry.href ||
                   (entry.taskId
@@ -89,17 +95,20 @@ export default function DashboardTaskCalendar() {
                   ? CALENDAR_ENTRY_STATUS_LABEL[entry.status] ||
                     entry.status.replace(/_/g, " ")
                   : "";
+                const showMeta = !isParentHeader && entry.kind !== "parentHeader";
                 return (
-                  <li key={key} className="py-2 text-sm">
+                  <li key={key} className={`py-2 text-sm ${indent ? "pl-6" : ""}`}>
                     <Link href={href} className="font-medium hover:underline">
                       {entry.title}
                     </Link>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {statusLabel ? `${statusLabel} · ` : ""}
-                      {entry.detail || DATE_KIND_LABEL[entry.kind] || entry.kind}
-                      {entry.priority ? ` · ${entry.priority}` : ""}
-                      {entry.time ? ` · ${entry.time}` : ""}
-                    </p>
+                    {showMeta ? (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {statusLabel ? `${statusLabel} · ` : ""}
+                        {entry.detail || DATE_KIND_LABEL[entry.kind] || entry.kind}
+                        {entry.priority ? ` · ${entry.priority}` : ""}
+                        {entry.time ? ` · ${entry.time}` : ""}
+                      </p>
+                    ) : null}
                   </li>
                 );
               })}

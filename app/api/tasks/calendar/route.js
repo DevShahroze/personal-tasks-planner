@@ -5,7 +5,10 @@ import { zonedDateTimeToUtc } from "@/lib/scheduling/time";
 import { isValidTimeZone, ymdInTimeZone } from "@/lib/scheduling/time";
 import { DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants.js";
 import { monthBounds } from "@/lib/calendar/constants.js";
-import { indexEntriesByYmd } from "@/lib/calendar/task-entries.js";
+import {
+  indexEntriesByYmd,
+  attachSubtasksToCalendarDays,
+} from "@/lib/calendar/task-entries.js";
 import { applyTaskDateAlignmentToRecord } from "@/lib/scheduling/align-task-date";
 import { indexFinancialEntriesByYmd } from "@/lib/calendar/financial-entries.js";
 import {
@@ -130,8 +133,20 @@ export async function GET(request) {
 
   await connectDB();
 
+  const taskCalendarDateOr = [
+    rangeOr("taskDate", rangeStart, rangeEnd),
+    rangeOr("orderPlacedDate", rangeStart, rangeEnd),
+    rangeOr("expectedReceiveDate", rangeStart, rangeEnd),
+    rangeOr("receivedDate", rangeStart, rangeEnd),
+    rangeOr("schedule.scheduledStart", rangeStart, rangeEnd),
+    rangeOr("schedule.dueDate", rangeStart, rangeEnd),
+    rangeOr("recurrence.nextDueDate", rangeStart, rangeEnd),
+  ];
+
+  const taskCalendarStatusFilter = { status: { $ne: "Cancelled" } };
+
   const [
-    tasks,
+    topLevelTasks,
     financialRecords,
     installments,
     kametiPlans,
@@ -144,18 +159,8 @@ export async function GET(request) {
       {
         $and: [
           TOP_LEVEL_PARENT_FILTER,
-          { status: { $ne: "Cancelled" } },
-          {
-            $or: [
-              rangeOr("taskDate", rangeStart, rangeEnd),
-              rangeOr("orderPlacedDate", rangeStart, rangeEnd),
-              rangeOr("expectedReceiveDate", rangeStart, rangeEnd),
-              rangeOr("receivedDate", rangeStart, rangeEnd),
-              rangeOr("schedule.scheduledStart", rangeStart, rangeEnd),
-              rangeOr("schedule.dueDate", rangeStart, rangeEnd),
-              rangeOr("recurrence.nextDueDate", rangeStart, rangeEnd),
-            ],
-          },
+          taskCalendarStatusFilter,
+          { $or: taskCalendarDateOr },
         ],
       },
       calendarProjection,
@@ -193,8 +198,34 @@ export async function GET(request) {
     }).lean(),
   ]);
 
+  const parentTitleById = Object.fromEntries(
+    topLevelTasks.map((task) => [String(task._id), task.title]),
+  );
+  const parentIds = topLevelTasks.map((task) => task._id);
+  const allSubtasks = parentIds.length
+    ? await Task.find(
+        {
+          parentTaskId: { $in: parentIds },
+          status: { $ne: "Cancelled" },
+        },
+        calendarProjection,
+      ).lean()
+    : [];
+
+  const subtasksByParentId = {};
+  for (const subtask of allSubtasks) {
+    subtask.parentTitle = parentTitleById[String(subtask.parentTaskId)] || "";
+    const parentId = String(subtask.parentTaskId);
+    if (!subtasksByParentId[parentId]) {
+      subtasksByParentId[parentId] = [];
+    }
+    subtasksByParentId[parentId].push(subtask);
+  }
+
+  const calendarTasks = [...topLevelTasks, ...allSubtasks];
+
   const alignmentWrites = [];
-  for (const task of tasks) {
+  for (const task of calendarTasks) {
     if (applyTaskDateAlignmentToRecord(task)) {
       alignmentWrites.push(
         Task.updateOne(
@@ -208,11 +239,16 @@ export async function GET(request) {
     await Promise.all(alignmentWrites);
   }
 
-  const days = mergeAllPlanningCalendarMaps(
-    indexEntriesByYmd(tasks, {
+  const taskDays = attachSubtasksToCalendarDays(
+    indexEntriesByYmd(calendarTasks, {
       monthFirstYmd: firstDay,
       monthLastYmd: lastDay,
     }),
+    subtasksByParentId,
+  );
+
+  const days = mergeAllPlanningCalendarMaps(
+    taskDays,
     indexFinancialEntriesByYmd(financialRecords, {
       timeZone,
       todayYmd,

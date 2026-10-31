@@ -6,7 +6,10 @@ import {
   subtaskSummary,
 } from "../../lib/subtasks/constants.js";
 import { buildTaskListFilter } from "../../lib/security/task-filters.js";
-import { buildCalendarEntriesForTask } from "../../lib/calendar/task-entries.js";
+import {
+  buildCalendarEntriesForTask,
+  attachSubtasksToCalendarDays,
+} from "../../lib/calendar/task-entries.js";
 
 test("subtaskSummary counts completed subtasks", () => {
   const summary = subtaskSummary([
@@ -41,16 +44,50 @@ test("buildTaskListFilter only returns top-level tasks", () => {
   assert.ok(filter.$and[1].$or);
 });
 
-test("calendar entries skip subtasks", () => {
+test("calendar entries include subtasks with parent link", () => {
   const entries = buildCalendarEntriesForTask({
     _id: "507f1f77bcf86cd799439011",
     title: "Child",
     parentTaskId: "507f1f77bcf86cd799439012",
+    parentTitle: "Parent",
     taskDate: "2026-06-01",
     priority: "Medium",
     status: "To Do",
     recurrence: { enabled: false },
-    schedule: { mode: "unscheduled" },
+    schedule: { mode: "unscheduled", timezone: "Asia/Karachi" },
   });
-  assert.equal(entries.length, 0);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].parentTaskId, "507f1f77bcf86cd799439012");
+  assert.equal(entries[0].parentTitle, "Parent");
+});
+
+test("attachSubtasksToCalendarDays lists subtasks under parent task days", () => {
+  const parentId = "507f1f77bcf86cd799439012";
+  const byDay = {
+    "2026-11-02": [
+      {
+        taskId: parentId,
+        title: "Parent task",
+        kind: "taskDate",
+        ymd: "2026-11-02",
+        href: `/tasks/${parentId}`,
+      },
+    ],
+  };
+  const subtasksByParentId = {
+    [parentId]: [
+      {
+        _id: "507f1f77bcf86cd799439011",
+        parentTaskId: parentId,
+        title: "Child step",
+        priority: "Medium",
+        status: "To Do",
+        parentTitle: "Parent task",
+      },
+    ],
+  };
+  const enriched = attachSubtasksToCalendarDays(byDay, subtasksByParentId);
+  assert.equal(enriched["2026-11-02"].length, 2);
+  assert.equal(enriched["2026-11-02"][1].kind, "subtask");
+  assert.equal(enriched["2026-11-02"][1].parentTaskId, parentId);
 });
