@@ -62,7 +62,9 @@ export default function DashboardTaskCalendar() {
         />
 
         <div>
-          <p className="text-sm font-medium">Items on {formatYmdLong(selected)}</p>
+          <h2 className="border-b border-border pb-2 text-xl font-semibold tracking-tight text-foreground">
+            Items on {formatYmdLong(selected)}
+          </h2>
           {!selectedEntries.length ? (
             <div className="mt-3">
               <EmptyState

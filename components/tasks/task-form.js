@@ -20,6 +20,7 @@ import TaskFormCalendarPicker, {
 import { calculateNextDueDate } from "@/lib/recurrence/calculate";
 import { normalizeRecurrence } from "@/lib/recurrence/defaults";
 import { formatScheduleInstant } from "@/lib/scheduling/client-form";
+import { firstSchedulableYmdOnOrAfter } from "@/lib/scheduling/align-task-date";
 import TaskCommerceFields, {
   commerceFromFormData,
 } from "@/components/tasks/task-commerce-fields";
@@ -89,7 +90,6 @@ export default function TaskForm({
     }
     return dateInputValue(initialValues?.schedule?.scheduledStart) || "";
   });
-  const [taskDateWarning, setTaskDateWarning] = useState("");
   const [categoryId, setCategoryId] = useState(() => initialCategoryId(initialValues));
 
   const taskDateForForm =
@@ -102,6 +102,21 @@ export default function TaskForm({
     };
     return scheduleFromFormState(stateForSchedule);
   }, [scheduleState, taskDateForForm]);
+
+  const effectiveTaskDate = useMemo(() => {
+    if (!taskDateForForm || schedulePayload.mode === "unscheduled") {
+      return taskDateForForm;
+    }
+    const nextYmd = firstSchedulableYmdOnOrAfter(taskDateForForm, schedulePayload);
+    return nextYmd || taskDateForForm;
+  }, [taskDateForForm, schedulePayload]);
+
+  const taskDateWarning = useMemo(() => {
+    if (effectiveTaskDate && taskDateForForm && effectiveTaskDate !== taskDateForForm) {
+      return `Task date moved to ${effectiveTaskDate} because that day is not allowed by visit availability.`;
+    }
+    return "";
+  }, [effectiveTaskDate, taskDateForForm]);
 
   const recurrencePreview = useMemo(() => {
     const normalized = normalizeRecurrence(recurrenceFromFormState(recurrenceState));
@@ -160,7 +175,7 @@ export default function TaskForm({
             status: formData.get("status"),
             priority: formData.get("priority"),
             category: categoryId || null,
-            taskDate: taskDateForForm || null,
+            taskDate: effectiveTaskDate || null,
             timelineStart: formData.get("timelineStart") || null,
             timelineEnd: formData.get("timelineEnd") || null,
             schedule: schedulePayload,
@@ -319,7 +334,7 @@ export default function TaskForm({
               description="Use the task date field above or save without the mini calendar."
             >
               <TaskFormCalendarPicker
-                selectedYmd={taskDateForForm}
+                selectedYmd={effectiveTaskDate}
                 timeZone={scheduleState.timezone}
                 scheduleForValidation={schedulePayload}
                 onSelectYmd={(ymd, warning) => {
@@ -337,7 +352,7 @@ export default function TaskForm({
           setRecurrenceState={setRecurrenceState}
           timeZone={scheduleState.timezone}
           taskId={taskId}
-          suggestedStartYmd={taskDateForForm}
+          suggestedStartYmd={effectiveTaskDate}
           onRecordCompletion={onRecordRecurrenceCompletion}
           recording={recordingRecurrence}
           nextDuePreview={nextDueLabel}

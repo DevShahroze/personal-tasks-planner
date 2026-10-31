@@ -6,6 +6,7 @@ import { isValidTimeZone, ymdInTimeZone } from "@/lib/scheduling/time";
 import { DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants.js";
 import { monthBounds } from "@/lib/calendar/constants.js";
 import { indexEntriesByYmd } from "@/lib/calendar/task-entries.js";
+import { applyTaskDateAlignmentToRecord } from "@/lib/scheduling/align-task-date";
 import { indexFinancialEntriesByYmd } from "@/lib/calendar/financial-entries.js";
 import {
   indexPlanningEntriesByYmd,
@@ -191,6 +192,21 @@ export async function GET(request) {
       endDate: { $gte: rangeStart },
     }).lean(),
   ]);
+
+  const alignmentWrites = [];
+  for (const task of tasks) {
+    if (applyTaskDateAlignmentToRecord(task)) {
+      alignmentWrites.push(
+        Task.updateOne(
+          { _id: task._id },
+          { $set: { taskDate: task.taskDate, schedule: task.schedule } },
+        ),
+      );
+    }
+  }
+  if (alignmentWrites.length) {
+    await Promise.all(alignmentWrites);
+  }
 
   const days = mergeAllPlanningCalendarMaps(
     indexEntriesByYmd(tasks, {

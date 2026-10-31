@@ -5,6 +5,7 @@ import { parsePagination, parseTaskSort, validateTaskCreate } from "@/lib/valida
 import { prepareScheduleForSave } from "@/lib/scheduling/prepare";
 import { prepareRecurrenceForSave } from "@/lib/recurrence/validate";
 import { assertNoScheduleConflicts } from "@/lib/scheduling/conflicts";
+import { alignTaskDateAndSchedule } from "@/lib/scheduling/align-task-date";
 import { DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants";
 import { buildTaskListFilter } from "@/lib/security/task-filters";
 import { readJsonBody } from "@/lib/security/request";
@@ -119,6 +120,12 @@ export async function POST(request) {
   });
   if (conflictResponse) {
     return conflictResponse;
+  }
+
+  if (value.taskDate && value.schedule) {
+    const aligned = alignTaskDateAndSchedule(value.taskDate, value.schedule);
+    value.taskDate = aligned.taskDate;
+    value.schedule = aligned.schedule;
   }
 
   const task = await Task.create(value);

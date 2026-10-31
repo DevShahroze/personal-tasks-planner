@@ -20,6 +20,11 @@ import {
   inferScheduleModeFromFormState,
   scheduleFromFormState,
 } from "../../lib/scheduling/client-form.js";
+import {
+  alignTaskDateAndSchedule,
+  firstSchedulableYmdOnOrAfter,
+} from "../../lib/scheduling/align-task-date.js";
+import { validateYmdAgainstSchedule } from "../../lib/calendar/schedule-date-check.js";
 
 const TZ = "Asia/Karachi";
 
@@ -286,4 +291,45 @@ test("availabilityWindowForDay uses custom time slots when set", () => {
     TZ,
   );
   assert.equal(windows?.length, 2);
+});
+
+test("alignTaskDateAndSchedule moves Saturday to Monday for weekday-only availability", () => {
+  const saturday = zonedDateTimeToUtc("2026-10-31", "12:00", TZ);
+  assert.equal(isoWeekdayInTimeZone(saturday, TZ), 6);
+  const schedule = {
+    ...defaultSchedule(),
+    mode: "flexible",
+    timezone: TZ,
+    durationMinutes: 60,
+    availability: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      startTime: "09:00",
+      endTime: "17:00",
+      excludePublicHolidays: false,
+      timeSlots: [],
+    },
+  };
+  assert.equal(firstSchedulableYmdOnOrAfter("2026-10-31", schedule), "2026-11-02");
+  const aligned = alignTaskDateAndSchedule(saturday, schedule);
+  assert.equal(aligned.adjusted, true);
+  assert.equal(aligned.taskDate.toISOString().slice(0, 10), "2026-11-02");
+});
+
+test("validateYmdAgainstSchedule treats earliest date as calendar day in task timezone", () => {
+  const schedule = {
+    ...defaultSchedule(),
+    mode: "flexible",
+    timezone: TZ,
+    earliestDate: new Date("2026-10-31T00:00:00.000Z"),
+    availability: {
+      daysOfWeek: [1, 2, 3, 4, 5],
+      startTime: "09:00",
+      endTime: "17:00",
+      excludePublicHolidays: false,
+      timeSlots: [],
+    },
+  };
+  const result = validateYmdAgainstSchedule("2026-10-31", schedule);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /availability/i);
 });

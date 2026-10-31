@@ -17,6 +17,7 @@ import {
 import { applyRecurrenceCompletion } from "@/lib/recurrence/calculate";
 import { normalizeRecurrence } from "@/lib/recurrence/defaults";
 import { assertNoScheduleConflicts } from "@/lib/scheduling/conflicts";
+import { alignTaskDateAndSchedule } from "@/lib/scheduling/align-task-date";
 import { DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants";
 import { readJsonBody } from "@/lib/security/request";
 import { enforceProcessorIdleResponse } from "@/lib/task-processor/enforce-idle";
@@ -186,6 +187,18 @@ export async function PATCH(request, { params }) {
           status: item.status,
         })),
       );
+    }
+  }
+
+  const mergedTaskDate =
+    patch.taskDate !== undefined ? patch.taskDate : existing.taskDate;
+  const mergedSchedule =
+    patch.schedule !== undefined ? patch.schedule : existing.schedule;
+  if (mergedTaskDate && mergedSchedule) {
+    const aligned = alignTaskDateAndSchedule(mergedTaskDate, mergedSchedule);
+    if (aligned.adjusted) {
+      patch.taskDate = aligned.taskDate;
+      patch.schedule = aligned.schedule;
     }
   }
 
