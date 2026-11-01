@@ -35,11 +35,35 @@ ESLint, Prettier check, unit tests (security, **activity**, scheduling, recurren
 - Needs **MongoDB** (see [HYDRATION.md](./HYDRATION.md)).
 - Stop `npm run dev` on **:3000** if hydration login fails; `validate:ci` avoids reusing that server.
 
+### Playwright browser missing
+
+If hydration fails with **`Executable doesn't exist`** under `playwright/chromium_headless_shell`:
+
+```bash
+PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium
+```
+
+Re-run pre-check with browsers in the project (recommended for agents):
+
+```bash
+PLAYWRIGHT_BROWSERS_PATH=0 npm run prepush:local
+```
+
+### Flaky hydration setup
+
+The **`authenticate for hydration suite`** setup test can time out once on a cold server, then pass on retry. If the run ends with **1 flaky** and a non-zero exit, **re-run `prepush:local` once** before changing application code.
+
+### Already on remote
+
+If `git status` is clean and `git log origin/main..HEAD` is empty after `git fetch origin`, **`main` is already pushed** — report that to the user; only commit and push when there are new local commits.
+
 ### Emergency bypass
 
 ```bash
 git push --no-verify
 ```
+
+Use only when the user explicitly accepts skipping Husky (not for routine agent pushes).
 
 ---
 
@@ -53,11 +77,14 @@ When the user asks to **push** (or follow this checklist and push):
 
 Replace the commit message with an accurate summary. Stage only intended files (`git add -A` when the whole change set should ship; never `.env` or secrets). On zsh, quote paths with parentheses.
 
+If there is **nothing to commit** but the user asked to push, run **`git fetch origin && git push`** only (after confirming they want remote updated).
+
 ```bash
 cd /path/to/personal-tasks-planner && \
-npm run prepush:local && \
+PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium 2>/dev/null || true && \
+PLAYWRIGHT_BROWSERS_PATH=0 npm run prepush:local && \
 git add -A && \
-git commit --author="DevShahroze <DevShahroze@users.noreply.github.com>" -m "$(cat <<'EOF'
+git diff --cached --quiet || git commit --author="DevShahroze <DevShahroze@users.noreply.github.com>" -m "$(cat <<'EOF'
 Your commit message here.
 
 EOF
@@ -77,7 +104,8 @@ Do **not** commit or push unless the user asked for it.
 
 | Step                    | Command                                                         |
 | ----------------------- | --------------------------------------------------------------- |
-| Pre-check (once)        | `npm run prepush:local`                                         |
+| Pre-check (once)        | `PLAYWRIGHT_BROWSERS_PATH=0 npm run prepush:local`              |
+| Install Playwright      | `PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium`    |
 | Hook / CI validate only | `npm run validate:ci`                                           |
 | Commit author           | `--author="DevShahroze <DevShahroze@users.noreply.github.com>"` |
 | Push                    | `git push` (Husky → `validate:ci`)                              |
