@@ -50,7 +50,8 @@ Open [http://localhost:3000](http://localhost:3000) and sign in.
 - `npm run format` — Prettier check
 - `npm run format:fix` — Prettier write
 - `npm run test:security` — security unit tests
-- `npm run test:scheduling` — scheduling validation tests
+- `npm run test:activity` — activity logger ordering and export format
+- `npm run test:scheduling` — scheduling validation and task-date alignment tests
 - `npm run test:recurrence` — recurrence and calendar entry tests
 - `npm run test:subtasks` — subtask filters and parent completion helpers
 - `npm run test:finance` — financial balances, notes validation, calendar entries
@@ -73,7 +74,7 @@ Failed TanStack Query reads and mutations show a **toast** in the bottom-right (
 
 ## Activity logger
 
-Enable **Enable Logs** in the navigation bar after you sign in to record page visits and API calls for the current browser session. Logs clear on full page refresh; the enable preference persists. Use **Export Logs** to download a `.txt` file (always visible; disabled when no events exist).
+Enable **Enable Logs** in the navigation bar after you sign in to record page visits and API calls for the current browser session. Logs clear on full page refresh; the enable preference persists. Use **Export Logs** to download a `.txt` file (always visible; disabled when no events exist). Exports are sorted by monotonic **`#seq`**; each completed API call is one **`API`** line (method, path, status, duration). Session events live in memory first with a bounded `localStorage` backup when space allows.
 
 Next.js (App Router, JavaScript), MongoDB/Mongoose, TanStack Query (central stale times in `lib/query-cache.js`), Tailwind CSS, Recharts (dashboard only).
 
@@ -110,9 +111,11 @@ See [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) for interactive checkboxe
 
 ## Tasks (detail page)
 
-- Opening a task shows a **read-only summary** of fields (basics, dates, spending, recurrence, visit availability).
-- Click **Edit** to change details; **Update task** saves and returns to read-only view. **Cancel** discards the edit session without leaving the page.
-- **Delete** is available while editing (footer). Subtasks, visits, notes, content blocks, and links stay editable below the summary.
+- Opening a task shows a **read-only summary** (`TaskDetailView`) of fields (basics, dates, spending, recurrence, visit availability, optional **Track order or purchase** dates).
+- Click **Edit** in the fixed footer to change details; **Update task** saves and returns to read-only view. **Cancel** ends the edit session without leaving the page.
+- **Delete** appears in the footer **only while editing** (danger button next to **Update task**). Subtasks, visits, notes, content blocks, and links stay editable below the summary without entering edit mode.
+- **Visits & follow-ups**: **Visit date** and **Next visit date** use a read-only field; click to open a **popover** month picker (`components/ui/ymd-date-popover-input.js`, `simple-ymd-calendar.js`) — not the dashboard task calendar and not an always-visible grid.
+- Task **edit** uses the native **Task date** field only (no embedded month calendar on the form).
 
 ## Categories
 
@@ -124,10 +127,13 @@ Destructive or irreversible actions (delete task, remove payment, cancel task, e
 
 ## Scheduling, recurrence, and calendar
 
-- Task **date** plus optional **start** / **end** time schedule a meeting or call (no separate “fixed/flexible” mode in the UI).
-- Optional **Visit availability** (checkbox): weekdays, allowed hours, templates, and **Suggest time slots** for open-ended visit-style work.
+- Task **date** plus optional **start** / **end** time on the edit form (native date/time inputs; no task mini-calendar on the form).
+- Optional **Visit availability** (checkbox): weekdays, allowed hours, templates, and **Suggest time slots** for open-ended visit-style work. When availability rules reject the chosen day (for example Saturday with weekdays-only visits), the app **aligns** the task date to the next allowed day on save, in the task form, and when loading the calendar (`lib/scheduling/align-task-date.js`, `lib/calendar/schedule-date-check.js`).
 - Task **schedule** (fixed/flexible/unscheduled), availability templates, and conflict checks — see [ARCHITECTURE.md](./ARCHITECTURE.md).
 - **Recurring** tasks keep one document; `nextDueDate` is calculated on the server. Optional `SCHEDULE_PUBLIC_HOLIDAYS` in `.env` for holiday exclusion.
-- Dashboard and task forms use a shared month calendar (`lib/calendar/task-entries.js`: **task date**, scheduled, deadline, recurring due, plus planning/financial markers via `uniqueDayMarkers`).
+- **Track order or purchase** on a task uses **order placed**, **expected receive**, and **received** dates on the calendar instead of the plain task date when those fields are set (`lib/task-commerce/*`, `lib/calendar/task-entries.js`). **Cancelled** tasks do not appear on the calendar.
+- Dashboard **task calendar** (`components/dashboard/dashboard-task-calendar.js` → `components/calendar/task-calendar-panel.js`): month grid plus **Items on {date}** heading (prominent `h2`) listing that day’s entries. **Subtasks** (no date of their own) appear **indented under the parent task** when the parent is on that day (`attachSubtasksToCalendarDays`, `lib/calendar/day-list-rows.js`). Data and month selection live in **`TaskCalendarProvider`** (protected layout).
+- **Floating tools** (bottom-right, `components/tools/floating-tools-widget.js`): **Calendar** opens the same panel in a modal; **Calculator** opens the existing calculator modal. Calendar reuses cached month data from context (no duplicate API call while the month is already loaded).
+- Shared month widget: `components/calendar/task-month-calendar.js`. Entry kinds include **task date**, scheduled, deadline, recurring due, order/receive markers, plus planning/financial markers via `uniqueDayMarkers` (subtask rows do not add extra priority dots). Day lists normalize parent/subtask ids via `lib/calendar/calendar-task-id.js`.
 - Render errors in the shell or calendar widgets are caught by **error boundaries** (`components/error-boundary.js`).
 - Client “today” uses a cached `useSyncExternalStore` snapshot (see [HYDRATION.md](./HYDRATION.md)).

@@ -92,4 +92,4 @@ Tasks created before this feature have `contentBlocks: []` (default). Descriptio
 
 ## Related task features
 
-Scheduling, recurrence, optional **amount spent**, and calendar UI live on the same task document but separate fields (`taskDate`, `schedule`, `recurrence`, `amountSpent`). Calendar month API includes **task date** entries via `lib/calendar/task-entries.js`. See [ARCHITECTURE.md](./ARCHITECTURE.md), [README.md](./README.md), and [HYDRATION.md](./HYDRATION.md).
+Scheduling, recurrence, optional **amount spent**, **order/purchase dates**, and the **dashboard** month calendar live on separate surfaces. Task edit uses native date/time fields (no embedded task calendar). **Visits & follow-ups** on the task page uses click-to-open popover date pickers (`components/ui/ymd-date-popover-input.js`). Calendar month API builds entries in `lib/calendar/task-entries.js` (including alignment with visit availability and order-date precedence over plain task date). Dashboard day lists group **subtasks** under their parent via `lib/calendar/day-list-rows.js`. See [ARCHITECTURE.md](./ARCHITECTURE.md), [README.md](./README.md), and [HYDRATION.md](./HYDRATION.md).

@@ -8,8 +8,10 @@ import { useTaskNoteMutations, useTaskNotes } from "@/hooks/use-task-notes";
 import { useUpdateTaskMutation } from "@/hooks/use-tasks";
 import Button from "@/components/ui/button";
 import Textarea from "@/components/ui/textarea";
-import Input from "@/components/ui/input";
 import Alert from "@/components/ui/alert";
+import YmdDatePopoverInput from "@/components/ui/ymd-date-popover-input";
+import { validateYmdAgainstSchedule } from "@/lib/calendar/schedule-date-check";
+import { normalizeStoredSchedule } from "@/lib/scheduling/defaults";
 import { useConfirm } from "@/contexts/confirm-context";
 
 export default function TaskVisitsPanel({ task, onTaskRescheduled }) {
@@ -29,6 +31,10 @@ export default function TaskVisitsPanel({ task, onTaskRescheduled }) {
 
   const todayYmd = clientToday?.ymd || "";
   const effectiveVisitYmd = visitYmd || todayYmd;
+  const scheduleForValidation = useMemo(
+    () => normalizeStoredSchedule(task.schedule),
+    [task.schedule],
+  );
 
   const visits = useMemo(() => {
     const items = notesQuery.data?.items || [];
@@ -164,11 +170,12 @@ export default function TaskVisitsPanel({ task, onTaskRescheduled }) {
       >
         <label className="block space-y-1 text-sm">
           <span>Visit date</span>
-          <Input
-            type="date"
-            value={visitYmd || todayYmd}
-            onChange={(event) => setVisitYmd(event.target.value)}
-            required
+          <YmdDatePopoverInput
+            value={visitYmd}
+            onChange={setVisitYmd}
+            placeholder={todayYmd ? `Today (${todayYmd}) if empty` : "Select date"}
+            ariaLabel="Visit date"
+            disabled={!todayYmd}
           />
         </label>
         <label className="block space-y-1 text-sm">
@@ -191,11 +198,15 @@ export default function TaskVisitsPanel({ task, onTaskRescheduled }) {
         {scheduleFollowUp ? (
           <label className="block space-y-1 text-sm">
             <span>Next visit date</span>
-            <Input
-              type="date"
+            <YmdDatePopoverInput
               value={nextVisitYmd}
-              onChange={(event) => setNextVisitYmd(event.target.value)}
+              onChange={setNextVisitYmd}
+              placeholder="Select date"
+              ariaLabel="Next visit date"
               required={scheduleFollowUp}
+              validateYmd={(ymd) =>
+                validateYmdAgainstSchedule(ymd, scheduleForValidation)
+              }
             />
           </label>
         ) : null}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import Select from "@/components/ui/select";
+import { useMemo, useState } from "react";
+import SearchableSelect from "@/components/ui/searchable-select";
 import CategoryQuickAddModal from "@/components/categories/category-quick-add-modal";
 import { useAppCategories } from "@/contexts/app-data-context";
 
@@ -12,6 +12,15 @@ function initialCategoryId(initialValues) {
 export default function TaskCategoryField({ categoryId, onCategoryIdChange }) {
   const { items } = useAppCategories();
   const [modalOpen, setModalOpen] = useState(false);
+
+  const options = useMemo(
+    () =>
+      items.map((cat) => ({
+        value: String(cat._id),
+        label: cat.name,
+      })),
+    [items],
+  );
 
   return (
     <div className="space-y-1">
@@ -25,17 +34,14 @@ export default function TaskCategoryField({ categoryId, onCategoryIdChange }) {
           Add category
         </button>
       </div>
-      <Select
+      <SearchableSelect
         value={categoryId}
-        onChange={(event) => onCategoryIdChange(event.target.value)}
-      >
-        <option value="">None</option>
-        {items.map((cat) => (
-          <option key={cat._id} value={cat._id}>
-            {cat.name}
-          </option>
-        ))}
-      </Select>
+        onChange={onCategoryIdChange}
+        options={options}
+        ariaLabel="Category"
+        searchPlaceholder="Search categories…"
+        emptyOptionLabel="None"
+      />
       <CategoryQuickAddModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}

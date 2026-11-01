@@ -7,12 +7,11 @@ import Input from "@/components/ui/input";
 import Textarea from "@/components/ui/textarea";
 import Select from "@/components/ui/select";
 import Alert from "@/components/ui/alert";
-import ErrorBoundary from "@/components/error-boundary";
 import TaskScheduleFields, {
   buildInitialScheduleState,
   scheduleFromFormState,
 } from "@/components/tasks/task-schedule-fields";
-import TaskFormCalendarPicker, {
+import {
   TaskRecurrenceFields,
   buildInitialRecurrenceState,
   recurrenceFromFormState,
@@ -28,6 +27,7 @@ import TaskCategoryField, {
   initialCategoryId,
 } from "@/components/tasks/task-category-field";
 import { useClientTodayYmd } from "@/hooks/use-client-today";
+import { SHELL_FIXED_CHROME_CLASS } from "@/lib/layout/shell-nav";
 
 function dateInputValue(value) {
   if (!value) {
@@ -270,6 +270,11 @@ export default function TaskForm({
                 <span className="text-xs text-muted-foreground">
                   For meetings or same-day work. Orders use expected receive below.
                 </span>
+                {taskDateWarning ? (
+                  <Alert variant="info" className="mt-2">
+                    {taskDateWarning}
+                  </Alert>
+                ) : null}
               </label>
               <label className="block space-y-1 text-sm">
                 <span>Start time</span>
@@ -326,27 +331,6 @@ export default function TaskForm({
 
         <TaskCommerceFields initialValues={initialValues} />
 
-        <FormSection title="Calendar">
-          <div className="max-w-md space-y-3">
-            {taskDateWarning ? <Alert variant="info">{taskDateWarning}</Alert> : null}
-            <ErrorBoundary
-              title="Calendar unavailable"
-              description="Use the task date field above or save without the mini calendar."
-            >
-              <TaskFormCalendarPicker
-                selectedYmd={effectiveTaskDate}
-                timeZone={scheduleState.timezone}
-                scheduleForValidation={schedulePayload}
-                onSelectYmd={(ymd, warning) => {
-                  setTaskDate(ymd);
-                  setScheduleState((prev) => ({ ...prev, scheduledDate: ymd }));
-                  setTaskDateWarning(warning || "");
-                }}
-              />
-            </ErrorBoundary>
-          </div>
-        </FormSection>
-
         <TaskRecurrenceFields
           recurrenceState={recurrenceState}
           setRecurrenceState={setRecurrenceState}
@@ -375,7 +359,9 @@ export default function TaskForm({
       </form>
 
       {isEditForm ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 px-3 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-card/90 md:left-56 md:px-4">
+        <div
+          className={`fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 px-3 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-card/90 md:px-4 ${SHELL_FIXED_CHROME_CLASS}`}
+        >
           <div className="mx-auto flex w-full max-w-4xl">{actionButtons}</div>
         </div>
       ) : null}

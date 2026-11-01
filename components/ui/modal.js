@@ -4,7 +4,13 @@ import { createPortal } from "react-dom";
 import { useEffect } from "react";
 import Button from "@/components/ui/button";
 
-export default function Modal({ open, title, children, onClose }) {
+export default function Modal({
+  open,
+  title,
+  children,
+  onClose,
+  panelClassName = "max-w-lg",
+}) {
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event) => {
@@ -24,7 +30,9 @@ export default function Modal({ open, title, children, onClose }) {
         className="absolute inset-0 bg-[var(--overlay)]"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-lg rounded-lg border border-border bg-card p-4 text-card-foreground shadow-lg">
+      <div
+        className={`relative z-10 w-full rounded-lg border border-border bg-card p-4 text-card-foreground shadow-lg ${panelClassName}`}
+      >
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">{title}</h2>
           <Button type="button" variant="ghost" onClick={onClose}>

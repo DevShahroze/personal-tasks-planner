@@ -1,6 +1,6 @@
 # Security Report
 
-Last updated: 2026-10-29
+Last updated: 2026-10-31
 
 ## Audit summary
 
@@ -59,13 +59,14 @@ For multi-instance/serverless production, use a shared store (for example Redis)
 1. ESLint
 2. Prettier check
 3. Security tests (`node --test tests/security`)
-4. Scheduling tests (`npm run test:scheduling`)
-5. Recurrence / calendar logic tests (`npm run test:recurrence`)
-6. Client “today” snapshot test (`npm run test:client-today`)
-7. Format, subtasks, finance, and planning unit tests
-8. Production dependency audit (`scripts/security-audit.mjs`)
-9. Production build
-10. Hydration tests (`npm run test:hydration`) when MongoDB is available (see [HYDRATION.md](./HYDRATION.md) and [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md))
+4. Activity logger tests (`npm run test:activity`)
+5. Scheduling tests (`npm run test:scheduling`)
+6. Recurrence / calendar logic tests (`npm run test:recurrence`)
+7. Client “today” snapshot test (`npm run test:client-today`)
+8. Format, subtasks, finance, and planning unit tests
+9. Production dependency audit (`scripts/security-audit.mjs`)
+10. Production build
+11. Hydration tests (`npm run test:hydration`) when MongoDB is available (see [HYDRATION.md](./HYDRATION.md) and [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md))
 
 Git **pre-push** hook (`.husky/pre-push`):
 

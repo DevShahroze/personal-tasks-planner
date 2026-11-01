@@ -28,7 +28,7 @@ Underlying scripts: `format:fix` → `validate:ci` (see [package.json](./package
 
 ### What `validate:ci` runs
 
-ESLint, Prettier check, unit tests (security, scheduling, recurrence, client-today, format, subtasks, finance, planning), dependency audit, production build, Playwright hydration tests.
+ESLint, Prettier check, unit tests (security, **activity**, scheduling, recurrence, client-today, format, subtasks, finance, planning), dependency audit, production build, Playwright hydration tests.
 
 ### Hydration notes
 

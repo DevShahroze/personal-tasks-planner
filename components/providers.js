@@ -5,6 +5,7 @@ import { Suspense, useEffect } from "react";
 import { getQueryClient } from "@/lib/query-client";
 import { bootstrapActivityLoggerSession } from "@/lib/activity-logger";
 import PageTracker from "@/components/activity/page-tracker";
+import TouchViewportEffects from "@/components/layout/touch-viewport-effects";
 import ToastHost from "@/components/ui/toast-host";
 import { AppDataProvider } from "@/contexts/app-data-context";
 import { ConfirmProvider } from "@/contexts/confirm-context";
@@ -20,6 +21,7 @@ export default function Providers({ children }) {
     <QueryClientProvider client={queryClient}>
       <AppDataProvider>
         <ConfirmProvider>
+          <TouchViewportEffects />
           <Suspense fallback={null}>
             <PageTracker />
           </Suspense>

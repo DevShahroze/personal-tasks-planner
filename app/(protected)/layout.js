@@ -3,6 +3,9 @@ import Providers from "@/components/providers";
 import AppShell from "@/components/layout/app-shell";
 import ErrorBoundary from "@/components/error-boundary";
 import { TaskProcessorProvider } from "@/contexts/task-processor-context";
+import { TaskCalendarProvider } from "@/contexts/task-calendar-context";
+
+import { PinLockProvider } from "@/contexts/pin-lock-context";
 
 export default function ProtectedLayout({ children }) {
   return (
@@ -13,7 +16,11 @@ export default function ProtectedLayout({ children }) {
       >
         <Suspense fallback={<div className="p-3 text-xs">Loading…</div>}>
           <TaskProcessorProvider>
-            <AppShell>{children}</AppShell>
+            <TaskCalendarProvider>
+              <PinLockProvider>
+                <AppShell>{children}</AppShell>
+              </PinLockProvider>
+            </TaskCalendarProvider>
           </TaskProcessorProvider>
         </Suspense>
       </ErrorBoundary>

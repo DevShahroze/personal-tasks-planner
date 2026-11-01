@@ -27,6 +27,7 @@ import { mergeSchedulePatch, validateSchedule } from "@/lib/scheduling/validate"
 import { defaultSchedule } from "@/lib/scheduling/defaults";
 import { useConfirm } from "@/contexts/confirm-context";
 import { toastError, toastSuccess } from "@/lib/toast-bus";
+import { SHELL_FIXED_CHROME_CLASS } from "@/lib/layout/shell-nav";
 
 export default function TaskDetailPage() {
   const params = useParams();
@@ -224,7 +225,9 @@ function TaskDetailPageBody({ taskId }) {
       />
 
       {showReadOnlyFooter ? (
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 px-3 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-card/90 md:left-56 md:px-4">
+        <div
+          className={`fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 px-3 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-card/90 md:px-4 ${SHELL_FIXED_CHROME_CLASS}`}
+        >
           <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-end gap-2">
             {canCancelTask ? (
               <Button type="button" variant="secondary" onClick={onCancelTask}>

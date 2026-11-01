@@ -22,6 +22,7 @@ import {
   buildTourCalendarEntries,
 } from "@/lib/calendar/planning-entries.js";
 import { TOP_LEVEL_PARENT_FILTER } from "@/lib/subtasks/constants";
+import { calendarTaskId } from "@/lib/calendar/calendar-task-id.js";
 import Task from "@/models/Task";
 import FinancialRecord from "@/models/FinancialRecord";
 import InstallmentCommitment from "@/models/InstallmentCommitment";
@@ -199,7 +200,7 @@ export async function GET(request) {
   ]);
 
   const parentTitleById = Object.fromEntries(
-    topLevelTasks.map((task) => [String(task._id), task.title]),
+    topLevelTasks.map((task) => [calendarTaskId(task._id), task.title]),
   );
   const parentIds = topLevelTasks.map((task) => task._id);
   const allSubtasks = parentIds.length
@@ -214,8 +215,11 @@ export async function GET(request) {
 
   const subtasksByParentId = {};
   for (const subtask of allSubtasks) {
-    subtask.parentTitle = parentTitleById[String(subtask.parentTaskId)] || "";
-    const parentId = String(subtask.parentTaskId);
+    subtask.parentTitle = parentTitleById[calendarTaskId(subtask.parentTaskId)] || "";
+    const parentId = calendarTaskId(subtask.parentTaskId);
+    if (!parentId) {
+      continue;
+    }
     if (!subtasksByParentId[parentId]) {
       subtasksByParentId[parentId] = [];
     }

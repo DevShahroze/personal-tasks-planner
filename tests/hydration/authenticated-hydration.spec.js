@@ -104,11 +104,14 @@ test.describe("hydration — authenticated app", () => {
   test("logout returns to login without hydration errors", async ({ page }) => {
     const issues = attachHydrationWatchers(page);
     await visit(page, "/dashboard");
-    await page
-      .getByRole("button", { name: /^logout$/i })
-      .first()
-      .click();
-    await page.waitForURL(/\/login/);
+    const logoutButton = page
+      .locator("header")
+      .getByRole("button", { name: /^logout$/i });
+    await expect(logoutButton).toBeEnabled();
+    await Promise.all([
+      page.waitForURL(/\/login/, { timeout: 60_000 }),
+      logoutButton.click(),
+    ]);
     await assertNoHydrationIssues(issues, "logout flow");
   });
 });

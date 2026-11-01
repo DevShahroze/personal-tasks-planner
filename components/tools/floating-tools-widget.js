@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/button";
 import CalculatorModal from "@/components/tools/calculator-modal";
+import TaskCalendarModal from "@/components/tools/task-calendar-modal";
+import { SHELL_FLOATING_RIGHT_CLASS } from "@/lib/layout/shell-nav";
 
 export default function FloatingToolsWidget() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const rootRef = useRef(null);
 
   useEffect(() => {
@@ -28,11 +31,16 @@ export default function FloatingToolsWidget() {
     setCalculatorOpen(true);
   };
 
+  const openCalendar = () => {
+    setMenuOpen(false);
+    setCalendarOpen(true);
+  };
+
   return (
     <>
       <div
         ref={rootRef}
-        className="fixed bottom-20 right-3 z-40 flex flex-col-reverse items-end gap-2 md:bottom-4 md:right-4"
+        className={`fixed bottom-20 right-3 z-40 flex flex-col-reverse items-end gap-2 md:bottom-4 ${SHELL_FLOATING_RIGHT_CLASS}`}
       >
         <button
           type="button"
@@ -44,18 +52,29 @@ export default function FloatingToolsWidget() {
           {menuOpen ? "×" : "☰"}
         </button>
         {menuOpen ? (
-          <Button
-            type="button"
-            variant="secondary"
-            className="shadow-md"
-            onClick={openCalculator}
-          >
-            Calculator
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="shadow-md"
+              onClick={openCalendar}
+            >
+              Calendar
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="shadow-md"
+              onClick={openCalculator}
+            >
+              Calculator
+            </Button>
+          </div>
         ) : null}
       </div>
 
       <CalculatorModal open={calculatorOpen} onClose={() => setCalculatorOpen(false)} />
+      <TaskCalendarModal open={calendarOpen} onClose={() => setCalendarOpen(false)} />
     </>
   );
 }

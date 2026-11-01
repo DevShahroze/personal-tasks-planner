@@ -107,6 +107,34 @@ body {
   line-height: 1.45;
 }
 
+:root {
+  --shell-nav-left: 14rem;
+  --shell-nav-right: 11rem;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --shell-nav-left: 0px;
+    --shell-nav-right: 0px;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* iOS Safari zooms focused fields when font-size is below 16px */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not(
+      [type="range"]
+    ),
+  textarea,
+  select {
+    font-size: 1rem;
+  }
+}
+
 @layer base {
   button:not(:disabled) {
     cursor: pointer;

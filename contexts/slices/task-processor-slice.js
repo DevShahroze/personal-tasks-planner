@@ -6,8 +6,9 @@ import { taskProcessorApi } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format";
 import { taskProcessorStatusQueryOptions } from "@/lib/query-cache";
 import { getQueryClient, queryKeys } from "@/lib/query-client";
+import { useClientTodayYmd } from "@/hooks/use-client-today";
 
-const AUTO_DRIVE_FLAG = "__ptpTaskProcessorAutoDriveDone";
+const AUTO_DRIVE_YMD_KEY = "__ptpTaskProcessorAutoDriveYmd";
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -27,6 +28,7 @@ function invalidateTaskViewsAfterRun() {
 /** Daily rollover driver — used only under protected layout via TaskProcessorProvider. */
 export function useTaskProcessorSlice() {
   const queryClient = useQueryClient();
+  const clientTodayYmd = useClientTodayYmd()?.ymd ?? "";
   const [driving, setDriving] = useState(false);
   const driveRef = useRef(false);
   const drivingRef = useRef(false);
@@ -103,8 +105,11 @@ export function useTaskProcessorSlice() {
   }, [queryClient, refreshStatus]);
 
   useEffect(() => {
+    if (!clientTodayYmd) {
+      return undefined;
+    }
     const win = typeof window !== "undefined" ? window : null;
-    if (win?.[AUTO_DRIVE_FLAG]) {
+    if (win?.[AUTO_DRIVE_YMD_KEY] === clientTodayYmd) {
       void queryClient.fetchQuery({
         queryKey: queryKeys.taskProcessor.status,
         queryFn: taskProcessorApi.status,
@@ -113,13 +118,28 @@ export function useTaskProcessorSlice() {
       return undefined;
     }
     if (win) {
-      win[AUTO_DRIVE_FLAG] = true;
+      win[AUTO_DRIVE_YMD_KEY] = clientTodayYmd;
     }
     const timer = window.setTimeout(() => {
       void driveProcessor();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [driveProcessor, queryClient]);
+  }, [driveProcessor, queryClient, clientTodayYmd]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+      void refreshStatus().then((data) => {
+        if (data?.shouldRun && !driveRef.current) {
+          void driveProcessor();
+        }
+      });
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [driveProcessor, refreshStatus]);
 
   useEffect(() => {
     if (!status?.locked) {

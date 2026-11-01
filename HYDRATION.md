@@ -9,12 +9,13 @@
 | Dates              | `toLocaleString(undefined)` (server/client locale drift)                       | Fixed **`MM/DD/YYYY`** and **`MM/DD/YYYY h:mm A`** via `lib/format.js` (`formatToParts`, `en-US`; UTC default; task timezone for scheduling) |
 | Theme context      | React state could diverge from pre-hydration `dark` class                      | After mount, reconcile state with DOM + storage in one effect                                                                                |
 | Task calendars     | `useSyncExternalStore` returned a new object every snapshot → infinite loop    | Cached snapshot in `use-client-today.js`; server snapshot `null` + skeleton until client                                                     |
-| Calendar markers   | Missing import of `uniqueDayMarkers` in mini calendar                          | Import from `lib/calendar/task-entries.js` in `task-month-calendar.js`                                                                       |
+| Calendar markers   | Missing import of `uniqueDayMarkers` in month grid widget                      | Import from `lib/calendar/task-entries.js` in `task-month-calendar.js`                                                                       |
 | Task processor     | Status polling could spam `/api/task-processor/status` on every mount          | TanStack Query cache + `STALE_MS.taskProcessor`; poll interval only while processor active; single auto-drive flag per page load             |
+| Activity logger    | Export order could race with concurrent API logging                            | Monotonic `#seq` on append; export sorts by `#seq`; session memory log with bounded storage sync (`lib/activity-logger.js`)                  |
 
 ## Client “today” for calendars
 
-`hooks/use-client-today.js` exposes `useClientTodayYmd()` for dashboard and task-form mini calendars.
+`hooks/use-client-today.js` exposes `useClientTodayYmd()` for the **dashboard** task calendar, visit date popovers, and other client date pickers.
 
 - **Server:** `getServerSnapshot()` always returns `null` — SSR and the first client pass render the same placeholder skeleton.
 - **Client:** `getClientSnapshot()` returns a **cached object** for the current local calendar day (same reference until the date changes). Never allocate a fresh object on every read.
@@ -28,7 +29,6 @@ Do not return inline object literals from `useSyncExternalStore` getSnapshot wit
 
 - Protected app shell (`app/(protected)/layout.js`) — includes `TaskProcessorProvider` (banner/shell gate; deterministic until status query resolves)
 - Dashboard task calendar (`app/(protected)/dashboard/page.js`)
-- Task form mini calendar (`components/tasks/task-form.js`)
 
 Production UI shows a short message and **Try again** / **Reload page**; stack traces are logged to the console in development only.
 

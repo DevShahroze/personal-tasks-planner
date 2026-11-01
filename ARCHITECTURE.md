@@ -53,6 +53,7 @@ Generic reference for this personal productivity app: a **single-user**, **cooki
 - **No server prefetch/dehydrate** in the current design: initial HTML shows deterministic loading states; data arrives in one client pass (consistent SSR/hydration).
 - Query defaults: modest `staleTime`, limited retries, no refetch-on-focus (reduces API churn on Vercel).
 - **`AppDataProvider`** (`contexts/app-data-context.js`) composes long-lived catalog slices (currently **categories** via `contexts/slices/categories-slice.js`) so forms and nav share one cached list.
+- **`TaskCalendarProvider`** (`contexts/task-calendar-context.js`) holds the active month, selected day, and TanStack Query result for `GET /api/tasks/calendar`. The dashboard panel and floating **Calendar** tool read the same context (one fetch per month while cache is warm).
 
 ### 2.3 UI composition
 
@@ -61,19 +62,19 @@ Generic reference for this personal productivity app: a **single-user**, **cooki
 - **Task processor UI** (`contexts/task-processor-context.js`, `contexts/slices/task-processor-slice.js`): banner + shell gate while rollover runs; **TaskProcessorNavStatus** shows last completed run; status fetched via TanStack Query (`GET /api/task-processor/status`), steps via `POST /api/task-processor/step`.
 - **Toast host** (`components/ui/toast-host.js`): non-blocking API error feedback via TanStack Query global handlers.
 - **Entity modules**: list + detail + create flows per domain (tasks, thoughts, plans, categories).
-- **Task detail**: `/tasks/[id]` loads **`TaskForm`** immediately; **Update** / **Delete** in a fixed viewport footer (`components/tasks/task-form.js`); subtasks, notes, and interactive blocks render below the form.
+- **Task detail**: `/tasks/[id]` opens in **read-only** summary; **Edit** in the fixed footer switches to **`TaskForm`** (task date via native input; no embedded month grid); **Update** / **Delete** (delete only in edit mode) share the same footer (`components/tasks/task-form.js`, `components/tasks/task-detail-view.js`). **Visits & follow-ups** uses popover date pickers (`components/ui/ymd-date-popover-input.js`). Subtasks, visits, notes, and interactive blocks render below and stay editable outside the main edit session.
 - **Rich task content**: structured **content blocks** (checkboxes with optional **`slug`**, radio groups, tables) stored on the task document; checkboxes can be bulk-created from comma-separated description text; block edits persist via PATCH (see [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md)).
 - **Relationships**: link tasks, thoughts, and plans through dedicated API routes and UI panels.
-- **Dashboard**: summary cards, Recharts visualizations, recent listings (server aggregations), **monthly task calendar** (task date + schedule/deadline/recurrence markers, priority markers, selected-day task list).
-- **Task scheduling**: modes (unscheduled / flexible / fixed), availability templates, conflict detection, flexible slot suggestions (`lib/scheduling/*`).
+- **Dashboard**: summary cards, Recharts visualizations, recent listings (server aggregations), **monthly task calendar** (task date + schedule/deadline/recurrence/order markers, priority markers on the grid), and a **selected-day list** with a prominent heading; **subtasks** nest under parent tasks for that day (`lib/calendar/day-list-rows.js`, `attachSubtasksToCalendarDays` in `lib/calendar/task-entries.js`).
+- **Task scheduling**: modes (unscheduled / flexible / fixed), availability templates, conflict detection, flexible slot suggestions, **task-date alignment** to visit availability (`lib/scheduling/align-task-date.js`; calendar GET can persist corrections) (`lib/scheduling/*`).
 - **Recurring tasks**: single-task recurrence and procedure fields; server-calculated `nextDueDate` (`lib/recurrence/*`); optional `recordRecurrenceCompletion` on PATCH.
 
 ### 2.4 Client-only persistence (by design)
 
-| Feature          | Storage                                     | Bounded?                    | Server impact |
-| ---------------- | ------------------------------------------- | --------------------------- | ------------- |
-| Theme preference | `localStorage` (`ptp-theme`)                | Single key                  | None          |
-| Activity logger  | `localStorage` (session logs + enable flag) | Max **500** events, trimmed | None          |
+| Feature          | Storage                                                                                                                        | Bounded?                          | Server impact |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- | ------------- |
+| Theme preference | `localStorage` (`ptp-theme`)                                                                                                   | Single key                        | None          |
+| Activity logger  | In-memory session log + bounded `localStorage` backup; monotonic `#seq`; export sorted; one **API** line per completed request | Max **500** events when persisted | None          |
 
 These features **never** write to server memory or disk and **do not** run during SSR, avoiding hydration mismatches and serverless storage costs.
 
@@ -85,7 +86,7 @@ These features **never** write to server memory or disk and **do not** run durin
 - **`useClientTodayYmd`** (`hooks/use-client-today.js`) uses **`useSyncExternalStore`** with a **cached snapshot** (stable object reference per calendar day) so client “today” does not trigger infinite re-renders; server snapshot is always `null` and calendars show a fixed skeleton until hydrated.
 - Chart colors use **CSS variables**, not `getComputedStyle` during render.
 - Documented narrow **`suppressHydrationWarning`** only on `<html>`, `<body>`, and the theme boot script node.
-- **React error boundaries** (`components/error-boundary.js`) wrap the protected app shell and isolate the dashboard task calendar and task-form mini calendar so a client render failure does not blank the entire page.
+- **React error boundaries** (`components/error-boundary.js`) wrap the protected app shell and isolate the **dashboard** task calendar so a client render failure does not blank the entire page.
 
 See [HYDRATION.md](./HYDRATION.md) for verification tests.
 
@@ -148,7 +149,7 @@ Implementation lives in **`app/globals.css`**, **`components/ui/*`**, **`compone
 
 - Stable JSON error responses; no stack traces or secrets in client payloads.
 - Appropriate HTTP status codes (`400`, `401`, `403`, `404`, `409`, `413`, `422`, `423`, `429`, `500`). Concurrent task **`PATCH`** saves that lose a Mongoose version race return **409** (same message as `expectedUpdatedAt` conflicts).
-- **Client error boundaries** catch render errors in the protected shell and high-risk widgets (dashboard calendar, task-form mini calendar); users get retry/reload actions without exposing stack traces in production UI.
+- **Client error boundaries** catch render errors in the protected shell and the dashboard task calendar widget; users get retry/reload actions without exposing stack traces in production UI.
 - **Toast notifications** (`lib/toast-bus.js`, `components/ui/toast-host.js`): TanStack Query `QueryCache` / `MutationCache` `onError` handlers surface failed API reads and mutations as dismissible toasts (client-only; no SSR). The dashboard degrades gracefully when individual aggregation endpoints fail (summary may still render).
 
 ### 3.7 Security headers and CSRF
@@ -180,7 +181,7 @@ See [SECURITY.md](./SECURITY.md) for audit detail.
 
 ### 4.2 Domain concepts
 
-- **Tasks**: status, priority, dates, category, **schedule**, **recurrence**, **content blocks**, optional **`amountSpent`** / commerce fields (`intent`, `estimatedValue`, `actualValue`, `currency`), **subtasks** (`parentTaskId`), links to thoughts/plans.
+- **Tasks**: status, priority, dates, category, **schedule**, **recurrence**, **content blocks**, optional **`amountSpent`** / commerce fields (`intent`, `estimatedValue`, `actualValue`, `currency`, **order placed / expected receive / received** dates), **subtasks** (`parentTaskId`; listed under parents on dashboard calendar days), links to thoughts/plans.
 - **Task notes**: separate `TaskNote` collection (not the task description).
 - **Financial records**: lent/borrowed/payable/receivable with payment history.
 - **Planning** (dedicated models): **installment commitments** (`downPaymentAmount`, optional `installmentAmount`, payment notes for installment/down/balloon types; `lib/planning/installment-payments.js` drives **installments paid**), Kameti plans, **subscriptions** (`manualBilling`, `paymentHistory`, edit/delete UI, payment log + per-payment delete), university applications, tours/expenses — calendar and dashboard integrate due dates without spawning per-payment tasks. Installment payments are sorted by `paidAt` on sync and in GET detail responses.
@@ -307,7 +308,7 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 
 **Task APIs (additional):**
 
-- `GET /api/tasks/calendar?year=&month=&timeZone=` — month-scoped entries (**task date**, scheduled, deadline, recurring due, plus planning/financial).
+- `GET /api/tasks/calendar?year=&month=&timeZone=` — month-scoped entries (**task date** with visit-availability alignment persisted when misaligned, scheduled, deadline, recurring due, **order/receive** dates, planning/financial). Loads subtasks for parents in the month and **attaches** them to each day the parent appears (subtasks without their own date). Parent/subtask links use normalized ids (`lib/calendar/calendar-task-id.js`) in `attachSubtasksToCalendarDays` and `buildCalendarDayListRows`.
 - `POST /api/tasks/[id]/schedule/slots` — flexible scheduling suggestions.
 - `GET/POST /api/availability-templates`, `PATCH/DELETE /api/availability-templates/[id]`.
 - Task `PATCH` may include `recordRecurrenceCompletion: { completedDate, procedureDate? }`.

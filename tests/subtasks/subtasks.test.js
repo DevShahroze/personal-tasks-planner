@@ -10,6 +10,7 @@ import {
   buildCalendarEntriesForTask,
   attachSubtasksToCalendarDays,
 } from "../../lib/calendar/task-entries.js";
+import { buildCalendarDayListRows } from "../../lib/calendar/day-list-rows.js";
 
 test("subtaskSummary counts completed subtasks", () => {
   const summary = subtaskSummary([
@@ -90,4 +91,37 @@ test("attachSubtasksToCalendarDays lists subtasks under parent task days", () =>
   assert.equal(enriched["2026-11-02"].length, 2);
   assert.equal(enriched["2026-11-02"][1].kind, "subtask");
   assert.equal(enriched["2026-11-02"][1].parentTaskId, parentId);
+});
+
+test("buildCalendarDayListRows nests attached subtasks under parent", () => {
+  const parentId = "507f1f77bcf86cd799439012";
+  const byDay = {
+    "2026-11-02": [
+      {
+        taskId: parentId,
+        title: "Parent task",
+        kind: "taskDate",
+        ymd: "2026-11-02",
+        href: `/tasks/${parentId}`,
+      },
+    ],
+  };
+  const subtasksByParentId = {
+    [parentId]: [
+      {
+        _id: "507f1f77bcf86cd799439011",
+        parentTaskId: parentId,
+        title: "Child step",
+        priority: "Medium",
+        status: "To Do",
+        parentTitle: "Parent task",
+      },
+    ],
+  };
+  const enriched = attachSubtasksToCalendarDays(byDay, subtasksByParentId);
+  const rows = buildCalendarDayListRows(enriched["2026-11-02"]);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].indent, false);
+  assert.equal(rows[1].indent, true);
+  assert.equal(rows[1].entry.title, "Child step");
 });

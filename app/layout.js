@@ -14,6 +14,12 @@ export const metadata = {
   description: "Private task, thought, and plan tracker",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html

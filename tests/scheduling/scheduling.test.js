@@ -24,6 +24,7 @@ import {
   alignTaskDateAndSchedule,
   firstSchedulableYmdOnOrAfter,
 } from "../../lib/scheduling/align-task-date.js";
+import { buildRolloverPatch } from "../../lib/task-processor/rollover-task.js";
 import { validateYmdAgainstSchedule } from "../../lib/calendar/schedule-date-check.js";
 
 const TZ = "Asia/Karachi";
@@ -332,4 +333,25 @@ test("validateYmdAgainstSchedule treats earliest date as calendar day in task ti
   const result = validateYmdAgainstSchedule("2026-10-31", schedule);
   assert.equal(result.ok, false);
   assert.match(result.message, /availability/i);
+});
+
+test("buildRolloverPatch skips Sunday when visit days are Mon–Sat", () => {
+  const task = {
+    taskDate: zonedDateTimeToUtc("2026-10-31", "12:00", TZ),
+    schedule: {
+      ...defaultSchedule(),
+      mode: "flexible",
+      timezone: TZ,
+      durationMinutes: 60,
+      availability: {
+        daysOfWeek: [1, 2, 3, 4, 5, 6],
+        startTime: "09:00",
+        endTime: "17:00",
+        excludePublicHolidays: false,
+        timeSlots: [],
+      },
+    },
+  };
+  const patch = buildRolloverPatch(task, "2026-10-31");
+  assert.equal(ymdInTimeZone(patch.taskDate, TZ), "2026-11-02");
 });

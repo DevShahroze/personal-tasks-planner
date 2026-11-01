@@ -47,7 +47,7 @@ function TaskProcessorShellGate({ children }) {
   );
 }
 
-export function TaskProcessorNavStatus({ className = "" }) {
+export function TaskProcessorNavStatus({ className = "", layout = "inline" }) {
   const { navLastRunLabel, active, driveProcessor } = useTaskProcessor();
   const confirm = useConfirm();
   const [manualPending, setManualPending] = useState(false);
@@ -77,15 +77,37 @@ export function TaskProcessorNavStatus({ className = "" }) {
     }
   };
 
+  const runLabel = manualPending || active ? "Running…" : "Run rollover";
+  const lastRunTitle = active
+    ? "Daily task processor is running"
+    : `Last daily task processor run: ${navLastRunLabel}`;
+
+  if (layout === "sidebar") {
+    return (
+      <div className={`space-y-2 ${className}`}>
+        <p className="text-xs leading-snug text-muted-foreground" title={lastRunTitle}>
+          <span className="font-medium text-foreground/80">Last rollover</span>
+          <br />
+          {navLastRunLabel}
+        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full text-xs"
+          disabled={active || manualPending}
+          onClick={onManualRun}
+        >
+          {runLabel}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex min-w-0 items-center gap-2 ${className}`}>
       <p
         className="min-w-0 flex-1 truncate text-[0.6875rem] text-muted-foreground"
-        title={
-          active
-            ? "Daily task processor is running"
-            : `Last daily task processor run: ${navLastRunLabel}`
-        }
+        title={lastRunTitle}
       >
         <span className="font-medium text-foreground/80">Last rollover:</span>{" "}
         {navLastRunLabel}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { subscribeToasts } from "@/lib/toast-bus";
+import { SHELL_FLOATING_RIGHT_CLASS } from "@/lib/layout/shell-nav";
 
 const AUTO_DISMISS_MS = 6000;
 
@@ -23,7 +24,7 @@ export default function ToastHost() {
 
   return (
     <div
-      className="pointer-events-none fixed bottom-20 right-3 z-[100] flex max-w-sm flex-col gap-2 md:bottom-3"
+      className={`pointer-events-none fixed bottom-20 right-3 z-[100] flex max-w-sm flex-col gap-2 md:bottom-3 ${SHELL_FLOATING_RIGHT_CLASS}`}
       aria-live="polite"
       aria-relevant="additions"
     >
