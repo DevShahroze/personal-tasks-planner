@@ -22,7 +22,7 @@ import PinLockOverlay from "@/components/admin/pin-lock-overlay";
 
 const PinLockContext = createContext(null);
 
-const ACTIVITY_EVENTS = ["pointerdown", "keydown", "mousedown", "touchstart", "scroll"];
+const ACTIVITY_EVENTS = ["pointerdown", "keydown", "mousedown", "touchstart"];
 const TAMPER_MISS_THRESHOLD = 3;
 
 export function PinLockProvider({ children }) {
@@ -35,16 +35,21 @@ export function PinLockProvider({ children }) {
 
   const lastActivityRef = useRef(0);
   const overlayRootRef = useRef(null);
+  const isLockedRef = useRef(false);
   const [isLocked, setIsLocked] = useState(false);
   const [unlockError, setUnlockError] = useState("");
   const [unlocking, setUnlocking] = useState(false);
 
   const config = settingsQuery.data;
   const active =
-    Boolean(config?.enabled) && Boolean(config?.configured) && !settingsQuery.isLoading;
+    settingsQuery.isFetched && Boolean(config?.enabled) && Boolean(config?.configured);
 
   const idleMs = (config?.idleMinutes ?? 5) * 60 * 1000;
   const locked = active && isLocked;
+
+  useEffect(() => {
+    isLockedRef.current = isLocked;
+  }, [isLocked]);
 
   useEffect(() => {
     setPinLockScreenActive(locked);
@@ -53,37 +58,60 @@ export function PinLockProvider({ children }) {
     };
   }, [locked]);
 
-  const bumpActivity = useCallback(() => {
-    if (!active || isLocked) {
-      return;
+  useEffect(() => {
+    if (!active) {
+      isLockedRef.current = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- disable PIN when settings turn off
+      setIsLocked(false);
+      return undefined;
     }
     touchPinActivity(lastActivityRef);
-    setIsLocked(false);
-  }, [active, isLocked]);
+    return undefined;
+  }, [active]);
 
   useEffect(() => {
     if (!active) {
       return undefined;
     }
 
-    touchPinActivity(lastActivityRef);
+    const onActivity = () => {
+      if (isLockedRef.current) {
+        return;
+      }
+      touchPinActivity(lastActivityRef);
+    };
 
-    const onActivity = () => bumpActivity();
     for (const eventName of ACTIVITY_EVENTS) {
       window.addEventListener(eventName, onActivity, { passive: true, capture: true });
     }
-
-    const timer = window.setInterval(() => {
-      setIsLocked(Date.now() - lastActivityRef.current >= idleMs);
-    }, 1000);
 
     return () => {
       for (const eventName of ACTIVITY_EVENTS) {
         window.removeEventListener(eventName, onActivity, { capture: true });
       }
+    };
+  }, [active]);
+
+  useEffect(() => {
+    if (!active) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      if (isLockedRef.current) {
+        return;
+      }
+      const shouldLock = Date.now() - lastActivityRef.current >= idleMs;
+      if (shouldLock) {
+        isLockedRef.current = true;
+        setIsLocked(true);
+      }
+    }, 1000);
+
+    return () => {
       window.clearInterval(timer);
     };
-  }, [active, idleMs, bumpActivity]);
+  }, [active, idleMs]);
 
   const markOverlayRoot = useCallback((el) => {
     overlayRootRef.current = el;
@@ -132,6 +160,7 @@ export function PinLockProvider({ children }) {
     try {
       await adminApi.pinScreen.unlock({ pin });
       touchPinActivity(lastActivityRef);
+      isLockedRef.current = false;
       setIsLocked(false);
     } catch (err) {
       setUnlockError(err.message || "Incorrect PIN");

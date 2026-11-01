@@ -13,12 +13,15 @@ import { ShellSidebar } from "@/components/layout/shell-sidebar";
 import RightSidebarUtilities from "@/components/nav/right-sidebar-utilities";
 import { NAV_LINK_ICONS, NavAdminIcon } from "@/components/nav/nav-link-icons";
 import { useShellNav } from "@/hooks/use-shell-nav";
+import WorkspaceSidebarSection from "@/components/workspace/workspace-sidebar-section";
+import WorkspaceIframeHost from "@/components/workspace/workspace-iframe-host";
 
 const mainNavItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/tasks", label: "Tasks" },
   { href: "/thoughts", label: "Thoughts" },
   { href: "/plans", label: "Plans" },
+  { href: "/workspace", label: "Workspace" },
   { href: "/important-info", label: "Important info" },
   { href: "/planning", label: "Planning" },
   { href: "/financial-records", label: "Financial" },
@@ -73,6 +76,7 @@ function MobileNavFooter({ onLogout, loggingOut }) {
 
 export default function AppShell({ children }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { leftExpanded, rightExpanded, toggleLeft, toggleRight } = useShellNav();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileAdminOpen, setMobileAdminOpen] = useState(false);
@@ -145,12 +149,20 @@ export default function AppShell({ children }) {
             collapsed={!leftExpanded}
             className="flex-1 overflow-y-auto overflow-x-hidden"
           />
+          <WorkspaceSidebarSection collapsed={!leftExpanded} />
         </ShellSidebar>
 
         <main className="flex min-w-0 flex-1 flex-col overflow-y-auto p-3 md:p-4">
           <TaskProcessorMainChrome>
             <PageGoBack />
-            {children}
+            <div
+              className={
+                pathname === "/workspace" ? "flex min-h-0 flex-1 flex-col" : undefined
+              }
+            >
+              {children}
+              <WorkspaceIframeHost />
+            </div>
           </TaskProcessorMainChrome>
         </main>
 
@@ -189,6 +201,7 @@ export default function AppShell({ children }) {
               onNavigate={closeMobile}
               className="flex-1 overflow-y-auto"
             />
+            <WorkspaceSidebarSection />
             <MobileNavFooter
               onLogout={async () => {
                 closeMobile();

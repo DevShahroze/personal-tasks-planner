@@ -25,6 +25,9 @@ function buildContentSecurityPolicy() {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     connectSrc,
+    isProduction
+      ? "frame-src 'self' https:"
+      : "frame-src 'self' https: http://127.0.0.1:* http://localhost:*",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
