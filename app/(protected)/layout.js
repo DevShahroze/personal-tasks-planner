@@ -6,10 +6,11 @@ import { TaskProcessorProvider } from "@/contexts/task-processor-context";
 import { TaskCalendarProvider } from "@/contexts/task-calendar-context";
 
 import { PinLockProvider } from "@/contexts/pin-lock-context";
+import { SessionIdleLogoutProvider } from "@/contexts/session-idle-logout-context";
 
 export default function ProtectedLayout({ children }) {
   return (
-    <Providers>
+    <Providers withAppCatalog>
       <ErrorBoundary
         title="Application error"
         description="The app shell failed to render. Try again or reload the page."
@@ -18,7 +19,9 @@ export default function ProtectedLayout({ children }) {
           <TaskProcessorProvider>
             <TaskCalendarProvider>
               <PinLockProvider>
-                <AppShell>{children}</AppShell>
+                <SessionIdleLogoutProvider>
+                  <AppShell>{children}</AppShell>
+                </SessionIdleLogoutProvider>
               </PinLockProvider>
             </TaskCalendarProvider>
           </TaskProcessorProvider>

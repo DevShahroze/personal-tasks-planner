@@ -1,10 +1,17 @@
-import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth";
+import { jsonError, jsonOk } from "@/lib/api-response";
+import { readSessionPayload } from "@/lib/auth";
 
 export async function GET() {
-  const auth = await requireAuth();
-  if (auth.error) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const payload = await readSessionPayload();
+  if (!payload) {
+    return jsonError("Unauthorized", 401);
   }
-  return NextResponse.json({ authenticated: true });
+
+  const exp = typeof payload.exp === "number" ? payload.exp : null;
+  const expiresAt = exp ? new Date(exp * 1000).toISOString() : null;
+
+  return jsonOk({
+    authenticated: true,
+    expiresAt,
+  });
 }

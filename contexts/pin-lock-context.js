@@ -14,8 +14,8 @@ import { adminApi } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
 import { catalogQueryOptions } from "@/lib/query-cache";
 import {
-  PIN_LOCK_SCREEN_ID,
   forceLogoutAfterPinTamper,
+  setPinLockScreenActive,
   touchPinActivity,
 } from "@/lib/admin/pin-screen-client";
 import PinLockOverlay from "@/components/admin/pin-lock-overlay";
@@ -23,6 +23,7 @@ import PinLockOverlay from "@/components/admin/pin-lock-overlay";
 const PinLockContext = createContext(null);
 
 const ACTIVITY_EVENTS = ["pointerdown", "keydown", "mousedown", "touchstart", "scroll"];
+const TAMPER_MISS_THRESHOLD = 3;
 
 export function PinLockProvider({ children }) {
   const queryClient = useQueryClient();
@@ -33,6 +34,7 @@ export function PinLockProvider({ children }) {
   });
 
   const lastActivityRef = useRef(0);
+  const overlayRootRef = useRef(null);
   const [isLocked, setIsLocked] = useState(false);
   const [unlockError, setUnlockError] = useState("");
   const [unlocking, setUnlocking] = useState(false);
@@ -43,6 +45,13 @@ export function PinLockProvider({ children }) {
 
   const idleMs = (config?.idleMinutes ?? 5) * 60 * 1000;
   const locked = active && isLocked;
+
+  useEffect(() => {
+    setPinLockScreenActive(locked);
+    return () => {
+      setPinLockScreenActive(false);
+    };
+  }, [locked]);
 
   const bumpActivity = useCallback(() => {
     if (!active || isLocked) {
@@ -76,30 +85,44 @@ export function PinLockProvider({ children }) {
     };
   }, [active, idleMs, bumpActivity]);
 
+  const markOverlayRoot = useCallback((el) => {
+    overlayRootRef.current = el;
+  }, []);
+
   useEffect(() => {
     if (!locked) {
+      overlayRootRef.current = null;
       return undefined;
     }
 
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    let missCount = 0;
+    let tamperLoggingOut = false;
+
     const checkTamper = () => {
-      const el = document.getElementById(PIN_LOCK_SCREEN_ID);
-      if (!el || !document.body.contains(el)) {
-        forceLogoutAfterPinTamper();
+      if (tamperLoggingOut) {
+        return;
+      }
+      const el = overlayRootRef.current;
+      if (el && el.isConnected) {
+        missCount = 0;
+        return;
+      }
+      missCount += 1;
+      if (missCount >= TAMPER_MISS_THRESHOLD) {
+        tamperLoggingOut = true;
+        void forceLogoutAfterPinTamper();
       }
     };
 
-    checkTamper();
     const interval = window.setInterval(checkTamper, 400);
-    const observer = new MutationObserver(checkTamper);
-    observer.observe(document.documentElement, { childList: true, subtree: true });
 
     return () => {
       document.body.style.overflow = previous;
       window.clearInterval(interval);
-      observer.disconnect();
+      overlayRootRef.current = null;
     };
   }, [locked]);
 
@@ -143,6 +166,7 @@ export function PinLockProvider({ children }) {
       </div>
       {locked ? (
         <PinLockOverlay
+          onMounted={markOverlayRoot}
           onSubmitPin={unlock}
           error={unlockError}
           submitting={unlocking}

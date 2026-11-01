@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
+import { jsonError } from "@/lib/api-response";
+import { readJsonBody } from "@/lib/security/request";
 import {
   createSessionToken,
   verifyLoginCredentials,
   sessionCookieOptions,
 } from "@/lib/auth";
 import { SESSION_COOKIE } from "@/lib/constants";
-import { jsonError } from "@/lib/api-response";
-import { readJsonBody } from "@/lib/security/request";
+import { configuredSessionMaxAgeSeconds } from "@/lib/admin/session-idle-logout";
 
 export async function POST(request) {
   const parsed = await readJsonBody(request);
@@ -31,8 +32,9 @@ export async function POST(request) {
     return jsonError("Invalid credentials", 401);
   }
 
-  const token = await createSessionToken();
+  const maxAgeSeconds = await configuredSessionMaxAgeSeconds();
+  const token = await createSessionToken(maxAgeSeconds);
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
+  response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(maxAgeSeconds));
   return response;
 }

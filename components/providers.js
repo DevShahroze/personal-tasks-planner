@@ -10,25 +10,27 @@ import ToastHost from "@/components/ui/toast-host";
 import { AppDataProvider } from "@/contexts/app-data-context";
 import { ConfirmProvider } from "@/contexts/confirm-context";
 
-export default function Providers({ children }) {
+export default function Providers({ children, withAppCatalog = false }) {
   const queryClient = getQueryClient();
 
   useEffect(() => {
     bootstrapActivityLoggerSession();
   }, []);
 
+  const tree = (
+    <ConfirmProvider>
+      <TouchViewportEffects />
+      <Suspense fallback={null}>
+        <PageTracker />
+      </Suspense>
+      {children}
+      <ToastHost />
+    </ConfirmProvider>
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
-      <AppDataProvider>
-        <ConfirmProvider>
-          <TouchViewportEffects />
-          <Suspense fallback={null}>
-            <PageTracker />
-          </Suspense>
-          {children}
-          <ToastHost />
-        </ConfirmProvider>
-      </AppDataProvider>
+      {withAppCatalog ? <AppDataProvider>{tree}</AppDataProvider> : tree}
     </QueryClientProvider>
   );
 }

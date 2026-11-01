@@ -8,6 +8,11 @@ const submodules = [
     title: "PIN screen",
     description: "Require a 4-digit PIN after inactivity. Tampering logs you out.",
   },
+  {
+    href: "/admin/privacy-security/session-timeout",
+    title: "Session timeout",
+    description: "Sign out automatically after a period with no activity.",
+  },
 ];
 
 export default function PrivacySecurityAdminPage() {

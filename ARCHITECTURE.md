@@ -54,6 +54,7 @@ Generic reference for this personal productivity app: a **single-user**, **cooki
 - Query defaults: modest `staleTime`, limited retries, no refetch-on-focus (reduces API churn on Vercel).
 - **`AppDataProvider`** (`contexts/app-data-context.js`) composes long-lived catalog slices (currently **categories** via `contexts/slices/categories-slice.js`) so forms and nav share one cached list.
 - **`TaskCalendarProvider`** (`contexts/task-calendar-context.js`) holds the active month, selected day, and TanStack Query result for `GET /api/tasks/calendar`. The dashboard panel and floating **Calendar** tool read the same context (one fetch per month while cache is warm).
+- **`PinLockProvider`** / **`SessionIdleLogoutProvider`**: PIN idle lock overlay and optional full sign-out + JWT expiry timers (`contexts/pin-lock-context.js`, `contexts/session-idle-logout-context.js`). PIN wraps session logout so timers pause while the lock screen is active.
 
 ### 2.3 UI composition
 
@@ -61,7 +62,7 @@ Generic reference for this personal productivity app: a **single-user**, **cooki
 - **App shell**: full-width **top navbar** + **left sidebar** (desktop); slide-out menu on mobile; main column scrolls independently.
 - **Task processor UI** (`contexts/task-processor-context.js`, `contexts/slices/task-processor-slice.js`): banner + shell gate while rollover runs; **TaskProcessorNavStatus** shows last completed run; status fetched via TanStack Query (`GET /api/task-processor/status`), steps via `POST /api/task-processor/step`.
 - **Toast host** (`components/ui/toast-host.js`): non-blocking API error feedback via TanStack Query global handlers.
-- **Entity modules**: list + detail + create flows per domain (tasks, thoughts, plans, categories).
+- **Entity modules**: list + detail + create flows per domain (tasks, thoughts, plans, **important information**, categories).
 - **Task detail**: `/tasks/[id]` opens in **read-only** summary; **Edit** in the fixed footer switches to **`TaskForm`** (task date via native input; no embedded month grid); **Update** / **Delete** (delete only in edit mode) share the same footer (`components/tasks/task-form.js`, `components/tasks/task-detail-view.js`). **Visits & follow-ups** uses popover date pickers (`components/ui/ymd-date-popover-input.js`). Subtasks, visits, notes, and interactive blocks render below and stay editable outside the main edit session.
 - **Rich task content**: structured **content blocks** (checkboxes with optional **`slug`**, radio groups, tables) stored on the task document; checkboxes can be bulk-created from comma-separated description text; block edits persist via PATCH (see [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md)).
 - **Relationships**: link tasks, thoughts, and plans through dedicated API routes and UI panels.
@@ -119,7 +120,8 @@ Implementation lives in **`app/globals.css`**, **`components/ui/*`**, **`compone
 ### 3.2 Authentication and sessions
 
 - **Single configured user** (username + bcrypt hash in environment variables).
-- **Login** verifies password server-side; issues **JWT** stored in **`HttpOnly` cookie** (`SameSite=Lax`, `Secure` in production).
+- **Login** verifies password server-side; issues **JWT** stored in **`HttpOnly` cookie** (`SameSite=Lax`, `Secure` in production). **Max age** comes from **`AppSettings.sessionTokenMaxAgeMinutes`** (default 7 days) on each login.
+- **`GET /api/auth/session`** returns `{ authenticated, expiresAt }` for client session-expiry timers.
 - **New token on each login** (mitigates session fixation); **logout** clears cookie.
 - **Proxy** redirects unauthenticated users away from protected pages; **API** returns `401` JSON.
 - **Handlers** call **`requireAuth()`** again (defense in depth; never trust client-only gating).
@@ -174,7 +176,7 @@ See [SECURITY.md](./SECURITY.md) for audit detail.
 
 ### 4.1 Database access
 
-- **Mongoose** models for Task, Thought, Plan, Category, TaskNote, FinancialRecord, InstallmentCommitment, KametiPlan, Subscription, UniversityApplication, Tour, **TaskProcessorRun**.
+- **Mongoose** models for Task, Thought, Plan, Category, **ImportantInfo**, **AppSettings** (singleton policy: PIN screen, session idle logout, token max age, task rollover statuses), TaskNote, FinancialRecord, InstallmentCommitment, KametiPlan, Subscription, UniversityApplication, Tour, **TaskProcessorRun**.
 - **`connectDB()`** uses the **global connection cache** pattern recommended for serverless Node (reuse one connection promise per instance).
 - **`resolveMongoUri()`** in `lib/env.js` targets a **dedicated database name** on the cluster (default `personal_tasks_planner`). MongoDB creates the database on first write; collections are created by Mongoose.
 - Database credentials exist **only** in server environment configuration — never `NEXT_PUBLIC_*`.
@@ -188,6 +190,7 @@ See [SECURITY.md](./SECURITY.md) for audit detail.
 - **Planning validation**: shared helpers in `lib/planning/validate.js`, `lib/planning/money-fields.js`, `lib/planning/prepaid-payments.js`, and `lib/planning/form-errors.js` (client-safe ObjectId checks via `lib/security/ids.js`, not Mongoose).
 - **TaskProcessorRun**: one document per business date — tracks pending/running/completed rollover batches and failures.
 - **Thoughts / Plans**: metadata + relationship edges to other entities.
+- **Important information**: standalone records (`title`, `category`, `subjectName`, `value`, `notes`) — list/detail CRUD without task/plan links; values omitted from list API projection.
 - **Categories**: labels for task organization; list UI supports search; delete reassigns tasks to **Unassigned** (`lib/categories/unassigned.js`).
 - **Dashboard**: read-only aggregation endpoints (`summary`, `charts`, `listings`); each handler must import Mongoose models explicitly.
 
@@ -231,21 +234,22 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 
 ## 6. Cross-cutting features (generic catalog)
 
-| Feature                     | Description                                                                      |
-| --------------------------- | -------------------------------------------------------------------------------- |
-| **Private auth**            | Cookie session, middleware + handler checks                                      |
-| **CRUD modules**            | Tasks, thoughts, plans, categories                                               |
-| **Structured task content** | Checkbox / radio / table blocks with server validation                           |
-| **Entity relationships**    | Many-to-many style links between domain objects                                  |
-| **Dashboard**               | Aggregations + charts + recent activity lists + task calendar                    |
-| **Task scheduling**         | Fixed/flexible slots, conflicts, availability templates                          |
-| **Recurring / procedures**  | In-place next due date, completion recording, optional appointments              |
-| **Daily task processor**    | Post–11 PM rollover, catch-up runs, DB-backed progress, client step driver       |
-| **Theming**                 | Light/dark semantic CSS tokens                                                   |
-| **Error boundaries**        | Client render failures contained per shell / calendar / form calendar            |
-| **Activity logger**         | Optional client-only diagnostic log export                                       |
-| **Quality gate**            | `npm run validate` — lint, format, security tests, audit, build, hydration tests |
-| **Pre-push hook**           | Husky: `npm run validate:ci` (see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md))      |
+| Feature                      | Description                                                                      |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| **Private auth**             | Cookie session, middleware + handler checks                                      |
+| **CRUD modules**             | Tasks, thoughts, plans, **important information**, categories                    |
+| **Privacy & session policy** | PIN screen lock, idle sign-out, configurable JWT lifetime (`AppSettings`)        |
+| **Structured task content**  | Checkbox / radio / table blocks with server validation                           |
+| **Entity relationships**     | Many-to-many style links between domain objects                                  |
+| **Dashboard**                | Aggregations + charts + recent activity lists + task calendar                    |
+| **Task scheduling**          | Fixed/flexible slots, conflicts, availability templates                          |
+| **Recurring / procedures**   | In-place next due date, completion recording, optional appointments              |
+| **Daily task processor**     | Post–11 PM rollover, catch-up runs, DB-backed progress, client step driver       |
+| **Theming**                  | Light/dark semantic CSS tokens                                                   |
+| **Error boundaries**         | Client render failures contained per shell / calendar / form calendar            |
+| **Activity logger**          | Optional client-only diagnostic log export                                       |
+| **Quality gate**             | `npm run validate` — lint, format, security tests, audit, build, hydration tests |
+| **Pre-push hook**            | Husky: `npm run validate:ci` (see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md))      |
 
 ---
 
@@ -312,6 +316,16 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 - `POST /api/tasks/[id]/schedule/slots` — flexible scheduling suggestions.
 - `GET/POST /api/availability-templates`, `PATCH/DELETE /api/availability-templates/[id]`.
 - Task `PATCH` may include `recordRecurrenceCompletion: { completedDate, procedureDate? }`.
+
+**Important information APIs:**
+
+- `GET/POST /api/important-info` — paginated list (search, category filter); POST creates a record.
+- `GET/PATCH/DELETE /api/important-info/[id]` — detail includes **value**; list responses omit **value**.
+
+**Admin privacy & session APIs:**
+
+- `GET/PUT /api/admin/pin-screen`, `POST /api/admin/pin-screen/unlock` — PIN settings and unlock (**403** on wrong PIN).
+- `GET/PUT /api/admin/session-idle-logout` — idle sign-out and **sessionTokenMaxAgeMinutes** (requires account password on PUT).
 
 ---
 

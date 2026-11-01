@@ -1,6 +1,6 @@
 # Personal Tasks & Plans Tracker
 
-Private single-user app for tasks, thoughts, plans, categories, relationships, **scheduling**, **recurring procedures**, a **daily task processor** (timezone-aware rollover after 11 PM), **financial records**, **planning** (installments with prepaid/variable amounts, Kameti, subscriptions, university applications, tours), and a dashboard (including a **task calendar**) backed by MongoDB.
+Private single-user app for tasks, thoughts, plans, **important information** (IDs and reference numbers), categories, relationships, **scheduling**, **recurring procedures**, a **daily task processor** (timezone-aware rollover after 11 PM), **financial records**, **planning** (installments with prepaid/variable amounts, Kameti, subscriptions, university applications, tours), and a dashboard (including a **task calendar**) backed by MongoDB.
 
 Architecture overview: [ARCHITECTURE.md](./ARCHITECTURE.md) · Before push: [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md)
 
@@ -110,6 +110,19 @@ Create flows support **prepaid periods** (count or comma-separated amounts) for 
 - **Financial → record detail**: read-only summary (`FinancialRecordDetailView`). Fixed footer **Edit**; edit mode **Cancel**, **Delete**, and **Update record** (same hierarchy as tasks). **Record payment** stays on the view page, not in edit mode.
 - **New record**: shared `FinancialRecordForm` with **Create record** (`components/finance/financial-record-form.js`).
 
+## Important information
+
+- Sidebar **Important info** (`/important-info`): save reference data you may need later — national ID, passport, bank account, policy numbers, etc.
+- Each record has **title**, **category** (Identity, Finance, Health, Contact, Other), optional **person / subject**, **value** (the number or detail), and **notes**.
+- The **list** shows title, category, and person only (not the value). Open a row for the full value, **Edit**, or **Delete**.
+- API: `GET/POST /api/important-info`, `GET/PATCH/DELETE /api/important-info/[id]` (`models/ImportantInfo.js`).
+
+## Privacy and security (Admin)
+
+- **Admin → Privacy & security → PIN screen**: after idle time, a full-screen **PIN** overlay locks the UI until you enter the 4-digit PIN. Removing the overlay from the DOM logs you out (tamper protection). Wrong PIN returns **403**, not **401**.
+- **Admin → Privacy & security → Session timeout**: optional **idle sign-out** (mouse/keyboard/scroll inactivity) and **maximum session length** (JWT/cookie lifetime from last sign-in). While the PIN screen is shown, idle session sign-out and token-expiry timers are **paused** (`PinLockProvider` wraps `SessionIdleLogoutProvider` in the protected layout).
+- Settings live on the **`AppSettings`** singleton (`sessionIdleLogout*`, `sessionTokenMaxAgeMinutes`, `pinScreen*`).
+
 ## Task content blocks
 
 See [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) for interactive checkboxes, radio groups, and tables inside tasks (including **Create items** from comma-separated description text).
@@ -133,7 +146,7 @@ Destructive or irreversible actions (delete task, remove payment, cancel task, e
 ## Scheduling, recurrence, and calendar
 
 - Task **date** plus optional **start** / **end** time on the edit form (native date/time inputs; no task mini-calendar on the form).
-- Optional **Visit availability** (checkbox): weekdays, allowed hours, templates, and **Suggest time slots** for open-ended visit-style work. When availability rules reject the chosen day (for example Saturday with weekdays-only visits), the app **aligns** the task date to the next allowed day on save, in the task form, and when loading the calendar (`lib/scheduling/align-task-date.js`, `lib/calendar/schedule-date-check.js`).
+- Optional **Visit availability** (checkbox): weekdays, allowed hours, templates, and **Suggest time slots** for open-ended visit-style work. When availability rules reject the chosen day (for example Saturday with weekdays-only visits), the app **aligns** the task date to the next allowed day on save, in the task form, and when loading the calendar (`lib/scheduling/align-task-date.js`, `lib/calendar/schedule-date-check.js`). Calendar alignment avoids a circular import with `scheduleHasRestrictedDays` by inlining the weekday restriction check in `resolveTaskDateYmdForCalendar`.
 - Task **schedule** (fixed/flexible/unscheduled), availability templates, and conflict checks — see [ARCHITECTURE.md](./ARCHITECTURE.md).
 - **Recurring** tasks keep one document; `nextDueDate` is calculated on the server. Optional `SCHEDULE_PUBLIC_HOLIDAYS` in `.env` for holiday exclusion.
 - **Track order or purchase** on a task uses **order placed**, **expected receive**, and **received** dates on the calendar instead of the plain task date when those fields are set (`lib/task-commerce/*`, `lib/calendar/task-entries.js`). **Cancelled** tasks do not appear on the calendar.

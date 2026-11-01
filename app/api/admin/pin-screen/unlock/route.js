@@ -17,7 +17,7 @@ export async function POST(request) {
   const pin = parsed.body?.pin;
   const result = await verifyPinScreenPin(pin);
   if (!result.ok) {
-    return jsonError(result.error, 401);
+    return jsonError(result.error, 403);
   }
 
   return jsonOk({ ok: true });

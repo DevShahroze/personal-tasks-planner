@@ -8,6 +8,7 @@ const TOP_LEVEL_PATHS = new Set([
   "/tasks",
   "/thoughts",
   "/plans",
+  "/important-info",
   "/planning",
   "/financial-records",
   "/categories",

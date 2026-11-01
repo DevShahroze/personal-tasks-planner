@@ -1,14 +1,22 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useLayoutEffect } from "react";
 import { PIN_LOCK_SCREEN_ID } from "@/lib/admin/pin-screen-client";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
 import Alert from "@/components/ui/alert";
 
-export default function PinLockOverlay({ onSubmitPin, error, submitting }) {
+export default function PinLockOverlay({ onSubmitPin, error, submitting, onMounted }) {
   const [pin, setPin] = useState("");
   const formRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const el = document.getElementById(PIN_LOCK_SCREEN_ID);
+    onMounted?.(el);
+    return () => {
+      onMounted?.(null);
+    };
+  }, [onMounted]);
 
   const onSubmit = async (event) => {
     event.preventDefault();
