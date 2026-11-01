@@ -57,6 +57,7 @@ export default function PinLockOverlay({ onSubmitPin, error, submitting, onMount
         <label className="mt-4 block space-y-1 text-xs font-medium">
           <span>PIN</span>
           <Input
+            type="password"
             inputMode="numeric"
             pattern="\d{4}"
             maxLength={4}

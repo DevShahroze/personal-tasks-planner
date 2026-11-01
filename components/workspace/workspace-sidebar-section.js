@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { WORKSPACE_SECTION_EXPANDED_KEY } from "@/lib/workspace/constants.js";
 import { useWorkspace } from "@/contexts/workspace-context";
 import Button from "@/components/ui/button";
@@ -10,9 +10,6 @@ import Alert from "@/components/ui/alert";
 import { useConfirm } from "@/contexts/confirm-context";
 
 function readSectionExpanded() {
-  if (typeof window === "undefined") {
-    return true;
-  }
   return window.localStorage.getItem(WORKSPACE_SECTION_EXPANDED_KEY) !== "0";
 }
 
@@ -20,7 +17,12 @@ export default function WorkspaceSidebarSection({ collapsed = false }) {
   const confirm = useConfirm();
   const { apps, openApp, addApp, updateApp, removeApp, moveApp, hydrated } =
     useWorkspace();
-  const [expanded, setExpanded] = useState(readSectionExpanded);
+  const [expanded, setExpanded] = useState(true);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read sidebar collapse preference after mount
+    setExpanded(readSectionExpanded());
+  }, []);
 
   const ensureSectionExpanded = () => {
     setExpanded(true);
@@ -149,7 +151,9 @@ export default function WorkspaceSidebarSection({ collapsed = false }) {
             </span>
           ) : null}
         </span>
-        <span className="shrink-0 text-xs">{expanded ? "−" : "+"}</span>
+        <span className="shrink-0 text-xs" suppressHydrationWarning>
+          {expanded ? "−" : "+"}
+        </span>
       </button>
 
       {expanded ? (

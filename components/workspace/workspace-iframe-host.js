@@ -25,7 +25,7 @@ export default function WorkspaceIframeHost() {
     <div
       className={
         onWorkspace
-          ? "relative mt-1 flex min-h-0 w-full flex-1 flex-col"
+          ? "relative mt-1 flex min-h-[min(70vh,900px)] w-full min-w-0 flex-1 flex-col"
           : "pointer-events-none fixed left-[-12000px] top-0 z-[-1] h-[720px] w-[1280px] overflow-hidden opacity-0"
       }
       aria-hidden={!onWorkspace}
@@ -35,6 +35,7 @@ export default function WorkspaceIframeHost() {
           key={app.id}
           app={app}
           active={onWorkspace && app.id === activeTabId}
+          framePageActive={onWorkspace}
         />
       ))}
     </div>
