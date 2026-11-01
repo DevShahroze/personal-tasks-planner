@@ -4,11 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useFinancialRecordMutations } from "@/hooks/use-financial-records";
-import Button from "@/components/ui/button";
 import Alert from "@/components/ui/alert";
-import FinancialRecordFormFields, {
-  financialRecordPayloadFromFormData,
-} from "@/components/finance/financial-record-form-fields";
+import FinancialRecordForm from "@/components/finance/financial-record-form";
 
 export default function NewFinancialRecordPage() {
   const router = useRouter();
@@ -29,7 +26,7 @@ export default function NewFinancialRecordPage() {
   }, []);
 
   return (
-    <div className="page-stack mx-auto max-w-2xl">
+    <div className="page-stack w-full max-w-4xl pb-24">
       <div>
         <p className="text-sm text-muted-foreground">
           <Link href="/financial-records" className="hover:underline">
@@ -42,17 +39,14 @@ export default function NewFinancialRecordPage() {
 
       {error ? <Alert variant="error">{error}</Alert> : null}
 
-      <form
+      <FinancialRecordForm
         key={`${pathname}-${formKey}`}
-        autoComplete="off"
-        className="surface-card space-y-3"
-        onSubmit={async (event) => {
-          event.preventDefault();
+        idPrefix="new-financial"
+        forCreate
+        submitting={create.isPending}
+        submitLabel="Create record"
+        onSubmit={async (payload) => {
           setError("");
-          const form = event.currentTarget;
-          const payload = financialRecordPayloadFromFormData(new FormData(form), {
-            forCreate: true,
-          });
           try {
             await create.mutateAsync(payload);
             setFormKey((value) => value + 1);
@@ -65,12 +59,7 @@ export default function NewFinancialRecordPage() {
             }
           }
         }}
-      >
-        <FinancialRecordFormFields idPrefix="new-financial" />
-        <Button type="submit" disabled={create.isPending}>
-          {create.isPending ? "Creating…" : "Create record"}
-        </Button>
-      </form>
+      />
     </div>
   );
 }

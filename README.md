@@ -105,6 +105,11 @@ Create flows support **prepaid periods** (count or comma-separated amounts) for 
 - **Sticky footer** on detail: **Cancel** (back to list), **Delete**, **Save changes**. Destructive actions use the app **confirm dialog** (`useConfirm` in `contexts/confirm-context.js`), not browser `window.confirm`.
 - Nested routes show **Go back** in the shell (`components/layout/page-go-back.js`) to the parent URL.
 
+## Financial records
+
+- **Financial → record detail**: read-only summary (`FinancialRecordDetailView`). Fixed footer **Edit**; edit mode **Cancel**, **Delete**, and **Update record** (same hierarchy as tasks). **Record payment** stays on the view page, not in edit mode.
+- **New record**: shared `FinancialRecordForm` with **Create record** (`components/finance/financial-record-form.js`).
+
 ## Task content blocks
 
 See [TASK_CONTENT_BLOCKS.md](./TASK_CONTENT_BLOCKS.md) for interactive checkboxes, radio groups, and tables inside tasks (including **Create items** from comma-separated description text).
