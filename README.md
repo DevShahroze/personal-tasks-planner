@@ -1,6 +1,6 @@
 # Personal Tasks & Plans Tracker
 
-Private single-user app for tasks, thoughts, plans, **important information** (IDs and reference numbers), categories, relationships, **scheduling**, **recurring procedures**, a **daily task processor** (timezone-aware rollover after 11 PM), **financial records**, **planning** (installments with prepaid/variable amounts, Kameti, subscriptions, university applications, tours), and a dashboard (including a **task calendar**) backed by MongoDB.
+Private single-user app for tasks, thoughts, plans, **important information** (IDs and reference numbers), categories, relationships, **scheduling**, **recurring procedures**, a **daily task processor** (timezone-aware rollover after midnight), **financial records**, **planning** (installments with prepaid/variable amounts, Kameti, subscriptions, university applications, tours), and a dashboard (including a **task calendar**) backed by MongoDB.
 
 Architecture overview: [ARCHITECTURE.md](./ARCHITECTURE.md) · Before push: [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md)
 
@@ -80,7 +80,7 @@ Next.js (App Router, JavaScript), MongoDB/Mongoose, TanStack Query (central stal
 
 ## Daily task processor
 
-After **11 PM** in the processor timezone (default: task schedule timezone; override with optional `TASK_PROCESSOR_TIMEZONE`), open **To Do** / **In Progress** tasks scheduled for that calendar day roll to the next day. Missed days are caught up (up to 31 days). Progress is stored in MongoDB (`TaskProcessorRun`); the protected layout runs a client driver (`TaskProcessorProvider`) that polls status, shows a banner while work runs, and blocks the main shell until idle. The navbar shows when the last run completed. Task create/update/delete APIs return **423** while a run is active. See [ARCHITECTURE.md](./ARCHITECTURE.md).
+After **midnight** in the processor timezone (default: task schedule timezone; override with optional `TASK_PROCESSOR_TIMEZONE`), incomplete **To Do** / **In Progress** tasks scheduled on **prior calendar days** roll to the next day. The Task Runner executes **at most once per processor calendar day** (automatic or manual): successful completion is stored in `TaskProcessorDailySession`; further runs that day are blocked until the next calendar day. Failed runs can be retried the same day. Missed days are caught up on the next sign-in (up to 31 business dates per run). Progress is stored in MongoDB (`TaskProcessorRun` plus daily session metadata). The protected layout runs a client driver (`TaskProcessorProvider`) that checks server status when the browser calendar day changes, uses a cross-tab driver lock, shows a banner and toasts when runs start/finish/fail, and blocks the main shell while a run is **running**. Manual **Run rollover** uses the same rollover rules as automatic scheduling. See [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## Client data caching
 

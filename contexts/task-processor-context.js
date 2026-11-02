@@ -6,6 +6,7 @@ import Button from "@/components/ui/button";
 import { useTaskProcessorSlice } from "@/contexts/slices/task-processor-slice";
 import { useConfirm } from "@/contexts/confirm-context";
 import { taskProcessorApi } from "@/lib/api-client";
+import { toastApiError, toastError } from "@/lib/toast-bus";
 
 const TaskProcessorContext = createContext(null);
 
@@ -48,18 +49,31 @@ function TaskProcessorShellGate({ children }) {
 }
 
 export function TaskProcessorNavStatus({ className = "", layout = "inline" }) {
-  const { navLastRunLabel, locked, driving, driveProcessor } = useTaskProcessor();
+  const { navLastRunLabel, locked, driving, driveProcessor, status } =
+    useTaskProcessor();
   const confirm = useConfirm();
   const [manualPending, setManualPending] = useState(false);
+  const manualDisabled = locked || driving || manualPending;
 
   const onManualRun = async () => {
     if (locked || driving || manualPending) {
       return;
     }
+    if (status?.completedToday) {
+      toastError("Task Runner already completed for today");
+      return;
+    }
+    if (!status?.canManualRun) {
+      toastError(
+        "Nothing to roll over",
+        "Only open To Do / In Progress tasks with a date on or before today are eligible.",
+      );
+      return;
+    }
     const ok = await confirm({
       title: "Run task rollover now?",
       description:
-        "Incomplete To Do and In Progress tasks scheduled on past days (through today) will move to the next day. Editing is paused while this runs.",
+        "Incomplete To Do and In Progress tasks scheduled on or before today will move to the next day. Editing is paused while this runs. You can only run once per day after a successful completion.",
       confirmLabel: "Run rollover",
       variant: "primary",
     });
@@ -69,9 +83,9 @@ export function TaskProcessorNavStatus({ className = "", layout = "inline" }) {
     setManualPending(true);
     try {
       await taskProcessorApi.manualRun();
-      await driveProcessor();
-    } catch {
-      // driveProcessor refreshes status on failure
+      await driveProcessor({ trigger: "manual" });
+    } catch (error) {
+      toastApiError(error, "Manual rollover");
     } finally {
       setManualPending(false);
     }
@@ -94,7 +108,7 @@ export function TaskProcessorNavStatus({ className = "", layout = "inline" }) {
           type="button"
           variant="secondary"
           className="w-full text-xs"
-          disabled={locked || driving || manualPending}
+          disabled={manualDisabled}
           onClick={onManualRun}
         >
           {runLabel}
@@ -116,7 +130,7 @@ export function TaskProcessorNavStatus({ className = "", layout = "inline" }) {
         type="button"
         variant="secondary"
         className="shrink-0 px-2 py-0.5 text-[0.6875rem]"
-        disabled={locked || driving || manualPending}
+        disabled={manualDisabled}
         onClick={onManualRun}
       >
         {manualPending || locked || driving ? "Running…" : "Run"}

@@ -60,7 +60,7 @@ Generic reference for this personal productivity app: a **single-user**, **cooki
 
 - **Compact density** — shared tokens in `app/globals.css` (`page-stack`, `page-title`, `page-lead`, `surface-card`), 14px base type, tighter controls (see §2.6).
 - **App shell**: full-width **top navbar** + **left sidebar** (desktop); slide-out menu on mobile; main column scrolls independently.
-- **Task processor UI** (`contexts/task-processor-context.js`, `contexts/slices/task-processor-slice.js`): banner + shell gate while rollover runs; **TaskProcessorNavStatus** shows last completed run; status fetched via TanStack Query (`GET /api/task-processor/status`), steps via `POST /api/task-processor/step`.
+- **Task processor UI** (`contexts/task-processor-context.js`, `contexts/slices/task-processor-slice.js`): banner + shell gate while rollover runs; **TaskProcessorNavStatus** shows last completed run or pending/failed state; status via TanStack Query (`GET /api/task-processor/status`), steps via `POST /api/task-processor/step`; toasts on start/complete/fail; cross-tab driver lock.
 - **Toast host** (`components/ui/toast-host.js`): non-blocking API error feedback via TanStack Query global handlers.
 - **Entity modules**: list + detail + create flows per domain (tasks, thoughts, plans, **important information**, categories).
 - **Task detail**: `/tasks/[id]` opens in **read-only** summary; **Edit** in the fixed footer switches to **`TaskForm`** (task date via native input; no embedded month grid); **Update** / **Delete** (delete only in edit mode) share the same footer (`components/tasks/task-form.js`, `components/tasks/task-detail-view.js`). **Visits & follow-ups** uses popover date pickers (`components/ui/ymd-date-popover-input.js`). Subtasks, visits, notes, and interactive blocks render below and stay editable outside the main edit session.
@@ -164,11 +164,12 @@ See [SECURITY.md](./SECURITY.md) for audit detail.
 
 ### 3.8 Daily task processor
 
-- **Purpose:** Move incomplete scheduled tasks forward after local **23:00** on their business date (timezone from `TASK_PROCESSOR_TIMEZONE` or default schedule timezone).
-- **Server:** `lib/task-processor/*` — date math, candidate selection (`ROLLOVER_OPEN_STATUSES`), batched PATCHes (`PROCESSOR_BATCH_SIZE`), stale-run recovery (`PROCESSOR_STALE_MS`), catch-up up to `PROCESSOR_MAX_CATCHUP_DAYS`.
-- **Persistence:** `TaskProcessorRun` documents track `businessDateYmd`, task id list, processed/failed ids, and completion timestamp.
-- **Client:** Protected layout wraps `TaskProcessorProvider`; one auto-drive per full page load (`window.__ptpTaskProcessorAutoDriveDone`), status polling only while locked or driving; task lists invalidate after steps complete.
-- **Concurrency:** Task mutations that could race rollover return **423** until the processor is idle.
+- **Purpose:** Move incomplete scheduled tasks forward after **midnight** on each new calendar day in the processor timezone (`TASK_PROCESSOR_TIMEZONE` or default schedule timezone). Automatic and manual runs share the same business-date rules (prior calendar days only).
+- **Once per calendar day:** `TaskProcessorDailySession` records whether today’s runner already **completed** successfully; `GET /api/task-processor/status` exposes `calendarDateYmd`, `completedToday`, `canManualRun`, and `shouldRun`.
+- **Server:** `lib/task-processor/*` — date math, candidate selection (`ROLLOVER_OPEN_STATUSES`), batched updates (`PROCESSOR_BATCH_SIZE`), stale-run recovery (`PROCESSOR_STALE_MS`), catch-up up to `PROCESSOR_MAX_CATCHUP_DAYS`, atomic pending→running acquisition per step, failed business runs when any task errors.
+- **Persistence:** `TaskProcessorRun` (per business date batch) and `TaskProcessorDailySession` (per processor calendar day).
+- **Client:** Protected layout wraps `TaskProcessorProvider`; auto-drive once per processor calendar day when `shouldRun` (browser midnight via `useClientTodayYmd` triggers a fresh status check), cross-tab coordination (`lib/task-processor/client-driver-coordination.js`), toasts on start/complete/fail.
+- **Concurrency:** Task mutations return **423** while running; one tab holds the driver lock; repeated manual clicks and duplicate tabs cannot start a second simultaneous run.
 
 ---
 
@@ -176,10 +177,12 @@ See [SECURITY.md](./SECURITY.md) for audit detail.
 
 ### 4.1 Database access
 
-- **Mongoose** models for Task, Thought, Plan, Category, **ImportantInfo**, **AppSettings** (singleton policy: PIN screen, session idle logout, token max age, task rollover statuses), TaskNote, FinancialRecord, InstallmentCommitment, KametiPlan, Subscription, UniversityApplication, Tour, **TaskProcessorRun**.
+- **Mongoose** models for Task, Thought, Plan, Category, **ImportantInfo**, **AppSettings** (singleton policy: PIN screen, session idle logout, token max age, task rollover statuses), TaskNote, FinancialRecord, InstallmentCommitment, KametiPlan, Subscription, UniversityApplication, Tour, **TaskProcessorRun**, **TaskProcessorDailySession**.
 - **`connectDB()`** uses the **global connection cache** pattern recommended for serverless Node (reuse one connection promise per instance).
 - **`resolveMongoUri()`** in `lib/env.js` targets a **dedicated database name** on the cluster (default `personal_tasks_planner`). MongoDB creates the database on first write; collections are created by Mongoose.
 - Database credentials exist **only** in server environment configuration — never `NEXT_PUBLIC_*`.
+
+Task processor collections: **`TaskProcessorRun`** (batched rollovers by business date) and **`TaskProcessorDailySession`** (one successful run per processor calendar day).
 
 ### 4.2 Domain concepts
 
@@ -189,6 +192,7 @@ See [SECURITY.md](./SECURITY.md) for audit detail.
 - **Planning** (dedicated models): **installment commitments** (`downPaymentAmount`, optional `installmentAmount`, payment notes for installment/down/balloon types; `lib/planning/installment-payments.js` drives **installments paid**), Kameti plans, **subscriptions** (`manualBilling`, `paymentHistory`, edit/delete UI, payment log + per-payment delete), university applications, tours/expenses — calendar and dashboard integrate due dates without spawning per-payment tasks. Installment payments are sorted by `paidAt` on sync and in GET detail responses.
 - **Planning validation**: shared helpers in `lib/planning/validate.js`, `lib/planning/money-fields.js`, `lib/planning/prepaid-payments.js`, and `lib/planning/form-errors.js` (client-safe ObjectId checks via `lib/security/ids.js`, not Mongoose).
 - **TaskProcessorRun**: one document per business date — tracks pending/running/completed rollover batches and failures.
+- **TaskProcessorDailySession**: one document per processor calendar day — blocks duplicate successful runs (automatic or manual) until the next day.
 - **Thoughts / Plans**: metadata + relationship edges to other entities.
 - **Important information**: standalone records (`title`, `category`, `subjectName`, `value`, `notes`) — list/detail CRUD without task/plan links; values omitted from list API projection.
 - **Categories**: labels for task organization; list UI supports search; delete reassigns tasks to **Unassigned** (`lib/categories/unassigned.js`).
@@ -212,7 +216,7 @@ All runtime secrets and connection strings are loaded through **`lib/env.js`** (
 | `APP_PASSWORD_HASH_B64`    | Yes      | Login                 | Base64 bcrypt hash (`node scripts/hash-password.mjs` prints this)                            |
 | `APP_PASSWORD_HASH`        | No       | Login                 | Raw `$2b$…` only if env loader preserves `$` (Next.js does not)                              |
 | `SCHEDULE_PUBLIC_HOLIDAYS` | No       | Scheduling            | Comma-separated `YYYY-MM-DD` dates when holiday exclusion is enabled                         |
-| `TASK_PROCESSOR_TIMEZONE`  | No       | Task processor        | IANA zone for rollover “business date” and 11 PM cutoff; defaults to schedule timezone       |
+| `TASK_PROCESSOR_TIMEZONE`  | No       | Task processor        | IANA zone for rollover business dates and midnight scheduling; defaults to schedule timezone |
 | `NODE_ENV`                 | Built-in | Runtime flags         | Set by platform (`production` on Vercel)                                                     |
 
 \*Provide **`MONGODB_URI`**, or **`MONGODB_USERNAME`** + **`MONGODB_PASSWORD`** (optional **`MONGODB_HOST`**).
@@ -244,7 +248,7 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 | **Dashboard**                | Aggregations + charts + recent activity lists + task calendar                    |
 | **Task scheduling**          | Fixed/flexible slots, conflicts, availability templates                          |
 | **Recurring / procedures**   | In-place next due date, completion recording, optional appointments              |
-| **Daily task processor**     | Post–11 PM rollover, catch-up runs, DB-backed progress, client step driver       |
+| **Daily task processor**     | Post–midnight rollover, catch-up runs, DB-backed progress, client step driver    |
 | **Theming**                  | Light/dark semantic CSS tokens                                                   |
 | **Error boundaries**         | Client render failures contained per shell / calendar / form calendar            |
 | **Activity logger**          | Optional client-only diagnostic log export                                       |

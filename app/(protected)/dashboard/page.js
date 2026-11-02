@@ -127,7 +127,7 @@ export default function DashboardPage() {
         <p className="page-lead">Overview of tasks, thoughts, and plans</p>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 xl:grid-cols-5">
         <SummaryCard label="Total tasks" value={s.totalTasks} />
         <SummaryCard label="To do" value={s.tasksToDo} />
         <SummaryCard label="In progress" value={s.tasksInProgress} />

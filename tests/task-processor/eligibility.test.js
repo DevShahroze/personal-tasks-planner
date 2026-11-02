@@ -46,7 +46,7 @@ describe("rollover eligibility", () => {
     assert.deepEqual(dates, ["2026-10-31"]);
   });
 
-  it("includes present-day tasks on manual rollover", () => {
+  it("includes present-day tasks on manual rollover only", () => {
     const now = new Date("2026-11-01T10:00:00.000+05:00");
     const todayTask = {
       status: "In Progress",

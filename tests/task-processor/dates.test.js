@@ -8,24 +8,24 @@ import {
 const TZ = "Asia/Karachi";
 
 describe("task-processor dates", () => {
-  it("queues next business date after last completed when calendar day advances", () => {
+  it("does not queue the current calendar day before the next midnight", () => {
     const now = new Date("2026-11-01T10:25:00.000+05:00");
     const pending = businessDatesNeedingRuns("2026-10-31", now, TZ);
-    assert.deepEqual(pending, ["2026-11-01"]);
+    assert.deepEqual(pending, []);
   });
 
-  it("queues today after prior business day completed when still before 11 PM", () => {
-    const now = new Date("2026-10-31T10:00:00.000+05:00");
+  it("queues yesterday after the prior business day completed", () => {
+    const now = new Date("2026-11-02T09:00:00.000+05:00");
     const end = latestRolloverBusinessYmd(now, TZ);
-    assert.equal(end, "2026-10-30");
-    const pending = businessDatesNeedingRuns("2026-10-30", now, TZ);
-    assert.deepEqual(pending, ["2026-10-31"]);
-  });
-
-  it("includes today after 11 PM local", () => {
-    const now = new Date("2026-11-01T23:30:00.000+05:00");
-    assert.equal(latestRolloverBusinessYmd(now, TZ), "2026-11-01");
+    assert.equal(end, "2026-11-01");
     const pending = businessDatesNeedingRuns("2026-10-31", now, TZ);
     assert.deepEqual(pending, ["2026-11-01"]);
+  });
+
+  it("uses the previous calendar day as the automatic rollover window", () => {
+    const now = new Date("2026-10-31T10:00:00.000+05:00");
+    assert.equal(latestRolloverBusinessYmd(now, TZ), "2026-10-30");
+    const pending = businessDatesNeedingRuns("2026-10-29", now, TZ);
+    assert.deepEqual(pending, ["2026-10-30"]);
   });
 });

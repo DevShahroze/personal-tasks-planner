@@ -35,7 +35,9 @@ export default function ToastHost() {
           className={`pointer-events-auto rounded-md border px-3 py-2 text-sm shadow-lg ${
             toast.variant === "success"
               ? "border-success/30 bg-card text-foreground"
-              : "border-destructive/40 bg-card text-foreground"
+              : toast.variant === "info"
+                ? "border-primary/30 bg-card text-foreground"
+                : "border-destructive/40 bg-card text-foreground"
           }`}
         >
           <p className="font-medium">{toast.message}</p>

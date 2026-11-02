@@ -17,6 +17,12 @@ const taskProcessorRunSchema = new mongoose.Schema(
       default: "pending",
       index: true,
     },
+    executionType: {
+      type: String,
+      enum: ["automatic", "manual"],
+      default: "automatic",
+      index: true,
+    },
     timezone: { type: String, required: true },
     taskIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Task" }],
     processedTaskIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Task" }],
@@ -24,6 +30,7 @@ const taskProcessorRunSchema = new mongoose.Schema(
     startedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
     lastStepAt: { type: Date, default: null },
+    errorSummary: { type: String, default: "" },
   },
   { timestamps: true },
 );
