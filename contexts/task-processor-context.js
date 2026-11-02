@@ -48,12 +48,12 @@ function TaskProcessorShellGate({ children }) {
 }
 
 export function TaskProcessorNavStatus({ className = "", layout = "inline" }) {
-  const { navLastRunLabel, active, driveProcessor } = useTaskProcessor();
+  const { navLastRunLabel, locked, driving, driveProcessor } = useTaskProcessor();
   const confirm = useConfirm();
   const [manualPending, setManualPending] = useState(false);
 
   const onManualRun = async () => {
-    if (active || manualPending) {
+    if (locked || driving || manualPending) {
       return;
     }
     const ok = await confirm({
@@ -77,8 +77,8 @@ export function TaskProcessorNavStatus({ className = "", layout = "inline" }) {
     }
   };
 
-  const runLabel = manualPending || active ? "Running…" : "Run rollover";
-  const lastRunTitle = active
+  const runLabel = manualPending || locked || driving ? "Running…" : "Run rollover";
+  const lastRunTitle = locked
     ? "Daily task processor is running"
     : `Last daily task processor run: ${navLastRunLabel}`;
 
@@ -94,7 +94,7 @@ export function TaskProcessorNavStatus({ className = "", layout = "inline" }) {
           type="button"
           variant="secondary"
           className="w-full text-xs"
-          disabled={active || manualPending}
+          disabled={locked || driving || manualPending}
           onClick={onManualRun}
         >
           {runLabel}
@@ -116,10 +116,10 @@ export function TaskProcessorNavStatus({ className = "", layout = "inline" }) {
         type="button"
         variant="secondary"
         className="shrink-0 px-2 py-0.5 text-[0.6875rem]"
-        disabled={active || manualPending}
+        disabled={locked || driving || manualPending}
         onClick={onManualRun}
       >
-        {manualPending || active ? "Running…" : "Run"}
+        {manualPending || locked || driving ? "Running…" : "Run"}
       </Button>
     </div>
   );

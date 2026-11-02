@@ -15,6 +15,7 @@ import {
   validateRecurrence,
 } from "@/lib/recurrence/validate";
 import { applyRecurrenceCompletion } from "@/lib/recurrence/calculate";
+import { applySetRecurrenceOccurrenceStatus } from "@/lib/recurrence/occurrence-status";
 import { normalizeRecurrence } from "@/lib/recurrence/defaults";
 import { assertNoScheduleConflicts } from "@/lib/scheduling/conflicts";
 import { alignTaskDateAndSchedule } from "@/lib/scheduling/align-task-date";
@@ -171,13 +172,31 @@ export async function PATCH(request, { params }) {
     patch.recurrence = validated.value;
   }
 
+  if (body.setRecurrenceOccurrenceStatus !== undefined) {
+    const applied = applySetRecurrenceOccurrenceStatus(
+      existing.recurrence,
+      body.setRecurrenceOccurrenceStatus,
+      timeZone,
+    );
+    if (!applied.ok) {
+      return jsonError(applied.error || "Invalid occurrence status", 422);
+    }
+    patch.recurrence = applied.recurrence;
+  }
+
   if (body.parentTaskId !== undefined) {
     return jsonError("Parent task cannot be changed from this endpoint", 400);
   }
 
   const previousStatus = existing.status;
 
-  if (patch.status === "Completed" && !existing.parentTaskId) {
+  const occurrenceStatusCompleted =
+    body.setRecurrenceOccurrenceStatus?.status === "Completed";
+
+  if (
+    (patch.status === "Completed" || occurrenceStatusCompleted) &&
+    !existing.parentTaskId
+  ) {
     const incomplete = await findIncompleteSubtasks(id);
     if (incomplete.length) {
       return jsonIncompleteSubtasks(

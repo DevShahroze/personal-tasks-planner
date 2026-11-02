@@ -9,6 +9,7 @@ import { validateRecurrence } from "../../lib/recurrence/validate.js";
 import { defaultRecurrence } from "../../lib/recurrence/defaults.js";
 import { buildMonthCells, shiftMonth } from "../../lib/calendar/constants.js";
 import { buildCalendarEntriesForTask } from "../../lib/calendar/task-entries.js";
+import { applySetRecurrenceOccurrenceStatus } from "../../lib/recurrence/occurrence-status.js";
 
 const TZ = "Asia/Karachi";
 
@@ -102,6 +103,47 @@ test("calendar entries distinguish scheduled, deadline, and recurring due", () =
   const entries = buildCalendarEntriesForTask(task);
   const kinds = entries.map((entry) => entry.kind).sort();
   assert.deepEqual(kinds, ["deadline", "recurringDue", "scheduled"]);
+});
+
+test("recurring calendar due uses per-occurrence status defaulting to To Do", () => {
+  const task = {
+    _id: "507f1f77bcf86cd799439011",
+    title: "Meds",
+    status: "Completed",
+    priority: "Medium",
+    schedule: { timezone: TZ },
+    recurrence: {
+      enabled: true,
+      interval: 1,
+      unit: "months",
+      nextDueDate: new Date("2026-07-10T00:00:00.000Z"),
+      occurrenceStatuses: [{ ymd: "2026-06-10", status: "In Progress" }],
+    },
+  };
+  const entries = buildCalendarEntriesForTask(task);
+  const recurring = entries.find((entry) => entry.kind === "recurringDue");
+  assert.equal(recurring.status, "To Do");
+});
+
+test("occurrence status patch keeps other dates at To Do", () => {
+  const base = {
+    ...defaultRecurrence(),
+    enabled: true,
+    interval: 1,
+    unit: "months",
+    lastProcedureDate: new Date("2026-05-10T00:00:00.000Z"),
+  };
+  const applied = applySetRecurrenceOccurrenceStatus(
+    base,
+    { ymd: "2026-06-10", status: "In Progress" },
+    TZ,
+  );
+  assert.equal(applied.ok, true);
+  assert.equal(
+    applied.recurrence.occurrenceStatuses.find((item) => item.ymd === "2026-06-10")
+      ?.status,
+    "In Progress",
+  );
 });
 
 test("calendar omits taskDate when scheduledStart is on the same day", () => {

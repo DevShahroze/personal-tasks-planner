@@ -13,7 +13,13 @@ import Spinner from "@/components/ui/spinner";
 import EmptyState from "@/components/ui/empty-state";
 import { formatDate, formatDateTime } from "@/lib/format";
 import Badge from "@/components/ui/badge";
-import { priorityBadgeClass, statusBadgeClass } from "@/lib/task-badges";
+import { priorityBadgeClass } from "@/lib/task-badges";
+import TaskStatusSelect from "@/components/tasks/task-status-select";
+import { useUpdateTaskMutation } from "@/hooks/use-tasks";
+import {
+  buildTaskStatusPatch,
+  displayStatusForTaskListRow,
+} from "@/lib/calendar/task-status-update";
 
 function FilterField({ children }) {
   return <div className="relative min-w-0 focus-within:z-50">{children}</div>;
@@ -48,6 +54,22 @@ export default function TasksPage() {
   );
 
   const tasksQuery = useTasks(filters);
+  const updateTask = useUpdateTaskMutation();
+  const [pendingStatusTaskId, setPendingStatusTaskId] = useState(null);
+
+  const onTaskStatusChange = async (task, status) => {
+    setPendingStatusTaskId(task._id);
+    try {
+      await updateTask.mutateAsync({
+        id: task._id,
+        body: buildTaskStatusPatch(task, status),
+      });
+    } catch {
+      // API toast
+    } finally {
+      setPendingStatusTaskId(null);
+    }
+  };
 
   return (
     <div className="page-stack">
@@ -174,31 +196,37 @@ export default function TasksPage() {
               </tr>
             </thead>
             <tbody>
-              {tasksQuery.data.items.map((task) => (
-                <tr key={task._id} className="border-t border-border">
-                  <td className="px-3 py-2">
-                    <Link
-                      href={`/tasks/${task._id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {task.title}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2">
-                    <Badge className={statusBadgeClass(task.status)}>
-                      {task.status}
-                    </Badge>
-                  </td>
-                  <td className="px-3 py-2">
-                    <Badge className={priorityBadgeClass(task.priority)}>
-                      {task.priority}
-                    </Badge>
-                  </td>
-                  <td className="px-3 py-2">{task.category?.name || "—"}</td>
-                  <td className="px-3 py-2">{formatDate(task.taskDate)}</td>
-                  <td className="px-3 py-2">{formatDateTime(task.updatedAt)}</td>
-                </tr>
-              ))}
+              {tasksQuery.data.items.map((task) => {
+                const rowStatus = displayStatusForTaskListRow(task);
+                return (
+                  <tr key={task._id} className="border-t border-border">
+                    <td className="px-3 py-2">
+                      <Link
+                        href={`/tasks/${task._id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {task.title}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-2">
+                      <TaskStatusSelect
+                        value={rowStatus}
+                        pending={pendingStatusTaskId === task._id}
+                        aria-label={`Status for ${task.title}`}
+                        onChange={(status) => onTaskStatusChange(task, status)}
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <Badge className={priorityBadgeClass(task.priority)}>
+                        {task.priority}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-2">{task.category?.name || "—"}</td>
+                    <td className="px-3 py-2">{formatDate(task.taskDate)}</td>
+                    <td className="px-3 py-2">{formatDateTime(task.updatedAt)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

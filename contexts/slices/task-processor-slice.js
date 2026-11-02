@@ -39,7 +39,7 @@ export function useTaskProcessorSlice() {
     ...taskProcessorStatusQueryOptions(),
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (drivingRef.current || data?.locked) {
+      if (drivingRef.current || data?.locked || data?.shouldRun) {
         return 2000;
       }
       return false;
@@ -98,6 +98,7 @@ export function useTaskProcessorSlice() {
       driveRef.current = false;
       drivingRef.current = false;
       setDriving(false);
+      await refreshStatus();
       if (didRunSteps) {
         invalidateTaskViewsAfterRun();
       }
@@ -164,7 +165,7 @@ export function useTaskProcessorSlice() {
   }, [status?.run]);
 
   const navLastRunLabel = useMemo(() => {
-    if (active) {
+    if (locked) {
       return "Running…";
     }
     const completedAt = status?.lastCompleted?.completedAt;
@@ -172,7 +173,7 @@ export function useTaskProcessorSlice() {
       return "Not run yet";
     }
     return formatDateTime(completedAt, status?.timezone);
-  }, [active, status?.lastCompleted?.completedAt, status?.timezone]);
+  }, [locked, status?.lastCompleted?.completedAt, status?.timezone]);
 
   return useMemo(
     () => ({

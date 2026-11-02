@@ -137,6 +137,15 @@ const taskSchema = new mongoose.Schema(
       },
       procedureDetails: { type: String, default: "" },
       nextAppointmentDate: { type: Date, default: null },
+      occurrenceStatuses: {
+        type: [
+          {
+            ymd: { type: String, required: true },
+            status: { type: String, enum: TASK_STATUSES, required: true },
+          },
+        ],
+        default: () => [],
+      },
     },
     linkedThoughts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Thought" }],
     linkedPlans: [{ type: mongoose.Schema.Types.ObjectId, ref: "Plan" }],
