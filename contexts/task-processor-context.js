@@ -59,21 +59,10 @@ export function TaskProcessorNavStatus({ className = "", layout = "inline" }) {
     if (locked || driving || manualPending) {
       return;
     }
-    if (status?.completedToday) {
-      toastError("Task Runner already completed for today");
-      return;
-    }
-    if (!status?.canManualRun) {
-      toastError(
-        "Nothing to roll over",
-        "Only open To Do / In Progress tasks with a date on or before today are eligible.",
-      );
-      return;
-    }
     const ok = await confirm({
       title: "Run task rollover now?",
       description:
-        "Incomplete To Do and In Progress tasks scheduled on or before today will move to the next day. Editing is paused while this runs. You can only run once per day after a successful completion.",
+        "Rolls eligible overdue To Do / In Progress tasks forward. Editing is paused while this runs. You can run manual rollover as many times as you want.",
       confirmLabel: "Run rollover",
       variant: "primary",
     });

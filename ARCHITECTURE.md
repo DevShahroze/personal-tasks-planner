@@ -165,7 +165,7 @@ See [SECURITY.md](./SECURITY.md) for audit detail.
 ### 3.8 Daily task processor
 
 - **Purpose:** Move incomplete scheduled tasks forward after **midnight** on each new calendar day in the processor timezone (`TASK_PROCESSOR_TIMEZONE` or default schedule timezone). Automatic and manual runs share the same business-date rules (prior calendar days only).
-- **Once per calendar day:** `TaskProcessorDailySession` records whether today’s runner already **completed** successfully; `GET /api/task-processor/status` exposes `calendarDateYmd`, `completedToday`, `canManualRun`, and `shouldRun`.
+- **Automatic once per calendar day:** `TaskProcessorDailySession` blocks repeat **automatic** success the same day. **Manual** rollover is always available while the processor is idle (`canManualRun`); it is not limited by overdue count or prior completion today.
 - **Server:** `lib/task-processor/*` — date math, candidate selection (`ROLLOVER_OPEN_STATUSES`), batched updates (`PROCESSOR_BATCH_SIZE`), stale-run recovery (`PROCESSOR_STALE_MS`), catch-up up to `PROCESSOR_MAX_CATCHUP_DAYS`, atomic pending→running acquisition per step, failed business runs when any task errors.
 - **Persistence:** `TaskProcessorRun` (per business date batch) and `TaskProcessorDailySession` (per processor calendar day).
 - **Client:** Protected layout wraps `TaskProcessorProvider`; auto-drive once per processor calendar day when `shouldRun` (browser midnight via `useClientTodayYmd` triggers a fresh status check), cross-tab coordination (`lib/task-processor/client-driver-coordination.js`), toasts on start/complete/fail.

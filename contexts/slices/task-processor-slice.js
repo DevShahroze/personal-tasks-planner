@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { taskProcessorApi } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/format";
-import { taskProcessorStatusQueryOptions } from "@/lib/query-cache";
+import {
+  taskProcessorStatusQueryOptions,
+  TASK_PROCESSOR_STATUS_POLL_MS,
+} from "@/lib/query-cache";
 import { getQueryClient, queryKeys } from "@/lib/query-client";
 import { useClientTodayYmd } from "@/hooks/use-client-today";
 import { toastError, toastInfo, toastSuccess } from "@/lib/toast-bus";
@@ -18,6 +21,7 @@ import {
 } from "@/lib/task-processor/client-driver-coordination";
 
 const AUTO_DRIVE_YMD_KEY = "__ptpTaskProcessorAutoDriveYmd";
+const TASK_PROCESSOR_ACTIVE_POLL_MS = 2500;
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -50,12 +54,9 @@ export function useTaskProcessorSlice() {
     refetchInterval: (query) => {
       const data = query.state.data;
       if (drivingRef.current || data?.locked) {
-        return 2500;
+        return TASK_PROCESSOR_ACTIVE_POLL_MS;
       }
-      if (data?.shouldRun && isAnotherTabDrivingProcessor()) {
-        return 3000;
-      }
-      return false;
+      return TASK_PROCESSOR_STATUS_POLL_MS;
     },
   });
 
@@ -124,14 +125,14 @@ export function useTaskProcessorSlice() {
           staleTime: 0,
         });
         if (!current.locked) {
-          if (trigger === "manual" && !current.canManualRun) {
-            return;
-          }
           if (trigger !== "manual" && !current.shouldRun) {
             return;
           }
         }
-        if ((current.shouldRun || current.canManualRun) && !notifiedStart) {
+        if (
+          (trigger === "manual" || current.shouldRun || current.locked) &&
+          !notifiedStart
+        ) {
           notifiedStart = true;
           toastInfo(
             trigger === "manual"
@@ -141,9 +142,7 @@ export function useTaskProcessorSlice() {
           );
         }
         let guard = 0;
-        const shouldDrive = (data) =>
-          data.locked || (trigger === "manual" ? data.canManualRun : data.shouldRun);
-        while (shouldDrive(current) && guard < 500) {
+        while (guard < 500) {
           refreshProcessorDriverLock();
           if (current.locked && isAnotherTabDrivingProcessor()) {
             await sleep(800);
@@ -165,10 +164,35 @@ export function useTaskProcessorSlice() {
             guard += 1;
             continue;
           }
-          if (!shouldDrive(current)) {
+          if (trigger !== "manual" && !current.shouldRun && !current.locked) {
             break;
           }
-          const stepResult = await taskProcessorApi.step({ executionType: trigger });
+          if (trigger === "manual" && guard > 0 && lastStepDone) {
+            break;
+          }
+          let stepResult;
+          try {
+            stepResult = await taskProcessorApi.step({ executionType: trigger });
+          } catch (err) {
+            if (err.status === 409 && err.processorStatus) {
+              current = err.processorStatus;
+              queryClient.setQueryData(queryKeys.taskProcessor.status, current);
+              if (current.locked && !didRunSteps) {
+                await sleep(800);
+              } else if (
+                trigger !== "manual" &&
+                !current.shouldRun &&
+                !current.locked
+              ) {
+                break;
+              } else if (trigger === "manual" && lastStepDone) {
+                break;
+              }
+              guard += 1;
+              continue;
+            }
+            throw err;
+          }
           didRunSteps = true;
           lastStepDone = Boolean(stepResult.done);
           current = stepResult.status;
@@ -179,7 +203,12 @@ export function useTaskProcessorSlice() {
           }
           guard += 1;
         }
-        if (didRunSteps && !lastStepDone && !current.shouldRun && !current.locked) {
+        if (
+          didRunSteps &&
+          !lastStepDone &&
+          !current.locked &&
+          (trigger === "manual" || !current.shouldRun)
+        ) {
           notifyRunOutcome(current, trigger);
         }
       } catch {

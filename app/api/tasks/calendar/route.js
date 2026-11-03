@@ -90,7 +90,7 @@ export async function GET(request) {
   const financialCalendarOr = [{ expectedDate: { $gte: rangeStart, $lte: rangeEnd } }];
   if (todayStart && todayStart >= rangeStart && todayStart <= rangeEnd) {
     financialCalendarOr.push({
-      type: { $in: ["money_lent", "money_borrowed"] },
+      type: { $in: ["money_lent", "money_borrowed", "receivable"] },
       expectedDate: { $lt: todayStart },
     });
   }

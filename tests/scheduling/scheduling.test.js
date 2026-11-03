@@ -352,6 +352,7 @@ test("buildRolloverPatch skips Sunday when visit days are Mon–Sat", () => {
       },
     },
   };
-  const patch = buildRolloverPatch(task, "2026-10-31");
+  const now = new Date("2026-11-01T10:00:00.000+05:00");
+  const patch = buildRolloverPatch(task, "2026-10-31", now, TZ);
   assert.equal(ymdInTimeZone(patch.taskDate, TZ), "2026-11-02");
 });

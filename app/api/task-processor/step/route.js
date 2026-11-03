@@ -1,12 +1,13 @@
 import { connectDB } from "@/lib/mongodb.js";
 import { requireAuth } from "@/lib/auth";
-import { jsonError, jsonOk } from "@/lib/api-response";
+import { jsonOk } from "@/lib/api-response";
 import { runProcessorStep } from "@/lib/task-processor/run.js";
+import { NextResponse } from "next/server";
 
 export async function POST(request) {
   const auth = await requireAuth();
   if (auth.error) {
-    return jsonError(auth.error, auth.status);
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   let executionType = "automatic";
@@ -22,7 +23,10 @@ export async function POST(request) {
   await connectDB();
   const result = await runProcessorStep({ executionType });
   if (!result.ok) {
-    return jsonError(result.error, 409, undefined);
+    return NextResponse.json(
+      { error: result.error, status: result.status },
+      { status: 409 },
+    );
   }
   return jsonOk(result);
 }

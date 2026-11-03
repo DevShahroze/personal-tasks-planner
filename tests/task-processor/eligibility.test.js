@@ -46,7 +46,7 @@ describe("rollover eligibility", () => {
     assert.deepEqual(dates, ["2026-10-31"]);
   });
 
-  it("includes present-day tasks on manual rollover only", () => {
+  it("never rolls present-day tasks (manual or automatic)", () => {
     const now = new Date("2026-11-01T10:00:00.000+05:00");
     const todayTask = {
       status: "In Progress",
@@ -54,9 +54,5 @@ describe("rollover eligibility", () => {
       schedule: { mode: "unscheduled", timezone: TZ },
     };
     assert.equal(taskShouldRollNow(todayTask, now, TZ, STATUSES), false);
-    assert.equal(
-      taskShouldRollNow(todayTask, now, TZ, STATUSES, { manual: true }),
-      true,
-    );
   });
 });
