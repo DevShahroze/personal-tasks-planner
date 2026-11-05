@@ -8,7 +8,7 @@ import {
   taskProcessorStatusQueryOptions,
   TASK_PROCESSOR_STATUS_POLL_MS,
 } from "@/lib/query-cache";
-import { getQueryClient, queryKeys } from "@/lib/query-client";
+import { queryKeys } from "@/lib/query-client";
 import { useClientTodayYmd } from "@/hooks/use-client-today";
 import { toastError, toastInfo, toastSuccess } from "@/lib/toast-bus";
 import {
@@ -29,13 +29,15 @@ function sleep(ms) {
   });
 }
 
-function invalidateTaskViewsAfterRun() {
-  const client = getQueryClient();
-  client.invalidateQueries({ queryKey: ["tasks"] });
-  client.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
-  client.invalidateQueries({ queryKey: queryKeys.dashboard.charts });
-  client.invalidateQueries({ queryKey: queryKeys.dashboard.listings });
-  client.invalidateQueries({ queryKey: ["tasks", "calendar"] });
+function refreshTaskViewsAfterRollover(queryClient) {
+  queryClient.invalidateQueries({ queryKey: ["tasks"] });
+  queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
+  queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.charts });
+  queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.listings });
+  return queryClient.refetchQueries({
+    queryKey: ["tasks", "calendar"],
+    type: "all",
+  });
 }
 
 /** Daily rollover driver — used only under protected layout via TaskProcessorProvider. */
@@ -46,12 +48,33 @@ export function useTaskProcessorSlice() {
   const driveRef = useRef(false);
   const drivingRef = useRef(false);
   const notificationRunIdRef = useRef(null);
+  const wasLockedRef = useRef(false);
+  const tabVisibleRef = useRef(true);
+  const [tabVisible, setTabVisible] = useState(true);
+
+  useEffect(() => {
+    const syncVisibility = () => {
+      const visible = document.visibilityState === "visible";
+      tabVisibleRef.current = visible;
+      setTabVisible(visible);
+      if (!visible && !driveRef.current && !drivingRef.current) {
+        void queryClient.cancelQueries({ queryKey: queryKeys.taskProcessor.status });
+      }
+    };
+    syncVisibility();
+    document.addEventListener("visibilitychange", syncVisibility);
+    return () => document.removeEventListener("visibilitychange", syncVisibility);
+  }, [queryClient]);
 
   const statusQuery = useQuery({
     queryKey: queryKeys.taskProcessor.status,
-    queryFn: taskProcessorApi.status,
+    queryFn: ({ signal }) => taskProcessorApi.status({ signal }),
+    enabled: tabVisible,
     ...taskProcessorStatusQueryOptions(),
     refetchInterval: (query) => {
+      if (!tabVisibleRef.current) {
+        return false;
+      }
       const data = query.state.data;
       if (drivingRef.current || data?.locked) {
         return TASK_PROCESSOR_ACTIVE_POLL_MS;
@@ -224,7 +247,7 @@ export function useTaskProcessorSlice() {
         releaseProcessorDriverLock();
         await refreshStatus();
         if (didRunSteps) {
-          invalidateTaskViewsAfterRun();
+          await refreshTaskViewsAfterRollover(queryClient);
         }
       }
     },
@@ -232,7 +255,18 @@ export function useTaskProcessorSlice() {
   );
 
   useEffect(() => {
+    const wasLocked = wasLockedRef.current;
+    wasLockedRef.current = Boolean(status?.locked);
+    if (wasLocked && !status?.locked) {
+      void refreshTaskViewsAfterRollover(queryClient);
+    }
+  }, [queryClient, status?.locked]);
+
+  useEffect(() => {
     return subscribeProcessorDriverEvents(() => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
       void refreshStatus();
     });
   }, [refreshStatus]);
