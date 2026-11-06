@@ -26,6 +26,7 @@ import {
 import {
   buildTourCalendarEntries,
   buildInstallmentCalendarEntries,
+  buildKametiCalendarEntries,
   buildSubscriptionCalendarEntries,
 } from "../../lib/calendar/planning-entries.js";
 import { planningDueCalendarYmd } from "../../lib/calendar/planning-calendar-display.js";
@@ -105,6 +106,64 @@ test("installment calendar entry pins unpaid due date to today in viewed month",
   assert.equal(entries.length, 1);
   assert.equal(entries[0].ymd, "2026-11-15");
   assert.match(entries[0].title, /October 2026/);
+});
+
+test("closed-ended installment stacks missed and current period in calendar month", () => {
+  const entries = buildInstallmentCalendarEntries(
+    {
+      _id: "507f1f77bcf86cd799439011",
+      name: "Plot",
+      openEnded: false,
+      manualNextDueDate: false,
+      frequency: "monthly",
+      startDate: new Date("2026-11-01T12:00:00.000Z"),
+      endDate: new Date("2027-12-31T12:00:00.000Z"),
+      totalAmount: 12000,
+      installmentAmount: 1000,
+      installmentsPaid: 0,
+      outstandingBalance: 2000,
+      payments: [],
+      status: "active",
+    },
+    {
+      todayYmd: "2026-12-10",
+      monthFirstYmd: "2026-12-01",
+      monthLastYmd: "2026-12-31",
+    },
+  );
+  assert.equal(entries.length, 2);
+  const titles = entries.map((e) => e.title).join(" | ");
+  assert.match(titles, /November 2026/);
+  assert.match(titles, /December 2026/);
+  assert.ok(entries.every((e) => e.ymd === "2026-12-10"));
+});
+
+test("Kameti calendar stacks missed and current unpaid rounds", () => {
+  const entries = buildKametiCalendarEntries(
+    {
+      _id: "507f1f77bcf86cd799439011",
+      planName: "Office group",
+      totalParticipants: 3,
+      contributionAmount: 100,
+      contributionFrequency: "monthly",
+      startDate: new Date("2026-11-01T12:00:00.000Z"),
+      contributionsPaidCount: 0,
+      contributionPayments: [],
+      remainingContributionsOwed: 300,
+      status: "active",
+    },
+    {
+      todayYmd: "2026-12-10",
+      monthFirstYmd: "2026-12-01",
+      monthLastYmd: "2026-12-31",
+    },
+  );
+  const contrib = entries.filter((e) => e.kind === "kametiContributionDue");
+  assert.equal(contrib.length, 2);
+  const titles = contrib.map((e) => e.title).join(" | ");
+  assert.match(titles, /November 2026/);
+  assert.match(titles, /December 2026/);
+  assert.ok(contrib.every((e) => e.ymd === "2026-12-10"));
 });
 
 test("subscription calendar shows future billing on scheduled day", () => {

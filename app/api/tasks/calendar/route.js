@@ -21,6 +21,10 @@ import {
   buildApplicationCalendarEntries,
   buildTourCalendarEntries,
 } from "@/lib/calendar/planning-entries.js";
+import { syncInstallmentCommitment } from "@/lib/planning/installments.js";
+import { syncKametiPlan } from "@/lib/planning/kameti.js";
+import { syncSubscription } from "@/lib/planning/subscriptions.js";
+import { syncInsurancePolicy } from "@/lib/planning/insurance.js";
 import { TOP_LEVEL_PARENT_FILTER } from "@/lib/subtasks/constants";
 import { calendarTaskId } from "@/lib/calendar/calendar-task-id.js";
 import Task from "@/models/Task";
@@ -199,6 +203,27 @@ export async function GET(request) {
     }).lean(),
   ]);
 
+  const installmentsForCalendar = installments.map((doc) => {
+    const copy = { ...doc };
+    syncInstallmentCommitment(copy, todayYmd);
+    return copy;
+  });
+  const kametiPlansForCalendar = kametiPlans.map((doc) => {
+    const copy = { ...doc };
+    syncKametiPlan(copy, todayYmd);
+    return copy;
+  });
+  const subscriptionsForCalendar = subscriptions.map((doc) => {
+    const copy = { ...doc };
+    syncSubscription(copy, todayYmd);
+    return copy;
+  });
+  const insurancePoliciesForCalendar = insurancePolicies.map((doc) => {
+    const copy = { ...doc };
+    syncInsurancePolicy(copy, todayYmd);
+    return copy;
+  });
+
   const parentTitleById = Object.fromEntries(
     topLevelTasks.map((task) => [calendarTaskId(task._id), task.title]),
   );
@@ -260,21 +285,24 @@ export async function GET(request) {
       monthLastYmd: lastDay,
     }),
     indexPlanningEntriesByYmd(
-      installments,
+      installmentsForCalendar,
       buildInstallmentCalendarEntries,
       planningCalendarOptions,
     ),
     indexPlanningEntriesByYmd(
-      kametiPlans,
+      kametiPlansForCalendar,
       buildKametiCalendarEntries,
       planningCalendarOptions,
     ),
     indexPlanningEntriesByYmd(
-      subscriptions,
+      subscriptionsForCalendar,
       buildSubscriptionCalendarEntries,
       planningCalendarOptions,
     ),
-    indexPlanningEntriesByYmd(insurancePolicies, buildInsuranceCalendarEntries),
+    indexPlanningEntriesByYmd(
+      insurancePoliciesForCalendar,
+      buildInsuranceCalendarEntries,
+    ),
     indexPlanningEntriesByYmd(applications, buildApplicationCalendarEntries),
     indexPlanningEntriesByYmd(tours, buildTourCalendarEntries),
   );
