@@ -18,7 +18,7 @@ Do **not** change global or local `git config`. Set the author **per commit** on
 
 ## One local pre-check command
 
-Formats the repo, then runs the same gate as Husky (Playwright on port **3001**, **`CI=1`**):
+Formats the repo, then runs the same gate as Husky (`CI=1`):
 
 ```bash
 npm run prepush:local
@@ -28,30 +28,7 @@ Underlying scripts: `format:fix` → `validate:ci` (see [package.json](./package
 
 ### What `validate:ci` runs
 
-ESLint, Prettier check, unit tests (security, **activity**, scheduling, recurrence, client-today, format, subtasks, finance, planning), dependency audit, production build, Playwright hydration tests.
-
-### Hydration notes
-
-- Needs **MongoDB** (see [HYDRATION.md](./HYDRATION.md)).
-- Stop `npm run dev` on **:3000** if hydration login fails; `validate:ci` avoids reusing that server.
-
-### Playwright browser missing
-
-If hydration fails with **`Executable doesn't exist`** under `playwright/chromium_headless_shell`:
-
-```bash
-PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium
-```
-
-Re-run pre-check with browsers in the project (recommended for agents):
-
-```bash
-PLAYWRIGHT_BROWSERS_PATH=0 npm run prepush:local
-```
-
-### Flaky hydration setup
-
-The **`authenticate for hydration suite`** setup test can time out once on a cold server, then pass on retry. If the run ends with **1 flaky** and a non-zero exit, **re-run `prepush:local` once** before changing application code.
+ESLint, Prettier check, unit tests (security, **activity**, scheduling, recurrence, client-today, format, subtasks, finance, planning), dependency audit, production build.
 
 ### Already on remote
 
@@ -81,8 +58,7 @@ If there is **nothing to commit** but the user asked to push, run **`git fetch o
 
 ```bash
 cd /path/to/personal-tasks-planner && \
-PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium 2>/dev/null || true && \
-PLAYWRIGHT_BROWSERS_PATH=0 npm run prepush:local && \
+npm run prepush:local && \
 git add -A && \
 git diff --cached --quiet || git commit --author="DevShahroze <DevShahroze@users.noreply.github.com>" -m "$(cat <<'EOF'
 Your commit message here.
@@ -92,7 +68,7 @@ EOF
 git push
 ```
 
-Use a long `block_until_ms` (e.g. 600000) on that Shell call — validate + hydration takes several minutes. Husky runs `validate:ci` again on push; that is expected.
+Use a long `block_until_ms` (e.g. 600000) on that Shell call — validate + build can take several minutes. Husky runs `validate:ci` again on push; that is expected.
 
 If **`prepush:local` fails**: fix the reported issue, then run **one** new chained command (same shape). Do not commit until `prepush:local` succeeds.
 
@@ -104,8 +80,7 @@ Do **not** commit or push unless the user asked for it.
 
 | Step                    | Command                                                         |
 | ----------------------- | --------------------------------------------------------------- |
-| Pre-check (once)        | `PLAYWRIGHT_BROWSERS_PATH=0 npm run prepush:local`              |
-| Install Playwright      | `PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium`    |
+| Pre-check (once)        | `npm run prepush:local`                                         |
 | Hook / CI validate only | `npm run validate:ci`                                           |
 | Commit author           | `--author="DevShahroze <DevShahroze@users.noreply.github.com>"` |
 | Push                    | `git push` (Husky → `validate:ci`)                              |

@@ -57,7 +57,6 @@ Open [http://localhost:3000](http://localhost:3000) and sign in.
 - `npm run test:finance` — financial balances, notes validation, calendar entries
 - `npm run test:planning` — installments (including prepaid payments), Kameti, subscriptions, tours schedule helpers
 - `npm run test:client-today` — cached client “today” snapshot (calendar hydration safety)
-- `npm run test:hydration` — Playwright against production build (`next start`); needs MongoDB
 - `npm run validate` — full quality gate (see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md); use **`npm run prepush:local`** before commit)
 
 **Before you push:** follow [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md) — one local gate: `npm run prepush:local`, then commit with `--author="DevShahroze <DevShahroze@users.noreply.github.com>"` and `git push` (Husky runs `npm run validate:ci`).

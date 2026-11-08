@@ -233,28 +233,26 @@ All runtime secrets and connection strings are loaded through **`lib/env.js`** (
 
 Client bundles **must not** import `lib/env.js`. There are **no** `NEXT_PUBLIC_` secrets.
 
-Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/CI tests only** and are not read by the app at runtime.
-
 ---
 
 ## 6. Cross-cutting features (generic catalog)
 
-| Feature                      | Description                                                                      |
-| ---------------------------- | -------------------------------------------------------------------------------- |
-| **Private auth**             | Cookie session, middleware + handler checks                                      |
-| **CRUD modules**             | Tasks, thoughts, plans, **important information**, categories                    |
-| **Privacy & session policy** | PIN screen lock, idle sign-out, configurable JWT lifetime (`AppSettings`)        |
-| **Structured task content**  | Checkbox / radio / table blocks with server validation                           |
-| **Entity relationships**     | Many-to-many style links between domain objects                                  |
-| **Dashboard**                | Aggregations + charts + recent activity lists + task calendar                    |
-| **Task scheduling**          | Fixed/flexible slots, conflicts, availability templates                          |
-| **Recurring / procedures**   | In-place next due date, completion recording, optional appointments              |
-| **Daily task processor**     | Post–midnight rollover, catch-up runs, DB-backed progress, client step driver    |
-| **Theming**                  | Light/dark semantic CSS tokens                                                   |
-| **Error boundaries**         | Client render failures contained per shell / calendar / form calendar            |
-| **Activity logger**          | Optional client-only diagnostic log export                                       |
-| **Quality gate**             | `npm run validate` — lint, format, security tests, audit, build, hydration tests |
-| **Pre-push hook**            | Husky: `npm run validate:ci` (see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md))      |
+| Feature                      | Description                                                                   |
+| ---------------------------- | ----------------------------------------------------------------------------- |
+| **Private auth**             | Cookie session, middleware + handler checks                                   |
+| **CRUD modules**             | Tasks, thoughts, plans, **important information**, categories                 |
+| **Privacy & session policy** | PIN screen lock, idle sign-out, configurable JWT lifetime (`AppSettings`)     |
+| **Structured task content**  | Checkbox / radio / table blocks with server validation                        |
+| **Entity relationships**     | Many-to-many style links between domain objects                               |
+| **Dashboard**                | Aggregations + charts + recent activity lists + task calendar                 |
+| **Task scheduling**          | Fixed/flexible slots, conflicts, availability templates                       |
+| **Recurring / procedures**   | In-place next due date, completion recording, optional appointments           |
+| **Daily task processor**     | Post–midnight rollover, catch-up runs, DB-backed progress, client step driver |
+| **Theming**                  | Light/dark semantic CSS tokens                                                |
+| **Error boundaries**         | Client render failures contained per shell / calendar / form calendar         |
+| **Activity logger**          | Optional client-only diagnostic log export                                    |
+| **Quality gate**             | `npm run validate` — lint, format, unit tests, audit, production build        |
+| **Pre-push hook**            | Husky: `npm run validate:ci` (see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md))   |
 
 ---
 
@@ -270,7 +268,7 @@ Optional variables (`PLAYWRIGHT_*`, `HYDRATION_TEST_PASSWORD`) are for **local/C
 ### Reliability / hydration
 
 - SSR/client parity for theme, logger, and loading states.
-- Automated Playwright hydration suite against **production build** (`next start`).
+- Unit test **`test:client-today`** and manual smoke checks; no browser E2E in the repo.
 
 ### Vercel / serverless resource discipline
 

@@ -62,26 +62,10 @@ Or validate only (same as Husky hook):
 npm run validate:ci
 ```
 
-Playwright starts **`next start`** (production server), watches the browser console for hydration errors, and covers:
-
-- Login load/refresh, theme toggle in login header
-- Authenticated direct loads and refreshes for all main routes
-- Client-side navigation, detail pages (sample ObjectId), logout
-
-Default test credentials (override with env):
-
-- `APP_USERNAME=hydration-user`
-- `HYDRATION_TEST_PASSWORD=hydration-test-pass`
-- `APP_PASSWORD_HASH_B64` — set by `playwright.config.mjs` for the test user (do not rely on your local `.env` `APP_USERNAME` when the web server is reused)
-
-MongoDB must accept connections for login/API during tests (`MONGODB_URI`, default `mongodb://127.0.0.1:27017/ptp-hydration-test`).
-
-**Local server reuse:** When `CI` is unset, Playwright **`reuseExistingServer: true`** — if something already listens on the Playwright port (default **3000**), tests hit that process instead of starting `next start` with hydration env. Symptom: auth setup times out on `/login` after sign-in. Mitigations: stop `npm run dev` on that port; use **`npm run prepush:local`** or **`npm run validate:ci`** (Husky pre-push; see [PUSH_CHECKLIST.md](./PUSH_CHECKLIST.md)).
+The quality gate runs lint, format, unit tests (including **`npm run test:client-today`** for the cached calendar “today” snapshot), dependency audit, and **`next build`**. There is no browser E2E suite; catch hydration regressions in the app and with client unit tests.
 
 ## Limitations
 
-- Playwright uses Chromium only; other browsers are not exercised.
-- Hydration tests require a reachable MongoDB instance (empty DB is fine).
 - In-memory rate limits and single-process behavior are unchanged from security docs.
 - Dashboard charts follow theme via CSS variables; no separate chart palette sync step.
 - API failure toasts mount only on the client after hydration (`ToastHost`); they do not change server HTML.

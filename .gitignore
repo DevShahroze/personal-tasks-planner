@@ -13,7 +13,6 @@
 # testing
 /coverage
 /test-results/
-/playwright-report/
 /tests/hydration/.auth/
 
 # next.js
