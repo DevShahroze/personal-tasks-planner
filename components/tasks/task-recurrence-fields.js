@@ -13,7 +13,7 @@ import TaskMonthCalendar from "@/components/calendar/task-month-calendar";
 import { validateYmdAgainstSchedule } from "@/lib/calendar/schedule-date-check";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
-import Textarea from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text/rich-text-editor";
 import Button from "@/components/ui/button";
 import Alert from "@/components/ui/alert";
 
@@ -283,7 +283,7 @@ export function TaskRecurrenceFields({
                 </label>
                 <label className="block space-y-1 text-sm md:col-span-2">
                   <span>Procedure details</span>
-                  <Textarea
+                  <RichTextEditor
                     rows={2}
                     value={recurrenceState.procedureDetails}
                     onChange={(event) =>

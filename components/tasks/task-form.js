@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/lib/constants";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
-import Textarea from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text/rich-text-editor";
+import { richTextToPlainText } from "@/lib/rich-text/plain-text";
 import Select from "@/components/ui/select";
 import Alert from "@/components/ui/alert";
 import TaskScheduleFields, {
@@ -192,9 +193,11 @@ export default function TaskForm({
             </label>
             <label className="block space-y-1 text-sm">
               <span>Description</span>
-              <Textarea
+              <RichTextEditor
                 name="description"
                 rows={4}
+                form={formId}
+                resetKey={`${taskId || "new"}:${initialValues?.updatedAt || ""}`}
                 defaultValue={initialValues?.description || ""}
               />
             </label>
@@ -206,8 +209,8 @@ export default function TaskForm({
                   disabled={creatingItemsFromDescription || submitting}
                   onClick={() => {
                     const form = document.getElementById(formId);
-                    const text = form?.elements?.description?.value ?? "";
-                    onCreateItemsFromDescription(text);
+                    const html = form?.elements?.description?.value ?? "";
+                    onCreateItemsFromDescription(richTextToPlainText(html));
                   }}
                 >
                   {creatingItemsFromDescription ? "Creating…" : "Create items"}

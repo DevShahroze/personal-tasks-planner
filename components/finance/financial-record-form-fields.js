@@ -6,7 +6,7 @@ import {
   DEFAULT_FINANCIAL_CURRENCY,
 } from "@/lib/finance/constants";
 import Input from "@/components/ui/input";
-import Textarea from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text/rich-text-editor";
 import Select from "@/components/ui/select";
 
 function dateInputValue(value) {
@@ -104,19 +104,21 @@ export default function FinancialRecordFormFields({
       </label>
       <label className="block space-y-1 text-sm">
         <span>Description</span>
-        <Textarea
+        <RichTextEditor
           id={`${idPrefix}-description`}
           name="description"
           rows={3}
+          resetKey={defaults?.updatedAt || defaults?._id || "new"}
           defaultValue={defaults?.description || ""}
         />
       </label>
       <label className="block space-y-1 text-sm">
         <span>Notes</span>
-        <Textarea
+        <RichTextEditor
           id={`${idPrefix}-notes`}
           name="notes"
           rows={3}
+          resetKey={`${defaults?.updatedAt || defaults?._id || "new"}-notes`}
           defaultValue={defaults?.notes || ""}
         />
       </label>

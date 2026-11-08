@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { FINANCIAL_STATUS_LABEL, FINANCIAL_TYPE_LABEL } from "@/lib/finance/constants";
+import { describeFinancialObligation } from "@/lib/finance/obligations";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
+import RichTextContent from "@/components/ui/rich-text/rich-text-content";
 
 function ViewSection({ title, children }) {
   if (!children) {
@@ -38,9 +40,25 @@ function DetailGrid({ rows }) {
 export default function FinancialRecordDetailView({ record }) {
   const taskId = record.taskId?._id || record.taskId;
   const taskTitle = record.taskId?.title;
+  const obligation = describeFinancialObligation(record);
 
   return (
     <div className="flex flex-col gap-4">
+      <div
+        className={`rounded-lg border px-4 py-3 ${
+          obligation.settled
+            ? "border-border bg-muted/30"
+            : obligation.direction === "receive"
+              ? "border-success/30 bg-success/5"
+              : "border-destructive/30 bg-destructive/5"
+        }`}
+      >
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {obligation.heading}
+        </p>
+        <p className="mt-1 text-lg font-semibold tabular-nums">{obligation.label}</p>
+      </div>
+
       <ViewSection title="Record details">
         <DetailGrid
           rows={[
@@ -56,6 +74,10 @@ export default function FinancialRecordDetailView({ record }) {
             },
             { label: "Currency", value: record.currency },
             {
+              label: obligation.heading,
+              value: obligation.shortLabel,
+            },
+            {
               label: "Outstanding",
               value: formatCurrency(record.outstandingBalance, record.currency),
             },
@@ -70,13 +92,13 @@ export default function FinancialRecordDetailView({ record }) {
         {record.description ? (
           <div className="mt-4 space-y-0.5">
             <p className="text-xs text-muted-foreground">Description</p>
-            <p className="whitespace-pre-wrap text-sm">{record.description}</p>
+            <RichTextContent html={record.description} />
           </div>
         ) : null}
         {record.notes ? (
           <div className="mt-4 space-y-0.5">
             <p className="text-xs text-muted-foreground">Notes</p>
-            <p className="whitespace-pre-wrap text-sm">{record.notes}</p>
+            <RichTextContent html={record.notes} />
           </div>
         ) : null}
         {taskId ? (

@@ -6,6 +6,7 @@ import { useClientTodayYmd } from "@/hooks/use-client-today";
 import { useFinancialRecords } from "@/hooks/use-financial-records";
 import { FINANCIAL_STATUS_LABEL, FINANCIAL_TYPE_LABEL } from "@/lib/finance/constants";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { describeFinancialObligation } from "@/lib/finance/obligations";
 import Button from "@/components/ui/button";
 import Select from "@/components/ui/select";
 import Spinner from "@/components/ui/spinner";
@@ -30,7 +31,7 @@ export default function FinancialRecordsPage() {
 
   const recordsQuery = useFinancialRecords(filters, Boolean(todayYmd));
   const items = recordsQuery.data?.items || [];
-  const outstandingTotals = recordsQuery.data?.summary?.outstandingByCurrency || [];
+  const obligationTotals = recordsQuery.data?.summary?.obligationsByCurrency || [];
 
   return (
     <div className="page-stack mx-auto max-w-4xl">
@@ -80,21 +81,31 @@ export default function FinancialRecordsPage() {
         />
       ) : (
         <>
-          {outstandingTotals.length ? (
+          {obligationTotals.length ? (
             <section className="dashboard-panel">
-              <div className="dashboard-panel-header">Total outstanding</div>
-              <div className="dashboard-panel-body space-y-2">
-                {outstandingTotals.map((row) => (
-                  <div
-                    key={row.currency}
-                    className="flex flex-wrap items-baseline justify-between gap-2"
-                  >
-                    <span className="text-sm text-muted-foreground">
-                      {outstandingTotals.length > 1 ? row.currency : "All records"}
-                    </span>
-                    <span className="text-lg font-semibold tabular-nums">
-                      {formatCurrency(row.outstanding, row.currency)}
-                    </span>
+              <div className="dashboard-panel-header">What you owe and are owed</div>
+              <div className="dashboard-panel-body space-y-4">
+                {obligationTotals.map((row) => (
+                  <div key={row.currency} className="space-y-2">
+                    {obligationTotals.length > 1 ? (
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        {row.currency}
+                      </p>
+                    ) : null}
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="rounded-md border border-success/25 bg-success/5 px-3 py-2">
+                        <p className="text-xs text-muted-foreground">To receive</p>
+                        <p className="text-lg font-semibold tabular-nums">
+                          {formatCurrency(row.toReceive || 0, row.currency)}
+                        </p>
+                      </div>
+                      <div className="rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2">
+                        <p className="text-xs text-muted-foreground">To pay</p>
+                        <p className="text-lg font-semibold tabular-nums">
+                          {formatCurrency(row.toPay || 0, row.currency)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ))}
                 {recordsQuery.data?.total != null &&
@@ -124,8 +135,7 @@ export default function FinancialRecordsPage() {
                     </span>
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Outstanding{" "}
-                    {formatCurrency(record.outstandingBalance, record.currency)} of{" "}
+                    {describeFinancialObligation(record).shortLabel} · Original{" "}
                     {formatCurrency(record.originalAmount, record.currency)}
                     {record.expectedDate
                       ? ` · Expected ${formatDate(record.expectedDate)}`

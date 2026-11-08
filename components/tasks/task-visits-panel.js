@@ -7,7 +7,8 @@ import { useClientTodayYmd } from "@/hooks/use-client-today";
 import { useTaskNoteMutations, useTaskNotes } from "@/hooks/use-task-notes";
 import { useUpdateTaskMutation } from "@/hooks/use-tasks";
 import Button from "@/components/ui/button";
-import Textarea from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text/rich-text-editor";
+import RichTextContent from "@/components/ui/rich-text/rich-text-content";
 import Alert from "@/components/ui/alert";
 import YmdDatePopoverInput from "@/components/ui/ymd-date-popover-input";
 import { validateYmdAgainstSchedule } from "@/lib/calendar/schedule-date-check";
@@ -79,9 +80,9 @@ export default function TaskVisitsPanel({ task, onTaskRescheduled }) {
                 {formatDate(visit.visitDate)}
               </p>
               {visit.content ? (
-                <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
-                  {visit.content}
-                </p>
+                <div className="mt-1 text-sm text-muted-foreground">
+                  <RichTextContent html={visit.content} />
+                </div>
               ) : (
                 <p className="mt-1 text-xs text-muted-foreground">No note added.</p>
               )}
@@ -184,7 +185,7 @@ export default function TaskVisitsPanel({ task, onTaskRescheduled }) {
         </label>
         <label className="block space-y-1 text-sm">
           <span>What happened? (optional)</span>
-          <Textarea
+          <RichTextEditor
             rows={3}
             placeholder="e.g. Bank asked for CNIC copy and account statement."
             value={visitNote}

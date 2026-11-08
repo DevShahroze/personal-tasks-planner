@@ -7,6 +7,7 @@ import {
   formatAvailabilityHours,
   formatHm12,
 } from "@/lib/format";
+import RichTextContent from "@/components/ui/rich-text/rich-text-content";
 import { DEFAULT_SCHEDULE_TIMEZONE } from "@/lib/scheduling/constants";
 import {
   formStateFromSchedule,
@@ -138,7 +139,7 @@ export default function TaskDetailView({ task }) {
           {task.description ? (
             <div>
               <p className="text-xs text-muted-foreground">Description</p>
-              <p className="whitespace-pre-wrap text-sm">{task.description}</p>
+              <RichTextContent html={task.description} />
             </div>
           ) : null}
         </div>
@@ -295,9 +296,9 @@ export default function TaskDetailView({ task }) {
             ]}
           />
           {task.recurrence.procedureDetails ? (
-            <p className="mt-3 whitespace-pre-wrap text-sm">
-              {task.recurrence.procedureDetails}
-            </p>
+            <div className="mt-3">
+              <RichTextContent html={task.recurrence.procedureDetails} />
+            </div>
           ) : null}
         </ViewSection>
       ) : null}

@@ -34,6 +34,7 @@ import KametiFormFields, {
 import StickyPageFooter from "@/components/layout/sticky-page-footer";
 import { useConfirm } from "@/contexts/confirm-context";
 import PauseResumeButton from "@/components/planning/pause-resume-button";
+import PlanningExportMenu from "@/components/planning/planning-export-menu";
 
 export default function KametiDetailPage() {
   const params = useParams();
@@ -124,19 +125,22 @@ export default function KametiDetailPage() {
 
   return (
     <div className="page-stack mx-auto w-full max-w-4xl pb-20">
-      <div>
-        <p className="text-sm text-muted-foreground">
-          <Link href="/planning/kameti" className="hover:underline">
-            Kameti
-          </Link>{" "}
-          / {item.planName}
-        </p>
-        <h1 className="page-title">{item.planName}</h1>
-        <p className="page-lead">
-          {item.status.replace(/_/g, " ")} · {roundsPaid}/{item.totalParticipants}{" "}
-          rounds paid · {roundsLeft} left · Next round{" "}
-          {formatDate(item.nextContributionDueDate)}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            <Link href="/planning/kameti" className="hover:underline">
+              Kameti
+            </Link>{" "}
+            / {item.planName}
+          </p>
+          <h1 className="page-title">{item.planName}</h1>
+          <p className="page-lead">
+            {item.status.replace(/_/g, " ")} · {roundsPaid}/{item.totalParticipants}{" "}
+            rounds paid · {roundsLeft} left · Next round{" "}
+            {formatDate(item.nextContributionDueDate)}
+          </p>
+        </div>
+        <PlanningExportMenu kind="kameti" record={item} />
       </div>
 
       {editing ? (

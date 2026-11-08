@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 import { execSync } from "node:child_process";
 
-const auditJson = execSync("npm audit --omit=dev --json", {
-  encoding: "utf8",
-  stdio: ["ignore", "pipe", "pipe"],
-});
+let auditJson;
+try {
+  auditJson = execSync("npm audit --omit=dev --json", {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+} catch (error) {
+  auditJson = error.stdout;
+  if (!auditJson) {
+    throw error;
+  }
+}
 
 let report;
 try {

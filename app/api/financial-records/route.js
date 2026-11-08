@@ -87,6 +87,45 @@ export async function GET(request) {
     { $sort: { _id: 1 } },
   ]);
 
+  const openObligationMatch = {
+    ...filter,
+    status: { $ne: "settled" },
+    outstandingBalance: { $gt: 0 },
+  };
+
+  const obligationsByCurrency = await FinancialRecord.aggregate([
+    { $match: openObligationMatch },
+    {
+      $group: {
+        _id: {
+          currency: "$currency",
+          bucket: {
+            $cond: [{ $in: ["$type", ["receivable", "money_lent"]] }, "receive", "pay"],
+          },
+        },
+        total: { $sum: "$outstandingBalance" },
+      },
+    },
+    { $sort: { "_id.currency": 1, "_id.bucket": 1 } },
+  ]);
+
+  const obligationByCurrency = new Map();
+  for (const row of obligationsByCurrency) {
+    const currency = row._id?.currency || DEFAULT_FINANCIAL_CURRENCY;
+    const bucket = row._id?.bucket === "receive" ? "receive" : "pay";
+    const current = obligationByCurrency.get(currency) || {
+      currency,
+      toReceive: 0,
+      toPay: 0,
+    };
+    if (bucket === "receive") {
+      current.toReceive += row.total;
+    } else {
+      current.toPay += row.total;
+    }
+    obligationByCurrency.set(currency, current);
+  }
+
   return jsonOk({
     items,
     page,
@@ -97,6 +136,9 @@ export async function GET(request) {
         currency: row._id || DEFAULT_FINANCIAL_CURRENCY,
         outstanding: row.outstanding,
       })),
+      obligationsByCurrency: [...obligationByCurrency.values()].sort((a, b) =>
+        a.currency.localeCompare(b.currency),
+      ),
     },
   });
 }

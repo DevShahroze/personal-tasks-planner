@@ -4,9 +4,11 @@ import { useState } from "react";
 import { formatDateTime } from "@/lib/format";
 import { useTaskNoteMutations, useTaskNotes } from "@/hooks/use-task-notes";
 import Button from "@/components/ui/button";
-import Textarea from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text/rich-text-editor";
+import { isRichTextEmpty } from "@/lib/rich-text/plain-text";
 import Alert from "@/components/ui/alert";
 import { useConfirm } from "@/contexts/confirm-context";
+import RichTextContent from "@/components/ui/rich-text/rich-text-content";
 
 export default function TaskNotesPanel({ taskId }) {
   const confirm = useConfirm();
@@ -57,11 +59,11 @@ export default function TaskNotesPanel({ taskId }) {
                     }
                   }}
                 >
-                  <Textarea
+                  <RichTextEditor
                     rows={3}
+                    resetKey={`${note._id}:${note.updatedAt || note.createdAt}`}
                     value={editingContent}
                     onChange={(event) => setEditingContent(event.target.value)}
-                    required
                   />
                   <div className="flex gap-2">
                     <Button type="submit" disabled={updateNote.isPending}>
@@ -78,7 +80,7 @@ export default function TaskNotesPanel({ taskId }) {
                 </form>
               ) : (
                 <>
-                  <p className="whitespace-pre-wrap text-sm">{note.content}</p>
+                  <RichTextContent html={note.content} />
                   <p className="mt-1 text-xs text-muted-foreground">
                     Created {formatDateTime(note.createdAt)}
                     {note.updatedAt && note.updatedAt !== note.createdAt
@@ -135,24 +137,24 @@ export default function TaskNotesPanel({ taskId }) {
         onSubmit={async (event) => {
           event.preventDefault();
           setError("");
-          if (!draft.trim()) {
+          if (isRichTextEmpty(draft)) {
             return;
           }
           try {
-            await createNote.mutateAsync({ content: draft.trim() });
+            await createNote.mutateAsync({ content: draft });
             setDraft("");
           } catch (err) {
             setError(err.message || "Could not add note");
           }
         }}
       >
-        <Textarea
+        <RichTextEditor
           rows={3}
           placeholder="Add a note"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
         />
-        <Button type="submit" disabled={createNote.isPending || !draft.trim()}>
+        <Button type="submit" disabled={createNote.isPending || isRichTextEmpty(draft)}>
           Add note
         </Button>
       </form>

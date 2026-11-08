@@ -30,6 +30,7 @@ import {
 import StickyPageFooter from "@/components/layout/sticky-page-footer";
 import { useConfirm } from "@/contexts/confirm-context";
 import PauseResumeButton from "@/components/planning/pause-resume-button";
+import PlanningExportMenu from "@/components/planning/planning-export-menu";
 
 export default function InstallmentDetailPage() {
   const params = useParams();
@@ -107,27 +108,33 @@ export default function InstallmentDetailPage() {
 
   return (
     <div className="page-stack mx-auto w-full max-w-4xl pb-20">
-      <div>
-        <p className="text-sm text-muted-foreground">
-          <Link href="/planning/installments" className="hover:underline">
-            Installments
-          </Link>{" "}
-          / {item.name}
-        </p>
-        <h1 className="page-title">{item.name}</h1>
-        <p className="page-lead">
-          {item.status}
-          {openEnded ? (
-            <> · Open-ended · Paid so far {formatCurrency(totalPaid, item.currency)}</>
-          ) : (
-            <>
-              {" "}
-              · Paid {formatCurrency(totalPaid, item.currency)} · Outstanding{" "}
-              {formatCurrency(item.outstandingBalance, item.currency)}
-            </>
-          )}{" "}
-          · Next due {formatDate(item.nextDueDate)}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            <Link href="/planning/installments" className="hover:underline">
+              Installments
+            </Link>{" "}
+            / {item.name}
+          </p>
+          <h1 className="page-title">{item.name}</h1>
+          <p className="page-lead">
+            {item.status}
+            {openEnded ? (
+              <>
+                {" "}
+                · Open-ended · Paid so far {formatCurrency(totalPaid, item.currency)}
+              </>
+            ) : (
+              <>
+                {" "}
+                · Paid {formatCurrency(totalPaid, item.currency)} · Outstanding{" "}
+                {formatCurrency(item.outstandingBalance, item.currency)}
+              </>
+            )}{" "}
+            · Next due {formatDate(item.nextDueDate)}
+          </p>
+        </div>
+        <PlanningExportMenu kind="installment" record={item} />
       </div>
 
       <form

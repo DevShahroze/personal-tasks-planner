@@ -19,6 +19,7 @@ import { validateSubscriptionUpdate } from "@/lib/planning/validate";
 import { toastFormError, toastValidationErrors } from "@/lib/planning/form-errors";
 import { useConfirm } from "@/contexts/confirm-context";
 import PauseResumeButton from "@/components/planning/pause-resume-button";
+import PlanningExportMenu from "@/components/planning/planning-export-menu";
 
 export default function SubscriptionDetailPage() {
   const { id } = useParams();
@@ -112,7 +113,8 @@ export default function SubscriptionDetailPage() {
             · Next billing {formatDate(item.nextBillingDate)} · {item.status}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <PlanningExportMenu kind="subscription" record={item} />
           <PauseResumeButton
             status={item.status}
             disabled={update.isPending || remove.isPending}

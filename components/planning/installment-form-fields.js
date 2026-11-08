@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Input from "@/components/ui/input";
-import Textarea from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text/rich-text-editor";
 import Select from "@/components/ui/select";
 import FieldLabel from "@/components/ui/field-label";
 import { PAYMENT_FREQUENCIES } from "@/lib/schedules/frequency";
@@ -63,10 +63,11 @@ export default function InstallmentFormFields({
           label="Description"
           info="Optional context: seller, account number, or what the installments are for."
         />
-        <Textarea
+        <RichTextEditor
           id={`${idPrefix}-description`}
           name="description"
           rows={2}
+          resetKey={defaults?.updatedAt || defaults?._id || "new"}
           defaultValue={defaults?.description || ""}
         />
       </div>

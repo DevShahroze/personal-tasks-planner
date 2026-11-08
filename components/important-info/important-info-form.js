@@ -3,7 +3,7 @@
 import { IMPORTANT_INFO_CATEGORIES } from "@/lib/important-info/constants";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
-import Textarea from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text/rich-text-editor";
 import Select from "@/components/ui/select";
 
 export default function ImportantInfoForm({
@@ -66,9 +66,10 @@ export default function ImportantInfoForm({
       </label>
       <label className="block space-y-1 text-sm">
         <span>Notes</span>
-        <Textarea
+        <RichTextEditor
           name="notes"
           rows={4}
+          resetKey={initialValues?.updatedAt || initialValues?._id || "new"}
           defaultValue={initialValues?.notes || ""}
           placeholder="Expiry, issuing authority, where the document is kept…"
         />

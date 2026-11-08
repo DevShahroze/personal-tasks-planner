@@ -1,7 +1,7 @@
 "use client";
 
 import Input from "@/components/ui/input";
-import Textarea from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text/rich-text-editor";
 import Select from "@/components/ui/select";
 import FieldLabel from "@/components/ui/field-label";
 import { PAYMENT_FREQUENCIES } from "@/lib/schedules/frequency";
@@ -205,10 +205,11 @@ export default function InsuranceFormFields({
           label="Notes"
           info="Coverage details, beneficiaries, agent contact, etc."
         />
-        <Textarea
+        <RichTextEditor
           id={`${idPrefix}-description`}
           name="description"
           rows={3}
+          resetKey={defaults?.updatedAt || defaults?._id || "new"}
           defaultValue={defaults?.description || ""}
         />
       </div>

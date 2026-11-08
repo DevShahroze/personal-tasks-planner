@@ -19,6 +19,8 @@ import FinancialRecordDetailView from "@/components/finance/financial-record-det
 import { useConfirm } from "@/contexts/confirm-context";
 import { SHELL_FIXED_CHROME_CLASS } from "@/lib/layout/shell-nav";
 import { toastSuccess } from "@/lib/toast-bus";
+import { describeFinancialObligation } from "@/lib/finance/obligations";
+import RecordExportMenu from "@/components/export/record-export-menu";
 
 export default function FinancialRecordDetailPage() {
   const params = useParams();
@@ -44,6 +46,7 @@ export default function FinancialRecordDetailPage() {
   }
 
   const record = recordQuery.data;
+  const obligation = describeFinancialObligation(record);
 
   const onDelete = async () => {
     const ok = await confirm({
@@ -66,20 +69,26 @@ export default function FinancialRecordDetailPage() {
     <div
       className={`mx-auto max-w-4xl space-y-4 ${showReadOnlyFooter || editing ? "pb-24" : ""}`}
     >
-      <div>
-        <p className="text-sm text-muted-foreground">
-          <Link href="/financial-records" className="hover:underline">
-            Financial
-          </Link>{" "}
-          / {record.partyName}
-        </p>
-        <h1 className="text-lg font-semibold tracking-tight">
-          {record.partyName} · {FINANCIAL_TYPE_LABEL[record.type]}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {FINANCIAL_STATUS_LABEL[record.status]}
-          {record.overdue ? " · Overdue" : ""}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            <Link href="/financial-records" className="hover:underline">
+              Financial
+            </Link>{" "}
+            / {record.partyName}
+          </p>
+          <h1 className="text-lg font-semibold tracking-tight">
+            {record.partyName} · {FINANCIAL_TYPE_LABEL[record.type]}
+          </h1>
+          <p className="mt-1 text-sm font-medium text-foreground">
+            {obligation.shortLabel}
+          </p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {FINANCIAL_STATUS_LABEL[record.status]}
+            {record.overdue ? " · Overdue" : ""}
+          </p>
+        </div>
+        <RecordExportMenu kind="financial" record={record} />
       </div>
 
       {error ? <Alert variant="error">{error}</Alert> : null}

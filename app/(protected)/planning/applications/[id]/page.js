@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useUniversityApplication } from "@/hooks/use-planning";
 import { formatCurrency, formatDate } from "@/lib/format";
 import Spinner from "@/components/ui/spinner";
+import RichTextContent from "@/components/ui/rich-text/rich-text-content";
 
 export default function ApplicationDetailPage() {
   const { id } = useParams();
@@ -24,7 +25,7 @@ export default function ApplicationDetailPage() {
         {formatCurrency(item.applicationFee, item.feeCurrency)} ({item.feePaymentStatus}
         ) · Deadline {formatDate(item.applicationDeadline)}
       </p>
-      {item.notes ? <p className="whitespace-pre-wrap text-sm">{item.notes}</p> : null}
+      {item.notes ? <RichTextContent html={item.notes} className="mt-2" /> : null}
     </div>
   );
 }

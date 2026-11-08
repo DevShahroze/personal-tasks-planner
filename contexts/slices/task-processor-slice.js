@@ -321,23 +321,24 @@ export function useTaskProcessorSlice() {
       return "Running…";
     }
     if (status?.lifecycleStatus === "failed") {
+      const failedAt =
+        status?.lastExecution?.completedAt || status?.lastExecution?.startedAt;
+      if (failedAt) {
+        return `Failed · ${formatDateTime(failedAt, status?.timezone)}`;
+      }
       return "Last run failed";
     }
-    if (status?.completedToday) {
-      return "Completed today";
+    const completedAt =
+      status?.dailySession?.completedAt ||
+      status?.lastCompleted?.completedAt ||
+      (status?.lastExecution?.status === "completed"
+        ? status.lastExecution.completedAt
+        : null);
+    if (completedAt) {
+      return formatDateTime(completedAt, status?.timezone);
     }
-    const completedAt = status?.lastCompleted?.completedAt;
-    if (!completedAt) {
-      return status?.lifecycleStatus === "pending" ? "Run pending" : "Not run yet";
-    }
-    return formatDateTime(completedAt, status?.timezone);
-  }, [
-    locked,
-    status?.lastCompleted?.completedAt,
-    status?.completedToday,
-    status?.lifecycleStatus,
-    status?.timezone,
-  ]);
+    return status?.lifecycleStatus === "pending" ? "Run pending" : "Not run yet";
+  }, [locked, status]);
 
   return useMemo(
     () => ({

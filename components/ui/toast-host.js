@@ -24,7 +24,7 @@ export default function ToastHost() {
 
   return (
     <div
-      className={`pointer-events-none fixed bottom-20 right-3 z-[100] flex max-w-sm flex-col gap-2 md:bottom-3 ${SHELL_FLOATING_RIGHT_CLASS}`}
+      className={`pointer-events-none fixed top-3 right-3 z-[100] flex max-w-sm flex-col-reverse gap-2 ${SHELL_FLOATING_RIGHT_CLASS}`}
       aria-live="polite"
       aria-relevant="additions"
     >

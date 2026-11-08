@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Input from "@/components/ui/input";
-import Textarea from "@/components/ui/textarea";
+import RichTextEditor from "@/components/ui/rich-text/rich-text-editor";
 import Select from "@/components/ui/select";
 import FieldLabel from "@/components/ui/field-label";
 import { PAYMENT_FREQUENCIES } from "@/lib/schedules/frequency";
@@ -268,10 +268,11 @@ export default function KametiFormFields({
           label="Notes"
           info="Optional: organizer, payout order, or other details."
         />
-        <Textarea
+        <RichTextEditor
           id={`${idPrefix}-notes`}
           name="notes"
           rows={2}
+          resetKey={defaults?.updatedAt || defaults?._id || "new"}
           defaultValue={defaults?.notes || ""}
         />
       </div>

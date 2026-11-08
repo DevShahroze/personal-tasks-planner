@@ -13,6 +13,7 @@ import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import { formatDateTime } from "@/lib/format";
+import RichTextContent from "@/components/ui/rich-text/rich-text-content";
 import { useConfirm } from "@/contexts/confirm-context";
 
 export default function ImportantInfoDetailPage() {
@@ -99,7 +100,7 @@ export default function ImportantInfoDetailPage() {
             <Meta label="Value" value={record.value} mono />
           </div>
           <div className="md:col-span-2">
-            <Meta label="Notes" value={record.notes || "—"} />
+            <Meta label="Notes" value={record.notes} rich />
           </div>
         </div>
       )}
@@ -107,15 +108,25 @@ export default function ImportantInfoDetailPage() {
   );
 }
 
-function Meta({ label, value, mono = false }) {
+function Meta({ label, value, mono = false, rich = false }) {
   return (
     <div>
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p
-        className={`mt-1 text-sm whitespace-pre-wrap break-all ${mono ? "font-mono" : ""}`}
-      >
-        {value}
-      </p>
+      {rich ? (
+        value ? (
+          <div className="mt-1">
+            <RichTextContent html={value} />
+          </div>
+        ) : (
+          <p className="mt-1 text-sm text-muted-foreground">—</p>
+        )
+      ) : (
+        <p
+          className={`mt-1 text-sm whitespace-pre-wrap break-all ${mono ? "font-mono" : ""}`}
+        >
+          {value || "—"}
+        </p>
+      )}
     </div>
   );
 }
