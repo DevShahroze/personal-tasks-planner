@@ -11,6 +11,7 @@ import PageGoBack from "@/components/layout/page-go-back";
 import FloatingToolsWidget from "@/components/tools/floating-tools-widget";
 import { ShellSidebar } from "@/components/layout/shell-sidebar";
 import RightSidebarUtilities from "@/components/nav/right-sidebar-utilities";
+import ConnectivityIndicator from "@/components/nav/connectivity-indicator";
 import { NAV_LINK_ICONS, NavAdminIcon } from "@/components/nav/nav-link-icons";
 import { useShellNav } from "@/hooks/use-shell-nav";
 import WorkspaceSidebarSection from "@/components/workspace/workspace-sidebar-section";
@@ -115,6 +116,7 @@ export default function AppShell({ children }) {
           </p>
         </div>
         <div className="flex-1" />
+        <ConnectivityIndicator />
         <Button
           type="button"
           variant="secondary"

@@ -57,16 +57,13 @@ export function useTaskProcessorSlice() {
       const visible = document.visibilityState === "visible";
       tabVisibleRef.current = visible;
       setTabVisible(visible);
-      if (!visible && !driveRef.current && !drivingRef.current) {
-        void queryClient.cancelQueries({ queryKey: queryKeys.taskProcessor.status });
-      }
     };
     syncVisibility();
     document.addEventListener("visibilitychange", syncVisibility);
     return () => document.removeEventListener("visibilitychange", syncVisibility);
   }, [queryClient]);
 
-  const statusQuery = useQuery({
+  const { data: status = null, refetch: refetchTaskProcessorStatus } = useQuery({
     queryKey: queryKeys.taskProcessor.status,
     queryFn: ({ signal }) => taskProcessorApi.status({ signal }),
     enabled: tabVisible,
@@ -83,13 +80,12 @@ export function useTaskProcessorSlice() {
     },
   });
 
-  const status = statusQuery.data ?? null;
   const locked = Boolean(status?.locked);
 
   const refreshStatus = useCallback(async () => {
-    const result = await statusQuery.refetch();
+    const result = await refetchTaskProcessorStatus();
     return result.data;
-  }, [statusQuery]);
+  }, [refetchTaskProcessorStatus]);
 
   const notifyRunOutcome = useCallback((current, trigger) => {
     const sessionKey = current?.dailySession
@@ -142,11 +138,10 @@ export function useTaskProcessorSlice() {
       let notifiedStart = false;
       let lastStepDone = false;
       try {
-        let current = await queryClient.fetchQuery({
-          queryKey: queryKeys.taskProcessor.status,
-          queryFn: taskProcessorApi.status,
-          staleTime: 0,
-        });
+        let current = await refreshStatus();
+        if (!current) {
+          return;
+        }
         if (!current.locked) {
           if (trigger !== "manual" && !current.shouldRun) {
             return;
@@ -169,21 +164,19 @@ export function useTaskProcessorSlice() {
           refreshProcessorDriverLock();
           if (current.locked && isAnotherTabDrivingProcessor()) {
             await sleep(800);
-            current = await queryClient.fetchQuery({
-              queryKey: queryKeys.taskProcessor.status,
-              queryFn: taskProcessorApi.status,
-              staleTime: 0,
-            });
+            current = await refreshStatus();
+            if (!current) {
+              break;
+            }
             guard += 1;
             continue;
           }
           if (current.locked && !didRunSteps) {
             await sleep(600);
-            current = await queryClient.fetchQuery({
-              queryKey: queryKeys.taskProcessor.status,
-              queryFn: taskProcessorApi.status,
-              staleTime: 0,
-            });
+            current = await refreshStatus();
+            if (!current) {
+              break;
+            }
             guard += 1;
             continue;
           }
@@ -272,44 +265,34 @@ export function useTaskProcessorSlice() {
   }, [refreshStatus]);
 
   useEffect(() => {
-    if (!clientTodayYmd) {
+    if (!clientTodayYmd || !status?.calendarDateYmd) {
       return undefined;
     }
-    let cancelled = false;
-    void refreshStatus().then((data) => {
-      if (cancelled || !data?.calendarDateYmd) {
-        return;
-      }
-      const win = typeof window !== "undefined" ? window : null;
-      if (win?.[AUTO_DRIVE_YMD_KEY] === data.calendarDateYmd) {
-        return;
-      }
-      if (win) {
-        win[AUTO_DRIVE_YMD_KEY] = data.calendarDateYmd;
-      }
-      if (data.shouldRun && !driveRef.current && !isAnotherTabDrivingProcessor()) {
-        void driveProcessor({ trigger: "automatic" });
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [clientTodayYmd, driveProcessor, refreshStatus]);
+    const win = typeof window !== "undefined" ? window : null;
+    if (win?.[AUTO_DRIVE_YMD_KEY] === status.calendarDateYmd) {
+      return undefined;
+    }
+    if (win) {
+      win[AUTO_DRIVE_YMD_KEY] = status.calendarDateYmd;
+    }
+    if (status.shouldRun && !driveRef.current && !isAnotherTabDrivingProcessor()) {
+      void driveProcessor({ trigger: "automatic" });
+    }
+    return undefined;
+  }, [clientTodayYmd, driveProcessor, status]);
 
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.visibilityState !== "visible") {
         return;
       }
-      void refreshStatus().then((data) => {
-        if (data?.shouldRun && !driveRef.current && !isAnotherTabDrivingProcessor()) {
-          void driveProcessor({ trigger: "automatic" });
-        }
-      });
+      if (status?.shouldRun && !driveRef.current && !isAnotherTabDrivingProcessor()) {
+        void driveProcessor({ trigger: "automatic" });
+      }
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [driveProcessor, refreshStatus]);
+  }, [driveProcessor, status?.shouldRun]);
 
   useEffect(() => {
     if (!status?.locked) {

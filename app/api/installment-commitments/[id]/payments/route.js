@@ -4,6 +4,8 @@ import { jsonError, jsonOk, isValidObjectId } from "@/lib/api-response";
 import { readJsonBody } from "@/lib/security/request";
 import { applyPlanningPayment } from "@/lib/planning/payment-handler";
 import { validateInstallmentPaymentLog } from "@/lib/planning/validate";
+import { installmentPaymentNoteForLog } from "@/lib/planning/installment-payments";
+import { INSTALLMENT_LOG_PAYMENT_KINDS } from "@/lib/planning/constants";
 import { syncInstallmentCommitment } from "@/lib/planning/installments";
 import InstallmentCommitment from "@/models/InstallmentCommitment";
 
@@ -43,7 +45,29 @@ export async function POST(request, { params }) {
     body: parsed.body,
     syncFn: syncInstallmentCommitment,
     todayYmd,
-    validateFn: validateInstallmentPaymentLog,
+    validateFn: (body) => {
+      const validated = validateInstallmentPaymentLog(body);
+      if (!validated.ok) {
+        return validated;
+      }
+      let kind = body.paymentKind;
+      if (kind === undefined || kind === null || kind === "") {
+        kind = "installment";
+      } else if (typeof kind === "string") {
+        kind = kind.trim();
+      }
+      if (!INSTALLMENT_LOG_PAYMENT_KINDS.includes(kind)) {
+        kind = "installment";
+      }
+      return {
+        ok: true,
+        errors: [],
+        value: {
+          ...validated.value,
+          note: installmentPaymentNoteForLog(record, kind),
+        },
+      };
+    },
   });
   if (result.error) {
     return result.error;

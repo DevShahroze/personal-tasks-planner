@@ -44,7 +44,7 @@ export default function InstallmentDetailPage() {
   const [paidAt, setPaidAt] = useState("");
   const [paymentKind, setPaymentKind] = useState("installment");
 
-  const detailQuery = useInstallmentCommitment(id);
+  const detailQuery = useInstallmentCommitment(id, true, todayYmd);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["planning", "installments"] });
@@ -91,7 +91,6 @@ export default function InstallmentDetailPage() {
   const item = detailQuery.data;
   const openEnded = installmentIsOpenEnded(item);
   const totalPaid = installmentTotalPaid(item);
-
   const onDelete = async () => {
     const ok = await confirm({
       title: "Delete installment?",
@@ -121,7 +120,11 @@ export default function InstallmentDetailPage() {
           {openEnded ? (
             <> · Open-ended · Paid so far {formatCurrency(totalPaid, item.currency)}</>
           ) : (
-            <> · Outstanding {formatCurrency(item.outstandingBalance, item.currency)}</>
+            <>
+              {" "}
+              · Paid {formatCurrency(totalPaid, item.currency)} · Outstanding{" "}
+              {formatCurrency(item.outstandingBalance, item.currency)}
+            </>
           )}{" "}
           · Next due {formatDate(item.nextDueDate)}
         </p>
@@ -152,7 +155,12 @@ export default function InstallmentDetailPage() {
       </form>
 
       <div className="surface-card grid gap-2 text-sm md:grid-cols-2">
-        <p>Installments paid: {item.installmentsPaid}</p>
+        <p>
+          Installments paid: {item.installmentsPaid}
+          {item.totalInstallments != null && item.totalInstallments > 0
+            ? ` of ${item.totalInstallments}`
+            : null}
+        </p>
         {item.downPaymentAmount ? (
           <p>
             Down payment: {formatCurrency(item.downPaymentAmount, item.currency)}
@@ -171,7 +179,10 @@ export default function InstallmentDetailPage() {
             Total paid so far: {formatCurrency(totalPaid, item.currency)} · No fixed cap
           </p>
         ) : (
-          <p>Total: {formatCurrency(item.totalAmount, item.currency)}</p>
+          <>
+            <p>Total paid: {formatCurrency(totalPaid, item.currency)}</p>
+            <p>Total commitment: {formatCurrency(item.totalAmount, item.currency)}</p>
+          </>
         )}
       </div>
 

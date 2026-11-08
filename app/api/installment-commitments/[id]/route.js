@@ -5,7 +5,7 @@ import { readJsonBody } from "@/lib/security/request";
 import { validateInstallmentUpdate } from "@/lib/planning/validate";
 import { syncInstallmentCommitment } from "@/lib/planning/installments";
 import InstallmentCommitment from "@/models/InstallmentCommitment";
-import { sortPaymentsByPaidAtAsc } from "@/lib/payments/mongoose";
+import { sortPaymentsByPaidAtAsc } from "@/lib/payments/sort";
 
 export async function GET(request, { params }) {
   const auth = await requireAuth();
@@ -18,14 +18,36 @@ export async function GET(request, { params }) {
     return jsonError("Invalid id", 400);
   }
 
+  const todayYmd =
+    new URL(request.url).searchParams.get("todayYmd") ||
+    new Date().toISOString().slice(0, 10);
+
   await connectDB();
-  const doc = await InstallmentCommitment.findById(id).lean();
-  if (!doc) {
+  const lean = await InstallmentCommitment.findById(id).lean();
+  if (!lean) {
     return jsonError("Installment commitment not found", 404);
   }
+  const synced = {
+    ...lean,
+    payments: (lean.payments || []).map((payment) => ({ ...payment })),
+  };
+  syncInstallmentCommitment(synced, todayYmd);
+  await InstallmentCommitment.updateOne(
+    { _id: id },
+    {
+      $set: {
+        nextDueDate: synced.nextDueDate,
+        manualNextDueDate: synced.manualNextDueDate,
+        installmentsPaid: synced.installmentsPaid,
+        outstandingBalance: synced.outstandingBalance,
+        status: synced.status,
+        payments: synced.payments,
+      },
+    },
+  );
   return jsonOk({
-    ...doc,
-    payments: sortPaymentsByPaidAtAsc(doc.payments),
+    ...synced,
+    payments: sortPaymentsByPaidAtAsc(synced.payments),
   });
 }
 

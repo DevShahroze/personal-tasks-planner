@@ -10,6 +10,7 @@ export default function TaskCalendarModal({ open, onClose }) {
       title="Task calendar"
       onClose={onClose}
       panelClassName="max-w-5xl"
+      scrollBody
     >
       <TaskCalendarPanel variant="modal" />
     </Modal>

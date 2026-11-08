@@ -12,6 +12,17 @@ import TaskStatusSelect from "@/components/tasks/task-status-select";
 import { useUpdateTaskMutation } from "@/hooks/use-tasks";
 import { buildTaskStatusPatch } from "@/lib/calendar/task-status-update";
 
+function calendarDayEntryKey(entry) {
+  if (entry.href) {
+    const period = entry.periodYmd || entry.ymd || "";
+    return `${entry.href}-${entry.kind}-${period}`;
+  }
+  if (entry.taskId) {
+    return `${entry.taskId}-${entry.kind}`;
+  }
+  return `${entry.recordId}-${entry.kind}`;
+}
+
 function CalendarDayTaskRow({
   entry,
   indent,
@@ -155,13 +166,7 @@ export default function TaskCalendarPanel({ variant = "dashboard" }) {
           <ul className="mt-3 divide-y divide-border">
             {selectedDayRows.map(({ entry, indent, isParentHeader }) => (
               <CalendarDayTaskRow
-                key={
-                  entry.href
-                    ? `${entry.href}-${entry.kind}`
-                    : entry.taskId
-                      ? `${entry.taskId}-${entry.kind}`
-                      : `${entry.recordId}-${entry.kind}`
-                }
+                key={calendarDayEntryKey(entry)}
                 entry={entry}
                 indent={indent}
                 isParentHeader={isParentHeader}

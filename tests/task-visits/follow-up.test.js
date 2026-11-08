@@ -33,6 +33,21 @@ test("buildVisitKindMap orders by visit date", () => {
   assert.equal(map.get("b"), "Follow-up visit 1");
 });
 
+test("buildFollowUpTaskPatch moves expected receive for order-tracking tasks", () => {
+  const task = {
+    expectedReceiveDate: "2026-11-06T12:00:00.000Z",
+    taskDate: "2026-11-06T12:00:00.000Z",
+    schedule: { mode: "unscheduled", timezone: "Asia/Karachi" },
+  };
+  const built = buildFollowUpTaskPatch(task, "2026-11-12");
+  assert.equal(built.ok, true);
+  assert.equal(built.patch.taskDate.toISOString(), "2026-11-12T12:00:00.000Z");
+  assert.equal(
+    built.patch.expectedReceiveDate.toISOString(),
+    "2026-11-12T12:00:00.000Z",
+  );
+});
+
 test("buildFollowUpTaskPatch moves taskDate and fixed schedule", () => {
   const task = {
     taskDate: "2026-03-01T12:00:00.000Z",

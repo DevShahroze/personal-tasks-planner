@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { planningApi } from "@/lib/api-client";
 import Button from "@/components/ui/button";
@@ -13,15 +14,26 @@ import { toastValidationErrors } from "@/lib/planning/form-errors";
 
 export default function NewKametiPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
+  const [formKey, setFormKey] = useState(0);
   const create = useMutation({
     mutationFn: planningApi.kameti.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["planning", "kameti"] });
       queryClient.invalidateQueries({ queryKey: ["tasks", "calendar"] });
-      router.push("/planning/kameti");
     },
   });
+
+  useEffect(() => {
+    const onPageShow = (event) => {
+      if (event.persisted) {
+        setFormKey((value) => value + 1);
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   return (
     <div className="page-stack mx-auto max-w-xl">
@@ -40,6 +52,8 @@ export default function NewKametiPage() {
       </div>
 
       <form
+        key={`${pathname}-${formKey}`}
+        autoComplete="off"
         className="surface-card space-y-4"
         onSubmit={async (event) => {
           event.preventDefault();
@@ -53,6 +67,8 @@ export default function NewKametiPage() {
             return;
           }
           await create.mutateAsync(validated.value);
+          setFormKey((value) => value + 1);
+          router.push("/planning/kameti");
         }}
       >
         <KametiFormFields idPrefix="new-kameti" showStartPaused />

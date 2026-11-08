@@ -138,6 +138,31 @@ test("closed-ended installment stacks missed and current period in calendar mont
   assert.ok(entries.every((e) => e.ymd === "2026-12-10"));
 });
 
+test("Kameti calendar shows next contribution on scheduled day in a future month", () => {
+  const entries = buildKametiCalendarEntries(
+    {
+      _id: "507f1f77bcf86cd799439011",
+      planName: "Waleed Kameti",
+      totalParticipants: 14,
+      contributionAmount: 25000,
+      contributionFrequency: "monthly",
+      startDate: new Date("2026-06-01T12:00:00.000Z"),
+      contributionPayments: new Array(6).fill({ amount: 25000 }),
+      remainingContributionsOwed: 200000,
+      status: "active",
+    },
+    {
+      todayYmd: "2026-11-08",
+      monthFirstYmd: "2026-12-01",
+      monthLastYmd: "2026-12-31",
+    },
+  );
+  const contrib = entries.filter((e) => e.kind === "kametiContributionDue");
+  assert.equal(contrib.length, 1);
+  assert.equal(contrib[0].ymd, "2026-12-01");
+  assert.match(contrib[0].title, /December 2026/);
+});
+
 test("Kameti calendar stacks missed and current unpaid rounds", () => {
   const entries = buildKametiCalendarEntries(
     {
@@ -296,6 +321,83 @@ test("validateInstallmentCreate allows open-ended contributions without total", 
   assert.equal(result.value.openEnded, true);
   assert.equal(result.value.totalAmount, null);
   assert.equal(result.value.outstandingBalance, 0);
+});
+
+test("closed-ended next due advances from start after installment payments", () => {
+  const installment = (paidAt, note) => ({
+    amount: 176000,
+    paidAt: new Date(paidAt),
+    note,
+  });
+  const doc = {
+    openEnded: false,
+    totalAmount: 7920000,
+    installmentAmount: 176000,
+    frequency: "monthly",
+    startDate: new Date("2025-09-01T12:00:00.000Z"),
+    endDate: new Date("2028-08-01T12:00:00.000Z"),
+    totalInstallments: 36,
+    manualNextDueDate: true,
+    nextDueDate: new Date("2026-11-01T12:00:00.000Z"),
+    payments: [
+      installment("2025-09-01T12:00:00.000Z", "Installment paid (1/14)"),
+      {
+        amount: 1584000,
+        paidAt: new Date("2025-09-05T00:00:00.000Z"),
+        note: "Down payment",
+      },
+      installment("2025-10-01T12:00:00.000Z", "Installment paid (2/14)"),
+      installment("2025-11-01T12:00:00.000Z", "Installment paid (3/14)"),
+      installment("2025-12-01T12:00:00.000Z", "Installment paid (4/14)"),
+      installment("2026-01-01T12:00:00.000Z", "Installment paid (5/14)"),
+      installment("2026-02-01T12:00:00.000Z", "Installment paid (6/14)"),
+      installment("2026-03-01T12:00:00.000Z", "Installment paid (7/14)"),
+      installment("2026-04-01T12:00:00.000Z", "Installment paid (8/14)"),
+      installment("2026-05-01T12:00:00.000Z", "Installment paid (9/14)"),
+      installment("2026-06-01T12:00:00.000Z", "Installment paid (10/14)"),
+      installment("2026-07-01T12:00:00.000Z", "Installment paid (11/14)"),
+      installment("2026-08-01T12:00:00.000Z", "Installment paid (12/14)"),
+      installment("2026-09-01T12:00:00.000Z", "Installment paid (13/14)"),
+      installment("2026-10-01T12:00:00.000Z", "Installment paid (14/14)"),
+      installment("2026-11-01T00:00:00.000Z", "Installment"),
+    ],
+    status: "overdue",
+  };
+  syncInstallmentCommitment(doc, "2026-11-08");
+  assert.equal(doc.installmentsPaid, 15);
+  assert.equal(doc.nextDueDate.toISOString().slice(0, 10), "2026-12-01");
+  assert.equal(doc.manualNextDueDate, false);
+  assert.equal(doc.status, "active");
+  assert.equal(doc.payments.at(-1).note, "Installment paid (15/36)");
+  assert.equal(doc.payments[0].note, "Installment paid (1/36)");
+});
+
+test("open-ended next due is start plus one period per installment payment", () => {
+  const doc = {
+    openEnded: true,
+    startDate: new Date("2026-11-01T12:00:00.000Z"),
+    frequency: "monthly",
+    manualNextDueDate: true,
+    nextDueDate: new Date("2026-11-01T12:00:00.000Z"),
+    payments: [
+      {
+        amount: 5150000,
+        paidAt: new Date("2026-11-01T12:00:00.000Z"),
+        note: "Installment paid (lump sum)",
+      },
+      {
+        amount: 100000,
+        paidAt: new Date("2026-11-08T12:00:00.000Z"),
+        note: "Installment",
+      },
+    ],
+    status: "overdue",
+  };
+  syncInstallmentCommitment(doc, "2026-11-08");
+  assert.equal(doc.installmentsPaid, 1);
+  assert.equal(doc.nextDueDate.toISOString().slice(0, 10), "2026-12-01");
+  assert.equal(doc.status, "active");
+  assert.equal(doc.manualNextDueDate, false);
 });
 
 test("syncInstallmentCommitment keeps open-ended active with payments", () => {

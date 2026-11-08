@@ -146,8 +146,12 @@ export default function TaskVisitsPanel({ task, onTaskRescheduled }) {
               }
               const body = {
                 ...built.patch,
+                taskDate: nextVisitYmd,
                 expectedUpdatedAt: task.updatedAt,
               };
+              if (built.patch.expectedReceiveDate) {
+                body.expectedReceiveDate = nextVisitYmd;
+              }
               if (task.status === "Completed") {
                 body.status = "To Do";
               }

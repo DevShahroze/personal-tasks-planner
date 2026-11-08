@@ -10,6 +10,7 @@ export default function Modal({
   children,
   onClose,
   panelClassName = "max-w-lg",
+  scrollBody = false,
 }) {
   useEffect(() => {
     if (!open) return;
@@ -31,15 +32,23 @@ export default function Modal({
         onClick={onClose}
       />
       <div
-        className={`relative z-10 w-full rounded-lg border border-border bg-card p-4 text-card-foreground shadow-lg ${panelClassName}`}
+        className={`relative z-10 flex w-full flex-col rounded-lg border border-border bg-card p-4 text-card-foreground shadow-lg ${
+          scrollBody ? "max-h-[calc(100dvh-2rem)]" : ""
+        } ${panelClassName}`}
       >
-        <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">{title}</h2>
           <Button type="button" variant="ghost" onClick={onClose}>
             Close
           </Button>
         </div>
-        {children}
+        {scrollBody ? (
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+            {children}
+          </div>
+        ) : (
+          children
+        )}
       </div>
     </div>,
     document.body,

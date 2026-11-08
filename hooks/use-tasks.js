@@ -3,6 +3,26 @@ import { tasksApi } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
 import { detailQueryOptions, listQueryOptions } from "@/lib/query-cache";
 
+let taskCalendarRefetchScheduled = false;
+
+function scheduleTaskCalendarRefetch(queryClient) {
+  queryClient.invalidateQueries({
+    queryKey: ["tasks", "calendar"],
+    refetchType: "none",
+  });
+  if (taskCalendarRefetchScheduled) {
+    return;
+  }
+  taskCalendarRefetchScheduled = true;
+  queueMicrotask(() => {
+    taskCalendarRefetchScheduled = false;
+    void queryClient.refetchQueries({
+      queryKey: ["tasks", "calendar"],
+      type: "active",
+    });
+  });
+}
+
 export function useTasks(filters) {
   return useQuery({
     queryKey: queryKeys.tasks(filters),
@@ -34,7 +54,7 @@ function invalidateTaskQueries(queryClient, id, parentTaskId, options = {}) {
   queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
   queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.charts });
   queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.listings });
-  queryClient.invalidateQueries({ queryKey: ["tasks", "calendar"] });
+  scheduleTaskCalendarRefetch(queryClient);
 }
 
 export function useSubtasks(parentId, enabled = true) {

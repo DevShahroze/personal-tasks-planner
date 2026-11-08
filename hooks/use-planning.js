@@ -13,10 +13,10 @@ export function useInstallmentCommitments(params = defaultListParams) {
   });
 }
 
-export function useInstallmentCommitment(id, enabled = true) {
+export function useInstallmentCommitment(id, enabled = true, todayYmd = "") {
   return useQuery({
-    queryKey: queryKeys.planning.installments.detail(id),
-    queryFn: () => planningApi.installments.get(id),
+    queryKey: [...queryKeys.planning.installments.detail(id), todayYmd || ""],
+    queryFn: () => planningApi.installments.get(id, todayYmd || undefined),
     enabled: Boolean(id) && enabled,
     ...detailQueryOptions(),
   });
