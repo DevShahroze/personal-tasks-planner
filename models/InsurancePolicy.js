@@ -7,10 +7,23 @@ import {
 import { MAX_DESCRIPTION_LENGTH } from "@/lib/security/constants";
 import { createPaymentSubschema } from "@/lib/payments/mongoose";
 
+const annualSubmissionSchema = new mongoose.Schema(
+  {
+    year: { type: Number, required: true, min: 1900, max: 2100 },
+    amount: { type: Number, required: true, min: 0 },
+  },
+  { _id: false },
+);
+
 const insurancePolicySchema = new mongoose.Schema(
   {
     insurerName: { type: String, required: true, trim: true },
     policyNumber: { type: String, required: true, trim: true, maxlength: 100 },
+    appLoginName: { type: String, default: "", trim: true, maxlength: 120 },
+    sumAssured: { type: Number, default: null, min: 0 },
+    premiumDueMonth: { type: Number, default: null, min: 1, max: 12 },
+    premiumDueDay: { type: Number, default: null, min: 1, max: 31 },
+    annualSubmissions: { type: [annualSubmissionSchema], default: [] },
     description: { type: String, default: "", maxlength: MAX_DESCRIPTION_LENGTH },
     premiumAmount: { type: Number, required: true, min: 0.01 },
     totalPremiumAmount: { type: Number, required: true, min: 0.01 },

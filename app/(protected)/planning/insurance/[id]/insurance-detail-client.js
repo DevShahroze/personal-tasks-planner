@@ -13,9 +13,8 @@ import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
-import InsuranceFormFields, {
-  insurancePayloadFromFormData,
-} from "@/components/planning/insurance-form-fields";
+import InsurancePolicyForm from "@/components/planning/insurance-policy-form";
+import InsuranceDetailView from "@/components/planning/insurance-detail-view";
 import {
   validateInsuranceUpdate,
   validatePlanningPayment,
@@ -23,6 +22,10 @@ import {
 import { toastFormError, toastValidationErrors } from "@/lib/planning/form-errors";
 import { validatePaymentAmount } from "@/lib/finance/balance";
 import { useConfirm } from "@/contexts/confirm-context";
+import { SHELL_FIXED_CHROME_CLASS } from "@/lib/layout/shell-nav";
+import { toastSuccess } from "@/lib/toast-bus";
+import PlanningExportMenu from "@/components/planning/planning-export-menu";
+import { formatInsuranceAnnualDueLabel } from "@/lib/planning/insurance";
 
 export default function InsurancePolicyDetailClient() {
   const { id } = useParams();
@@ -31,6 +34,7 @@ export default function InsurancePolicyDetailClient() {
   const clientToday = useClientTodayYmd();
   const todayYmd = clientToday?.ymd || "";
   const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
   const [editKey, setEditKey] = useState(0);
   const query = useInsurancePolicy(id);
 
@@ -77,8 +81,25 @@ export default function InsurancePolicyDetailClient() {
     return <Alert variant="error">Policy not found</Alert>;
   }
 
+  const showReadOnlyFooter = !editing;
+
+  const onDelete = async () => {
+    const ok = await confirm({
+      title: "Delete policy?",
+      description: "Delete this policy and its payment history? This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) {
+      return;
+    }
+    await remove.mutateAsync();
+  };
+
   return (
-    <div className="page-stack mx-auto w-full max-w-4xl">
+    <div
+      className={`page-stack mx-auto w-full max-w-4xl ${showReadOnlyFooter || editing ? "pb-24" : ""}`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">
@@ -89,68 +110,50 @@ export default function InsurancePolicyDetailClient() {
           </p>
           <h1 className="page-title">{item.insurerName}</h1>
           <p className="page-lead">
-            {item.status} · Premium {formatCurrency(item.premiumAmount, item.currency)}{" "}
-            · Next due {formatDate(item.nextDueDate)}
+            {item.status} · Premium {formatCurrency(item.premiumAmount, item.currency)}
+            {item.sumAssured != null ? (
+              <> · Sum assured {formatCurrency(item.sumAssured, item.currency)}</>
+            ) : null}{" "}
+            ·{" "}
+            {formatInsuranceAnnualDueLabel(item.premiumDueMonth, item.premiumDueDay) ||
+              `Next due ${formatDate(item.nextDueDate)}`}
           </p>
         </div>
-        <Button
-          variant="danger"
-          type="button"
-          disabled={remove.isPending}
-          onClick={async () => {
-            const ok = await confirm({
-              title: "Delete policy?",
-              description:
-                "Delete this policy and its payment history? This cannot be undone.",
-              confirmLabel: "Delete",
-              variant: "danger",
-            });
-            if (!ok) {
-              return;
-            }
-            await remove.mutateAsync();
-          }}
-        >
-          Delete
-        </Button>
+        <PlanningExportMenu kind="insurance" record={item} />
       </div>
 
-      <form
-        key={editKey}
-        className="surface-card space-y-3"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          const body = insurancePayloadFromFormData(new FormData(event.currentTarget), {
-            includeStatus: true,
-          });
-          const validated = validateInsuranceUpdate(body);
-          if (!validated.ok) {
-            toastValidationErrors(validated.errors);
-            return;
-          }
-          if (!Object.keys(validated.patch).length) {
-            toastFormError("No changes to save.");
-            return;
-          }
-          await update.mutateAsync(validated.patch);
-        }}
-      >
-        <h2 className="text-sm font-semibold">Policy details</h2>
-        <InsuranceFormFields idPrefix="edit-insurance" defaults={item} showStatus />
-        <Button type="submit" disabled={update.isPending}>
-          {update.isPending ? "Saving…" : "Save changes"}
-        </Button>
-      </form>
-
-      <div className="surface-card grid gap-2 text-sm md:grid-cols-2">
-        <p>Outstanding: {formatCurrency(item.outstandingBalance, item.currency)}</p>
-        <p>Total premium: {formatCurrency(item.totalPremiumAmount, item.currency)}</p>
-        <p>Premiums paid: {item.premiumsPaid}</p>
-        {item.termYears ? <p>Term: {item.termYears} years</p> : null}
-        {item.totalPremiumPayments ? (
-          <p>Total payments: {item.totalPremiumPayments}</p>
-        ) : null}
-        <p>End date: {formatDate(item.endDate)}</p>
+      <div className="surface-card">
+        {editing ? (
+          <InsurancePolicyForm
+            key={`${id}-${editKey}-${item.updatedAt}`}
+            isEditForm
+            idPrefix="edit-insurance"
+            formId="edit-insurance-form"
+            defaults={item}
+            showStatus
+            submitting={update.isPending}
+            deleting={remove.isPending}
+            submitLabel="Save changes"
+            onCancelEdit={() => setEditing(false)}
+            onDelete={onDelete}
+            onSubmit={async (body) => {
+              const validated = validateInsuranceUpdate(body);
+              if (!validated.ok) {
+                toastValidationErrors(validated.errors);
+                return;
+              }
+              if (!Object.keys(validated.patch).length) {
+                toastFormError("No changes to save.");
+                return;
+              }
+              await update.mutateAsync(validated.patch);
+              toastSuccess("Policy updated");
+              setEditing(false);
+            }}
+          />
+        ) : (
+          <InsuranceDetailView policy={item} />
+        )}
       </div>
 
       <div className="surface-card space-y-3">
@@ -245,6 +248,26 @@ export default function InsurancePolicyDetailClient() {
           </form>
         ) : null}
       </div>
+
+      {showReadOnlyFooter ? (
+        <div
+          className={`fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 px-3 py-3 backdrop-blur-sm supports-[backdrop-filter]:bg-card/90 md:px-4 ${SHELL_FIXED_CHROME_CLASS}`}
+        >
+          <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="danger"
+              onClick={onDelete}
+              disabled={remove.isPending}
+            >
+              {remove.isPending ? "Deleting…" : "Delete"}
+            </Button>
+            <Button type="button" variant="primary" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

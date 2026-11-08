@@ -22,7 +22,12 @@ import {
   validateInstallmentCreate,
   validateInstallmentUpdate,
   validateInstallmentPaymentLog,
+  validateInsuranceCreate,
 } from "../../lib/planning/validate.js";
+import {
+  computeNextFixedAnnualDueYmd,
+  formatInsuranceAnnualDueLabel,
+} from "../../lib/planning/insurance.js";
 import {
   buildTourCalendarEntries,
   buildInstallmentCalendarEntries,
@@ -585,6 +590,42 @@ test("sortPaymentsByPaidAtAsc orders payments oldest first", () => {
   ]);
   assert.equal(sorted[0].amount, 20);
   assert.equal(sorted[2].amount, 10);
+});
+
+test("validateInsuranceCreate stores policy, login, due date, and submissions", () => {
+  const result = validateInsuranceCreate({
+    insurerName: "State Life Insurance",
+    policyNumber: "20025024200-0",
+    appLoginName: "9054-202238",
+    sumAssured: 3000000,
+    premiumAmount: 838120,
+    premiumDueMonth: 12,
+    premiumDueDay: 31,
+    frequency: "yearly",
+    startDate: "2025-01-01",
+    submissionYears: ["2025"],
+    submissionAmounts: ["838500"],
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.value.policyNumber, "20025024200-0");
+  assert.equal(result.value.annualSubmissions[0].year, 2025);
+  assert.equal(result.value.annualSubmissions[0].amount, 838500);
+  assert.equal(result.value.premiumDueMonth, 12);
+  assert.equal(result.value.premiumDueDay, 31);
+});
+
+test("insurance annual due label and schedule", () => {
+  assert.equal(formatInsuranceAnnualDueLabel(12, 31), "31 Dec, each year");
+  assert.equal(
+    computeNextFixedAnnualDueYmd({
+      month: 12,
+      day: 31,
+      todayYmd: "2026-06-01",
+      anchorYmd: "2025-12-31",
+      endYmd: null,
+    }),
+    "2026-12-31",
+  );
 });
 
 test("tour calendar spans start through end dates", () => {

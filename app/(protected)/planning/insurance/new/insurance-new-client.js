@@ -5,10 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { planningApi } from "@/lib/api-client";
-import Button from "@/components/ui/button";
-import InsuranceFormFields, {
-  insurancePayloadFromFormData,
-} from "@/components/planning/insurance-form-fields";
+import InsurancePolicyForm from "@/components/planning/insurance-policy-form";
 import { validateInsuranceCreate } from "@/lib/planning/validate";
 import { toastValidationErrors } from "@/lib/planning/form-errors";
 
@@ -44,33 +41,26 @@ export default function NewInsurancePolicyClient() {
         / New
       </p>
       <h1 className="page-title">New insurance policy</h1>
-      <form
-        key={`${pathname}-${formKey}`}
-        autoComplete="off"
-        className="surface-card space-y-3"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          const payload = insurancePayloadFromFormData(
-            new FormData(event.currentTarget),
-            {
-              includePrepaid: true,
-            },
-          );
-          const validated = validateInsuranceCreate(payload);
-          if (!validated.ok) {
-            toastValidationErrors(validated.errors);
-            return;
-          }
-          await create.mutateAsync(validated.value);
-          setFormKey((value) => value + 1);
-          router.push("/planning/insurance");
-        }}
-      >
-        <InsuranceFormFields idPrefix="new-insurance" showPrepaid />
-        <Button type="submit" disabled={create.isPending}>
-          {create.isPending ? "Creating…" : "Create policy"}
-        </Button>
-      </form>
+      <div className="surface-card">
+        <InsurancePolicyForm
+          key={`${pathname}-${formKey}`}
+          idPrefix="new-insurance"
+          formId="new-insurance-form"
+          showPrepaid
+          submitting={create.isPending}
+          submitLabel="Create policy"
+          onSubmit={async (payload) => {
+            const validated = validateInsuranceCreate(payload);
+            if (!validated.ok) {
+              toastValidationErrors(validated.errors);
+              return;
+            }
+            await create.mutateAsync(validated.value);
+            setFormKey((value) => value + 1);
+            router.push("/planning/insurance");
+          }}
+        />
+      </div>
     </div>
   );
 }

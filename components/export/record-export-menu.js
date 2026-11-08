@@ -4,6 +4,7 @@ import { useState } from "react";
 import Button from "@/components/ui/button";
 import {
   buildInstallmentExportSnapshot,
+  buildInsuranceExportSnapshot,
   buildKametiExportSnapshot,
   buildSubscriptionExportSnapshot,
 } from "@/lib/planning/export/snapshots";
@@ -45,6 +46,9 @@ function snapshotForKind(kind, record) {
   }
   if (kind === "kameti") {
     return buildKametiExportSnapshot(record);
+  }
+  if (kind === "insurance") {
+    return buildInsuranceExportSnapshot(record);
   }
   if (kind === "financial") {
     return buildFinancialExportSnapshot(record);

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useInsurancePolicies } from "@/hooks/use-planning";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { formatInsuranceAnnualDueLabel } from "@/lib/planning/insurance";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import EmptyState from "@/components/ui/empty-state";
@@ -49,8 +50,19 @@ export default function InsurancePoliciesClient() {
                 <p className="text-xs text-muted-foreground">
                   {item.status} · Premium{" "}
                   {formatCurrency(item.premiumAmount, item.currency)}
-                  {item.nextDueDate
-                    ? ` · Next due ${formatDate(item.nextDueDate)}`
+                  {item.sumAssured != null
+                    ? ` · Sum assured ${formatCurrency(item.sumAssured, item.currency)}`
+                    : ""}
+                  {formatInsuranceAnnualDueLabel(
+                    item.premiumDueMonth,
+                    item.premiumDueDay,
+                  )
+                    ? ` · Due ${formatInsuranceAnnualDueLabel(item.premiumDueMonth, item.premiumDueDay)}`
+                    : item.nextDueDate
+                      ? ` · Next due ${formatDate(item.nextDueDate)}`
+                      : ""}
+                  {item.annualSubmissions?.length
+                    ? ` · ${item.annualSubmissions.length} submission year(s)`
                     : ""}
                   {item.termYears ? ` · ${item.termYears} yr term` : ""}
                 </p>
