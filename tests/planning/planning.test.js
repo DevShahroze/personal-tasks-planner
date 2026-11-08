@@ -613,6 +613,8 @@ test("validateInsuranceCreate stores simplified policy fields", () => {
   assert.equal(result.value.premiumAmount, 838500);
   assert.equal(result.value.totalPremiumAmount, 838500 * 3);
   assert.equal(result.value.annualSubmissions[0].year, 2025);
+  assert.equal(result.value.payments.length, 1);
+  assert.equal(result.value.payments[0].amount, 838500);
 });
 
 test("insurance annual due label and schedule", () => {

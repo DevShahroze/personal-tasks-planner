@@ -19,11 +19,17 @@ export async function GET(request, { params }) {
   }
 
   await connectDB();
-  const doc = await InsurancePolicy.findById(id).lean();
+  const doc = await InsurancePolicy.findById(id);
   if (!doc) {
     return jsonError("Insurance policy not found", 404);
   }
-  return jsonOk(doc);
+  const hadPayments = Boolean(doc.payments?.length);
+  normalizeInsuranceDocument(doc);
+  syncInsurancePolicy(doc, new Date().toISOString().slice(0, 10));
+  if (!hadPayments && doc.payments?.length) {
+    await doc.save();
+  }
+  return jsonOk(doc.toObject());
 }
 
 export async function PATCH(request, { params }) {

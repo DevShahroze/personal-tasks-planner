@@ -29,7 +29,7 @@ export default function InsuranceAnnualSubmissionsFields({
       <div>
         <h3 className="text-sm font-semibold tracking-tight">Amount submitted</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          What you paid or submitted each year (e.g. 838,500 for 2025).
+          Each row is logged as a premium payment for that year.
         </p>
       </div>
       <ul className="space-y-2">
@@ -48,7 +48,6 @@ export default function InsuranceAnnualSubmissionsFields({
                 min="1900"
                 max="2100"
                 step="1"
-                placeholder="2025"
                 value={row.year}
                 onChange={(event) => {
                   const value = event.target.value;
@@ -72,7 +71,6 @@ export default function InsuranceAnnualSubmissionsFields({
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="838500"
                 value={row.amount}
                 onChange={(event) => {
                   const value = event.target.value;

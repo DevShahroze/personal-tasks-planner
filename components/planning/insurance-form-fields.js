@@ -47,7 +47,6 @@ export default function InsuranceFormFields({
           id={`${idPrefix}-insurance-company`}
           name="insuranceCompany"
           required
-          placeholder="State Life Insurance"
           defaultValue={defaults?.insurerName || ""}
         />
       </div>
@@ -63,7 +62,6 @@ export default function InsuranceFormFields({
             id={`${idPrefix}-policy-number`}
             name="policyNumber"
             required
-            placeholder="20025024200-0"
             defaultValue={defaults?.policyNumber || ""}
           />
         </div>
@@ -73,7 +71,6 @@ export default function InsuranceFormFields({
             id={`${idPrefix}-holder-name`}
             name="holderName"
             required
-            placeholder="9054-202238"
             defaultValue={defaults?.appLoginName || ""}
           />
         </div>
@@ -93,7 +90,6 @@ export default function InsuranceFormFields({
           step="0.01"
           min="0.01"
           required
-          placeholder="3000000"
           defaultValue={defaults?.sumAssured ?? ""}
         />
       </div>
@@ -147,7 +143,6 @@ export default function InsuranceFormFields({
             max="100"
             step="1"
             required
-            placeholder="3"
             defaultValue={paymentYears ?? ""}
           />
         </div>
@@ -166,7 +161,6 @@ export default function InsuranceFormFields({
             max="100"
             step="1"
             required
-            placeholder="10"
             defaultValue={maturityYears}
           />
         </div>
@@ -188,7 +182,6 @@ export default function InsuranceFormFields({
             type="text"
             inputMode="decimal"
             autoComplete="off"
-            placeholder="e.g. 838500"
           />
         </fieldset>
       ) : null}
