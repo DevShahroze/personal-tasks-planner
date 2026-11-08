@@ -4,10 +4,8 @@ import { jsonError, jsonOk } from "@/lib/api-response";
 import { readJsonBody } from "@/lib/security/request";
 import { parsePagination } from "@/lib/validations";
 import { validateInsuranceCreate } from "@/lib/planning/validate";
-import {
-  applyInsuranceScheduleAfterPatch,
-  syncInsurancePolicy,
-} from "@/lib/planning/insurance";
+import { syncInsurancePolicy } from "@/lib/planning/insurance";
+import { normalizeInsuranceDocument } from "@/lib/planning/insurance-policy";
 import InsurancePolicy from "@/models/InsurancePolicy";
 
 export async function GET(request) {
@@ -53,7 +51,7 @@ export async function POST(request) {
 
   await connectDB();
   const doc = new InsurancePolicy(validated.value);
-  applyInsuranceScheduleAfterPatch(doc);
+  normalizeInsuranceDocument(doc);
   syncInsurancePolicy(doc, new Date().toISOString().slice(0, 10));
   await doc.save();
 

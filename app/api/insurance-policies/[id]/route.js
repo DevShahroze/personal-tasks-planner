@@ -3,10 +3,8 @@ import { requireAuth } from "@/lib/auth";
 import { jsonError, jsonOk, isValidObjectId } from "@/lib/api-response";
 import { readJsonBody } from "@/lib/security/request";
 import { validateInsuranceUpdate } from "@/lib/planning/validate";
-import {
-  applyInsuranceScheduleAfterPatch,
-  syncInsurancePolicy,
-} from "@/lib/planning/insurance";
+import { syncInsurancePolicy } from "@/lib/planning/insurance";
+import { normalizeInsuranceDocument } from "@/lib/planning/insurance-policy";
 import InsurancePolicy from "@/models/InsurancePolicy";
 
 export async function GET(request, { params }) {
@@ -56,7 +54,7 @@ export async function PATCH(request, { params }) {
   }
 
   Object.assign(doc, validated.patch);
-  applyInsuranceScheduleAfterPatch(doc);
+  normalizeInsuranceDocument(doc);
   syncInsurancePolicy(doc, new Date().toISOString().slice(0, 10));
   await doc.save();
   return jsonOk(doc.toObject());

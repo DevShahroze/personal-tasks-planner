@@ -108,15 +108,19 @@ export default function InsurancePolicyDetailClient() {
             </Link>{" "}
             / {item.policyNumber}
           </p>
-          <h1 className="page-title">{item.insurerName}</h1>
+          <h1 className="page-title">{item.insurerName || item.policyNumber}</h1>
           <p className="page-lead">
-            {item.status} · Premium {formatCurrency(item.premiumAmount, item.currency)}
-            {item.sumAssured != null ? (
-              <> · Sum assured {formatCurrency(item.sumAssured, item.currency)}</>
-            ) : null}{" "}
+            {item.status}
+            {item.sumAssured != null
+              ? ` · Sum assured ${formatCurrency(item.sumAssured, item.currency)}`
+              : ""}{" "}
             ·{" "}
             {formatInsuranceAnnualDueLabel(item.premiumDueMonth, item.premiumDueDay) ||
               `Next due ${formatDate(item.nextDueDate)}`}
+            {(item.premiumPaymentYears ?? item.termYears)
+              ? ` · Pay ${item.premiumPaymentYears ?? item.termYears} yr`
+              : ""}
+            {item.maturityYears ? ` · Matures ${item.maturityYears} yr` : ""}
           </p>
         </div>
         <PlanningExportMenu kind="insurance" record={item} />

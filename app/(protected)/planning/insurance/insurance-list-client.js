@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useInsurancePolicies } from "@/hooks/use-planning";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import { formatInsuranceAnnualDueLabel } from "@/lib/planning/insurance";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
@@ -45,11 +45,12 @@ export default function InsurancePoliciesClient() {
                 href={`/planning/insurance/${item._id}`}
                 className="block hover:underline"
               >
-                <span className="font-medium">{item.insurerName}</span>
+                <span className="font-medium">
+                  {item.insurerName || item.policyNumber}
+                </span>
                 <span className="text-muted-foreground"> · {item.policyNumber}</span>
                 <p className="text-xs text-muted-foreground">
-                  {item.status} · Premium{" "}
-                  {formatCurrency(item.premiumAmount, item.currency)}
+                  {item.status}
                   {item.sumAssured != null
                     ? ` · Sum assured ${formatCurrency(item.sumAssured, item.currency)}`
                     : ""}
@@ -58,13 +59,11 @@ export default function InsurancePoliciesClient() {
                     item.premiumDueDay,
                   )
                     ? ` · Due ${formatInsuranceAnnualDueLabel(item.premiumDueMonth, item.premiumDueDay)}`
-                    : item.nextDueDate
-                      ? ` · Next due ${formatDate(item.nextDueDate)}`
-                      : ""}
-                  {item.annualSubmissions?.length
-                    ? ` · ${item.annualSubmissions.length} submission year(s)`
                     : ""}
-                  {item.termYears ? ` · ${item.termYears} yr term` : ""}
+                  {(item.premiumPaymentYears ?? item.termYears)
+                    ? ` · Pay ${item.premiumPaymentYears ?? item.termYears} yr`
+                    : ""}
+                  {item.maturityYears ? ` · Matures ${item.maturityYears} yr` : ""}
                 </p>
               </Link>
             </li>

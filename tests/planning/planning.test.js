@@ -592,26 +592,27 @@ test("sortPaymentsByPaidAtAsc orders payments oldest first", () => {
   assert.equal(sorted[2].amount, 10);
 });
 
-test("validateInsuranceCreate stores policy, login, due date, and submissions", () => {
+test("validateInsuranceCreate stores simplified policy fields", () => {
   const result = validateInsuranceCreate({
-    insurerName: "State Life Insurance",
+    insuranceCompany: "State Life Insurance",
     policyNumber: "20025024200-0",
-    appLoginName: "9054-202238",
+    holderName: "9054-202238",
     sumAssured: 3000000,
-    premiumAmount: 838120,
     premiumDueMonth: 12,
     premiumDueDay: 31,
-    frequency: "yearly",
-    startDate: "2025-01-01",
+    premiumPaymentYears: 3,
+    maturityYears: 10,
     submissionYears: ["2025"],
     submissionAmounts: ["838500"],
   });
   assert.equal(result.ok, true);
+  assert.equal(result.value.insurerName, "State Life Insurance");
   assert.equal(result.value.policyNumber, "20025024200-0");
+  assert.equal(result.value.premiumPaymentYears, 3);
+  assert.equal(result.value.maturityYears, 10);
+  assert.equal(result.value.premiumAmount, 838500);
+  assert.equal(result.value.totalPremiumAmount, 838500 * 3);
   assert.equal(result.value.annualSubmissions[0].year, 2025);
-  assert.equal(result.value.annualSubmissions[0].amount, 838500);
-  assert.equal(result.value.premiumDueMonth, 12);
-  assert.equal(result.value.premiumDueDay, 31);
 });
 
 test("insurance annual due label and schedule", () => {
