@@ -1,5 +1,10 @@
 import Providers from "@/components/providers";
+import { WorkspaceProvider } from "@/contexts/workspace-context";
 
 export default function LoginLayout({ children }) {
-  return <Providers>{children}</Providers>;
+  return (
+    <Providers>
+      <WorkspaceProvider>{children}</WorkspaceProvider>
+    </Providers>
+  );
 }

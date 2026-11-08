@@ -4,10 +4,10 @@ import { usePathname } from "next/navigation";
 import { useWorkspace } from "@/contexts/workspace-context";
 import WorkspaceIframePanel from "@/components/workspace/workspace-iframe-panel";
 
-export default function WorkspaceIframeHost() {
+export default function WorkspaceIframeHost({ guestDesk = false } = {}) {
   const pathname = usePathname();
   const { apps, openTabIds, activeTabId, hydrated } = useWorkspace();
-  const onWorkspace = pathname === "/workspace";
+  const onWorkspace = pathname === "/workspace" || (guestDesk && pathname === "/login");
 
   if (!hydrated || !openTabIds.length) {
     return null;

@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { randomUUID } from "@/lib/uuid";
+import { GUEST_DESK_PATHS } from "@/lib/desk/constants.js";
 import { emptyWorkspaceState } from "@/lib/workspace/constants.js";
 import {
   loadWorkspaceState,
@@ -59,7 +60,7 @@ export function WorkspaceProvider({ children }) {
           activeTabId: appId,
         };
       });
-      if (pathname !== "/workspace") {
+      if (pathname !== "/workspace" && !GUEST_DESK_PATHS.includes(pathname)) {
         router.push("/workspace");
       }
     },
@@ -74,7 +75,7 @@ export function WorkspaceProvider({ children }) {
         }
         return { ...prev, activeTabId: appId };
       });
-      if (pathname !== "/workspace") {
+      if (pathname !== "/workspace" && !GUEST_DESK_PATHS.includes(pathname)) {
         router.push("/workspace");
       }
     },

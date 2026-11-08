@@ -13,7 +13,7 @@ function readSectionExpanded() {
   return window.localStorage.getItem(WORKSPACE_SECTION_EXPANDED_KEY) !== "0";
 }
 
-export default function WorkspaceSidebarSection({ collapsed = false }) {
+export default function WorkspaceSidebarSection({ collapsed = false, nested = false }) {
   const confirm = useConfirm();
   const { apps, openApp, addApp, updateApp, removeApp, moveApp, hydrated } =
     useWorkspace();
@@ -102,9 +102,14 @@ export default function WorkspaceSidebarSection({ collapsed = false }) {
     />
   );
 
+  const sectionShellClass = nested
+    ? "space-y-0.5"
+    : "mt-2 space-y-0.5 border-t border-border pt-2";
+  const expandedWrapClass = nested ? "mt-0.5" : "mt-2 border-t border-border pt-2";
+
   if (collapsed) {
     return (
-      <div className="mt-2 space-y-0.5 border-t border-border pt-2">
+      <div className={sectionShellClass}>
         {hydrated
           ? apps.map((app) => (
               <Button
@@ -136,10 +141,14 @@ export default function WorkspaceSidebarSection({ collapsed = false }) {
   }
 
   return (
-    <div className="mt-2 border-t border-border pt-2">
+    <div className={expandedWrapClass}>
       <button
         type="button"
-        className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground hover:bg-muted"
+        className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 font-medium text-muted-foreground hover:bg-muted ${
+          nested
+            ? "text-xs normal-case tracking-normal"
+            : "text-[0.6875rem] uppercase tracking-wide"
+        }`}
         onClick={toggleSection}
         aria-expanded={expanded}
       >

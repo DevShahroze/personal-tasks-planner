@@ -14,7 +14,7 @@ import RightSidebarUtilities from "@/components/nav/right-sidebar-utilities";
 import ConnectivityIndicator from "@/components/nav/connectivity-indicator";
 import { NAV_LINK_ICONS, NavAdminIcon } from "@/components/nav/nav-link-icons";
 import { useShellNav } from "@/hooks/use-shell-nav";
-import WorkspaceSidebarSection from "@/components/workspace/workspace-sidebar-section";
+import DeskSidebarSection from "@/components/desk/desk-sidebar-section";
 import WorkspaceIframeHost from "@/components/workspace/workspace-iframe-host";
 
 const mainNavItems = [
@@ -151,7 +151,7 @@ export default function AppShell({ children }) {
             collapsed={!leftExpanded}
             className="flex-1 overflow-y-auto overflow-x-hidden"
           />
-          <WorkspaceSidebarSection collapsed={!leftExpanded} />
+          <DeskSidebarSection collapsed={!leftExpanded} />
         </ShellSidebar>
 
         <main className="flex min-w-0 flex-1 flex-col overflow-y-auto p-3 md:p-4">
@@ -203,7 +203,7 @@ export default function AppShell({ children }) {
               onNavigate={closeMobile}
               className="flex-1 overflow-y-auto"
             />
-            <WorkspaceSidebarSection />
+            <DeskSidebarSection />
             <MobileNavFooter
               onLogout={async () => {
                 closeMobile();
