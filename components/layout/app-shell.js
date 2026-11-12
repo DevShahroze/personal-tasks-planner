@@ -98,13 +98,10 @@ export default function AppShell({ children }) {
     }
   };
 
-  const onNotes =
-    pathname === "/notes" || (pathname && pathname.startsWith("/notes/"));
+  const onNotes = pathname === "/notes" || (pathname && pathname.startsWith("/notes/"));
   const mainScrollClass = onNotes ? "overflow-hidden" : "overflow-y-auto";
   const mainInnerClass =
-    onNotes || pathname === "/workspace"
-      ? "flex min-h-0 flex-1 flex-col"
-      : undefined;
+    onNotes || pathname === "/workspace" ? "flex min-h-0 flex-1 flex-col" : undefined;
 
   const closeMobile = () => setMobileOpen(false);
   const closeMobileAdmin = () => setMobileAdminOpen(false);
@@ -166,9 +163,7 @@ export default function AppShell({ children }) {
           <DeskSidebarSection collapsed={!leftExpanded} />
         </ShellSidebar>
 
-        <main
-          className={`flex min-w-0 flex-1 flex-col p-3 md:p-4 ${mainScrollClass}`}
-        >
+        <main className={`flex min-w-0 flex-1 flex-col p-3 md:p-4 ${mainScrollClass}`}>
           <TaskProcessorMainChrome>
             <PageGoBack />
             <div className={mainInnerClass}>

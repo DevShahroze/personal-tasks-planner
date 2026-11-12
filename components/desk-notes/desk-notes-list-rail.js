@@ -15,7 +15,11 @@ function TrashIcon({ className = "h-3.5 w-3.5" }) {
       strokeWidth="2"
       aria-hidden
     >
-      <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -100,7 +104,9 @@ export default function DeskNotesListRail() {
                   type="button"
                   variant="ghost"
                   className={`absolute right-0.5 top-1 h-7 w-7 px-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 ${
-                    selected ? "text-primary-foreground hover:bg-primary-foreground/15" : ""
+                    selected
+                      ? "text-primary-foreground hover:bg-primary-foreground/15"
+                      : ""
                   }`}
                   title="Delete note"
                   aria-label={`Delete ${item.title}`}

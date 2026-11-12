@@ -21,10 +21,7 @@ import {
 import { MAX_DESK_NOTE_CONTENT_LENGTH } from "@/lib/desk-notes/constants.js";
 import { limitRichText } from "@/lib/rich-text/field.js";
 import { isRichTextEmpty } from "@/lib/rich-text/plain-text.js";
-import {
-  useDeskNoteMutations,
-  useDeskNotesList,
-} from "@/hooks/use-desk-notes";
+import { useDeskNoteMutations, useDeskNotesList } from "@/hooks/use-desk-notes";
 
 const DeskNotesContext = createContext(null);
 
