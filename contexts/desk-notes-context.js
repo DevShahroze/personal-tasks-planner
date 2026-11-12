@@ -233,9 +233,11 @@ export function DeskNotesProvider({ children }) {
     }
     const session = loadDeskNoteSession();
     if (session?.id && typeof session.content === "string") {
+      /* eslint-disable react-hooks/set-state-in-effect -- restore active note draft from session storage after mount */
       setActiveId(session.id);
       setDraft(session.content);
       setSavedDraft(session.content);
+      /* eslint-enable react-hooks/set-state-in-effect */
       draftRef.current = session.content;
       savedDraftRef.current = session.content;
     }

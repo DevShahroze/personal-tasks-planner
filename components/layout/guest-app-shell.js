@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/theme/theme-toggle";
 import Button from "@/components/ui/button";
@@ -65,12 +65,6 @@ export default function GuestAppShell() {
   const { leftExpanded, toggleLeft } = useShellNav();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(loginRoute);
-
-  useEffect(() => {
-    if (loginRoute) {
-      setLoginOpen(true);
-    }
-  }, [loginRoute]);
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden bg-background text-foreground">
