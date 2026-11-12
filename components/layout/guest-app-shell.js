@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/theme/theme-toggle";
 import Button from "@/components/ui/button";
 import DeskSidebarSection from "@/components/desk/desk-sidebar-section";
@@ -11,9 +12,21 @@ import { ShellSidebar } from "@/components/layout/shell-sidebar";
 import { useShellNav } from "@/hooks/use-shell-nav";
 import { useWorkspace } from "@/contexts/workspace-context";
 
-function GuestMain({ loginOpen, setLoginOpen }) {
+function GuestMain({ loginOpen, setLoginOpen, loginRoute }) {
   const { openTabIds, hydrated } = useWorkspace();
   const workspaceActive = hydrated && openTabIds.length > 0;
+
+  if (loginRoute || loginOpen) {
+    return (
+      <div className="flex flex-1 items-center justify-center py-8">
+        <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+          <InlineLoginForm
+            onCancel={loginRoute ? undefined : () => setLoginOpen(false)}
+          />
+        </Suspense>
+      </div>
+    );
+  }
 
   if (workspaceActive) {
     return (
@@ -28,16 +41,6 @@ function GuestMain({ loginOpen, setLoginOpen }) {
         </div>
         <WorkspaceTabBar />
         <WorkspaceIframeHost guestDesk />
-      </div>
-    );
-  }
-
-  if (loginOpen) {
-    return (
-      <div className="flex flex-1 items-center justify-center py-8">
-        <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
-          <InlineLoginForm onCancel={() => setLoginOpen(false)} />
-        </Suspense>
       </div>
     );
   }
@@ -57,9 +60,17 @@ function GuestMain({ loginOpen, setLoginOpen }) {
 }
 
 export default function GuestAppShell() {
+  const pathname = usePathname();
+  const loginRoute = pathname === "/login";
   const { leftExpanded, toggleLeft } = useShellNav();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(loginRoute);
+
+  useEffect(() => {
+    if (loginRoute) {
+      setLoginOpen(true);
+    }
+  }, [loginRoute]);
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden bg-background text-foreground">
@@ -81,7 +92,7 @@ export default function GuestAppShell() {
         </div>
         <div className="flex-1" />
         <ThemeToggle />
-        {!loginOpen ? (
+        {!loginOpen && !loginRoute ? (
           <Button
             type="button"
             variant="secondary"
@@ -106,7 +117,11 @@ export default function GuestAppShell() {
         </ShellSidebar>
 
         <main className="flex min-w-0 flex-1 flex-col overflow-y-auto p-3 md:p-4">
-          <GuestMain loginOpen={loginOpen} setLoginOpen={setLoginOpen} />
+          <GuestMain
+            loginOpen={loginOpen}
+            setLoginOpen={setLoginOpen}
+            loginRoute={loginRoute}
+          />
         </main>
       </div>
 

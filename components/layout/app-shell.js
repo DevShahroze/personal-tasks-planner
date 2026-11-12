@@ -16,11 +16,14 @@ import { NAV_LINK_ICONS, NavAdminIcon } from "@/components/nav/nav-link-icons";
 import { useShellNav } from "@/hooks/use-shell-nav";
 import DeskSidebarSection from "@/components/desk/desk-sidebar-section";
 import WorkspaceIframeHost from "@/components/workspace/workspace-iframe-host";
+import DeskNotesListRail from "@/components/desk-notes/desk-notes-list-rail";
+import { clearDeskNoteSession } from "@/lib/desk-notes/storage.js";
 
 const mainNavItems = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/tasks", label: "Tasks" },
   { href: "/thoughts", label: "Thoughts" },
+  { href: "/notes", label: "Notes" },
   { href: "/plans", label: "Plans" },
   { href: "/workspace", label: "Workspace" },
   { href: "/important-info", label: "Important info" },
@@ -86,6 +89,7 @@ export default function AppShell({ children }) {
   const logout = async () => {
     setLoggingOut(true);
     try {
+      clearDeskNoteSession();
       await authApi.logout();
       router.push("/login");
       router.refresh();
@@ -93,6 +97,14 @@ export default function AppShell({ children }) {
       setLoggingOut(false);
     }
   };
+
+  const onNotes =
+    pathname === "/notes" || (pathname && pathname.startsWith("/notes/"));
+  const mainScrollClass = onNotes ? "overflow-hidden" : "overflow-y-auto";
+  const mainInnerClass =
+    onNotes || pathname === "/workspace"
+      ? "flex min-h-0 flex-1 flex-col"
+      : undefined;
 
   const closeMobile = () => setMobileOpen(false);
   const closeMobileAdmin = () => setMobileAdminOpen(false);
@@ -154,19 +166,19 @@ export default function AppShell({ children }) {
           <DeskSidebarSection collapsed={!leftExpanded} />
         </ShellSidebar>
 
-        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto p-3 md:p-4">
+        <main
+          className={`flex min-w-0 flex-1 flex-col p-3 md:p-4 ${mainScrollClass}`}
+        >
           <TaskProcessorMainChrome>
             <PageGoBack />
-            <div
-              className={
-                pathname === "/workspace" ? "flex min-h-0 flex-1 flex-col" : undefined
-              }
-            >
+            <div className={mainInnerClass}>
               {children}
               <WorkspaceIframeHost />
             </div>
           </TaskProcessorMainChrome>
         </main>
+
+        {onNotes ? <DeskNotesListRail /> : null}
 
         <ShellSidebar
           side="right"

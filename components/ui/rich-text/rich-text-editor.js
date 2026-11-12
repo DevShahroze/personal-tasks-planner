@@ -60,6 +60,8 @@ export default function RichTextEditor({
   /** Change when loaded entity changes so the editor remounts with fresh HTML. */
   resetKey = "",
   form: formId,
+  /** Registers a flush function that syncs the DOM and returns stored HTML. */
+  onBindFlush = null,
 }) {
   const autoId = useId();
   const inputId = idProp || (name ? `rte-${name}` : `rte-${autoId}`);
@@ -91,9 +93,26 @@ export default function RichTextEditor({
 
   const flushEditor = useCallback(() => {
     if (bodyRef.current) {
+      const stored = prepareRichTextForStorage(bodyRef.current.innerHTML);
       syncHidden(bodyRef.current.innerHTML);
+      return stored;
     }
-  }, [syncHidden]);
+    if (isControlled) {
+      return prepareRichTextForStorage(value || "");
+    }
+    return prepareRichTextForStorage(hiddenRef.current?.value || defaultValue || "");
+  }, [defaultValue, isControlled, syncHidden, value]);
+
+  useEffect(() => {
+    if (!onBindFlush) {
+      return undefined;
+    }
+    onBindFlush(flushEditor);
+    return () => {
+      flushEditor();
+      onBindFlush(null);
+    };
+  }, [flushEditor, onBindFlush]);
 
   useEffect(() => {
     if (lastResetKeyRef.current === resetKey) {
@@ -125,27 +144,42 @@ export default function RichTextEditor({
 
   useEffect(() => {
     const host = hostRef.current;
-    if (!host || bodyRef.current) {
+    if (!host) {
       return undefined;
     }
 
-    const root = host.attachShadow({ mode: "open" });
-    const style = document.createElement("style");
-    const body = document.createElement("div");
-    body.className = "rte-body";
+    let root = host.shadowRoot;
+    if (!root) {
+      root = host.attachShadow({ mode: "open" });
+    }
+
+    let style = styleRef.current;
+    let body = bodyRef.current;
+    if (!body?.isConnected || body.getRootNode() !== root) {
+      style = root.querySelector("style");
+      body = root.querySelector(".rte-body");
+    }
+
+    if (!body) {
+      root.replaceChildren();
+      style = document.createElement("style");
+      body = document.createElement("div");
+      body.className = "rte-body";
+      root.appendChild(style);
+      root.appendChild(body);
+
+      const initial = isControlled ? value : defaultValue;
+      setEditorHtml(body, initial);
+      syncHidden(body.innerHTML);
+    }
+
+    styleRef.current = style;
+    bodyRef.current = body;
     body.setAttribute("data-placeholder", placeholder);
     body.contentEditable = String(!disabled && !readOnly);
     body.setAttribute("aria-multiline", "true");
     body.setAttribute("role", "textbox");
     body.setAttribute("aria-labelledby", inputId);
-    root.appendChild(style);
-    root.appendChild(body);
-    styleRef.current = style;
-    bodyRef.current = body;
-
-    const initial = isControlled ? value : defaultValue;
-    setEditorHtml(body, initial);
-    syncHidden(body.innerHTML);
 
     const onInput = () => {
       if (syncingRef.current) {
@@ -160,6 +194,8 @@ export default function RichTextEditor({
     return () => {
       body.removeEventListener("input", onInput);
       body.removeEventListener("blur", onBlur);
+      bodyRef.current = null;
+      styleRef.current = null;
     };
   }, [
     defaultValue,

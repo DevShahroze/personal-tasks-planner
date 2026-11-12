@@ -54,6 +54,15 @@ export function NavPlansIcon(props) {
   );
 }
 
+export function NavNotesIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M6 4h12a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" />
+      <path d="M8 8h8M8 12h8M8 16h5" />
+    </Icon>
+  );
+}
+
 export function NavWorkspaceIcon(props) {
   return (
     <Icon {...props}>
@@ -114,6 +123,7 @@ export const NAV_LINK_ICONS = {
   "/dashboard": NavDashboardIcon,
   "/tasks": NavTasksIcon,
   "/thoughts": NavThoughtsIcon,
+  "/notes": NavNotesIcon,
   "/plans": NavPlansIcon,
   "/workspace": NavWorkspaceIcon,
   "/important-info": NavImportantInfoIcon,

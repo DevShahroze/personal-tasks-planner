@@ -8,6 +8,7 @@ import { TaskCalendarProvider } from "@/contexts/task-calendar-context";
 import { PinLockProvider } from "@/contexts/pin-lock-context";
 import { SessionIdleLogoutProvider } from "@/contexts/session-idle-logout-context";
 import { WorkspaceProvider } from "@/contexts/workspace-context";
+import { DeskNotesProvider } from "@/contexts/desk-notes-context";
 
 export default function ProtectedLayout({ children }) {
   return (
@@ -22,7 +23,9 @@ export default function ProtectedLayout({ children }) {
               <PinLockProvider>
                 <SessionIdleLogoutProvider>
                   <WorkspaceProvider>
-                    <AppShell>{children}</AppShell>
+                    <DeskNotesProvider>
+                      <AppShell>{children}</AppShell>
+                    </DeskNotesProvider>
                   </WorkspaceProvider>
                 </SessionIdleLogoutProvider>
               </PinLockProvider>
