@@ -270,7 +270,11 @@ export function useTaskProcessorSlice() {
   );
 
   useEffect(() => {
-    if (!clientTodayYmd || !status?.calendarDateYmd || document.visibilityState !== "visible") {
+    if (
+      !clientTodayYmd ||
+      !status?.calendarDateYmd ||
+      document.visibilityState !== "visible"
+    ) {
       return undefined;
     }
     const win = typeof window !== "undefined" ? window : null;

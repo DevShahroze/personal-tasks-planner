@@ -24,7 +24,10 @@ function TrashIcon({ className = "h-3.5 w-3.5" }) {
   );
 }
 
-export default function DeskNotesListBody({ onAfterSelect, touchDeleteAlways = false }) {
+export default function DeskNotesListBody({
+  onAfterSelect,
+  touchDeleteAlways = false,
+}) {
   const confirm = useConfirm();
   const {
     items,
@@ -104,7 +107,9 @@ export default function DeskNotesListBody({ onAfterSelect, touchDeleteAlways = f
                 type="button"
                 variant="ghost"
                 className={`absolute right-0.5 top-1 h-7 w-7 px-0 ${deleteVisibility} ${
-                  selected ? "text-primary-foreground hover:bg-primary-foreground/15" : ""
+                  selected
+                    ? "text-primary-foreground hover:bg-primary-foreground/15"
+                    : ""
                 }`}
                 title="Delete note"
                 aria-label={`Delete ${item.title}`}

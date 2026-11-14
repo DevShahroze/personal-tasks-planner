@@ -109,7 +109,11 @@ export default function DeskNotesEditor() {
           <div className="absolute bottom-0 left-0 flex max-h-[min(85dvh,32rem)] w-full flex-col rounded-t-lg border border-border bg-sidebar text-sidebar-foreground shadow-lg">
             <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
               <span className="text-sm font-semibold">All notes</span>
-              <Button type="button" variant="ghost" onClick={() => setMobileListOpen(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setMobileListOpen(false)}
+              >
                 Close
               </Button>
             </div>

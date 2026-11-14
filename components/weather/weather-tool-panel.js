@@ -41,10 +41,7 @@ export default function WeatherToolPanel() {
     return <Spinner label="Finding your location…" />;
   }
 
-  if (
-    (locationStatus === "denied" || locationStatus === "unavailable") &&
-    !forecast
-  ) {
+  if ((locationStatus === "denied" || locationStatus === "unavailable") && !forecast) {
     return (
       <EmptyState
         title="Location needed"
@@ -68,7 +65,11 @@ export default function WeatherToolPanel() {
         title="Weather unavailable"
         description="The forecast could not be loaded. Check your connection and try again."
         action={
-          <Button type="button" variant="secondary" onClick={() => forecastQuery.refetch()}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => forecastQuery.refetch()}
+          >
             Retry
           </Button>
         }
@@ -105,12 +106,15 @@ export default function WeatherToolPanel() {
           <span className="text-2xl" aria-hidden>
             {current.symbol}
           </span>
-          <span className="text-2xl font-semibold tabular-nums">{formatTemp(current.temperature)}</span>
+          <span className="text-2xl font-semibold tabular-nums">
+            {formatTemp(current.temperature)}
+          </span>
           <span className="text-sm text-muted-foreground">{current.label}</span>
         </div>
         <p className="mt-2 text-[0.6875rem] text-muted-foreground">
-          Feels like {formatTemp(current.apparentTemperature)} · Humidity {current.humidity ?? "—"}%
-          · Wind {current.windSpeed != null ? `${Math.round(current.windSpeed)} km/h` : "—"}
+          Feels like {formatTemp(current.apparentTemperature)} · Humidity{" "}
+          {current.humidity ?? "—"}% · Wind{" "}
+          {current.windSpeed != null ? `${Math.round(current.windSpeed)} km/h` : "—"}
         </p>
         <div className="mt-3 grid gap-2 sm:grid-cols-3">
           <StatTile
@@ -149,9 +153,7 @@ export default function WeatherToolPanel() {
             {rain.upcomingWetHours
               .slice(0, 6)
               .map((h) =>
-                h.chance != null
-                  ? `${h.label} (${Math.round(h.chance)}%)`
-                  : h.label,
+                h.chance != null ? `${h.label} (${Math.round(h.chance)}%)` : h.label,
               )
               .join(", ")}
           </p>
@@ -266,7 +268,10 @@ export default function WeatherToolPanel() {
                       unit="°"
                       width={36}
                     />
-                    <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${v}°`, "Temp"]} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      formatter={(v) => [`${v}°`, "Temp"]}
+                    />
                     <Line
                       type="monotone"
                       dataKey="temperature"
@@ -352,7 +357,9 @@ export default function WeatherToolPanel() {
       ) : (
         <ChartPanel title="Daily high & low">
           {!daily.length ? (
-            <p className="text-xs text-muted-foreground">No daily forecast available.</p>
+            <p className="text-xs text-muted-foreground">
+              No daily forecast available.
+            </p>
           ) : (
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -462,7 +469,9 @@ export default function WeatherToolPanel() {
                 {day.precipitationProbabilityMax != null
                   ? `${Math.round(day.precipitationProbabilityMax)}% rain · `
                   : ""}
-                {day.precipitationSum != null ? `${day.precipitationSum.toFixed(1)} mm · ` : ""}
+                {day.precipitationSum != null
+                  ? `${day.precipitationSum.toFixed(1)} mm · `
+                  : ""}
                 {formatTemp(day.tempMin)} / {formatTemp(day.tempMax)}
               </span>
             </li>
@@ -479,9 +488,13 @@ function StatTile({ title, value, detail }) {
       <p className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
         {title}
       </p>
-      <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">{value}</p>
+      <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
+        {value}
+      </p>
       {detail ? (
-        <p className="mt-0.5 text-[0.625rem] leading-snug text-muted-foreground">{detail}</p>
+        <p className="mt-0.5 text-[0.625rem] leading-snug text-muted-foreground">
+          {detail}
+        </p>
       ) : null}
     </div>
   );

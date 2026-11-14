@@ -43,12 +43,12 @@ export default function WeatherTopBar() {
     );
   }
 
-  if (
-    (locationStatus === "denied" || locationStatus === "unavailable") &&
-    !forecast
-  ) {
+  if ((locationStatus === "denied" || locationStatus === "unavailable") && !forecast) {
     return (
-      <WeatherNavChip title="Enable location to see local weather" ariaLabel="Weather location">
+      <WeatherNavChip
+        title="Enable location to see local weather"
+        ariaLabel="Weather location"
+      >
         <span className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
           Wx
         </span>
