@@ -18,17 +18,32 @@ function formatClockParts(timestampMs) {
   return { time, dateLabel, tz };
 }
 
+let clockSnapshotMs = 0;
+
 function subscribeClockTick(onStoreChange) {
-  const id = window.setInterval(onStoreChange, 1000);
+  clockSnapshotMs = Date.now();
+  onStoreChange();
+  const id = window.setInterval(() => {
+    clockSnapshotMs = Date.now();
+    onStoreChange();
+  }, 1000);
   return () => window.clearInterval(id);
 }
 
 function readClockMs() {
-  return Date.now();
+  return clockSnapshotMs;
+}
+
+function readClockMsServer() {
+  return 0;
 }
 
 export default function NavClock() {
-  const nowMs = useSyncExternalStore(subscribeClockTick, readClockMs, () => 0);
+  const nowMs = useSyncExternalStore(
+    subscribeClockTick,
+    readClockMs,
+    readClockMsServer,
+  );
 
   const { time, dateLabel, tz } =
     nowMs > 0 ? formatClockParts(nowMs) : { time: "--:--:--", dateLabel: "", tz: "" };

@@ -17,6 +17,11 @@ export const RICH_TEXT_ISLAND_CSS = `
   padding: 0.375rem 0.625rem;
   word-break: break-word;
 }
+.rte-body[data-tall="true"] {
+  min-height: var(--rte-min-height, 24rem);
+  max-height: var(--rte-max-height, 24rem);
+  overflow-y: auto;
+}
 .rte-body:empty::before {
   content: attr(data-placeholder);
   color: var(--rte-placeholder, #737373);

@@ -40,7 +40,9 @@ function TaskProcessorShellGate({ children }) {
         />
       ) : null}
       <div
-        className={locked ? "pointer-events-none select-none opacity-60" : undefined}
+        className={`flex min-h-0 flex-1 flex-col${
+          locked ? " pointer-events-none select-none opacity-60" : ""
+        }`}
       >
         {children}
       </div>

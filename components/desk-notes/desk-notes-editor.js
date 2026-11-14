@@ -67,7 +67,7 @@ export default function DeskNotesEditor() {
         </div>
       </div>
 
-      <div className="relative flex min-h-0 flex-1 flex-col">
+      <div className="relative shrink-0">
         {loadingNote ? (
           <p className="absolute inset-x-0 top-2 z-10 text-center text-xs text-muted-foreground">
             Loading note…
@@ -80,11 +80,10 @@ export default function DeskNotesEditor() {
           onChange={(event) => setDraftContent(event.target.value)}
           onBindFlush={registerEditorFlush}
           resetKey={activeId ?? "new"}
-          rows={12}
-          maxRows={80}
+          tall
+          tallMinHeight="calc(100dvh - 14rem)"
           disabled={loadingNote}
           readOnly={loadingNote}
-          className="flex min-h-0 flex-1 flex-col"
         />
       </div>
 

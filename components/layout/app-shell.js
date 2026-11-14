@@ -171,7 +171,11 @@ export default function AppShell({ children }) {
           <TaskProcessorMainChrome>
             <PageGoBack />
             <div className={mainInnerClass}>
-              {children}
+              {onNotes ? (
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+              ) : (
+                children
+              )}
               <WorkspaceIframeHost />
             </div>
           </TaskProcessorMainChrome>

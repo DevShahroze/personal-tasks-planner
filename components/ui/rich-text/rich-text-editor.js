@@ -27,6 +27,179 @@ function setEditorHtml(body, raw) {
   body.innerHTML = sanitizeRichTextHtml(value);
 }
 
+const FONT_SIZE_PX_OPTIONS = ["12", "14", "16", "18", "20", "24", "28", "32"];
+const FONT_SIZE_PX_SET = new Set(FONT_SIZE_PX_OPTIONS);
+
+function getEditorSelection(body) {
+  if (!body) {
+    return null;
+  }
+  const root = body.getRootNode();
+  if (root instanceof ShadowRoot && typeof root.getSelection === "function") {
+    return root.getSelection();
+  }
+  return body.ownerDocument.getSelection();
+}
+
+function rangeInEditorBody(body, range) {
+  if (!body || !range) {
+    return false;
+  }
+  let node = range.commonAncestorContainer;
+  if (node.nodeType === Node.TEXT_NODE) {
+    node = node.parentNode;
+  }
+  while (node) {
+    if (node === body) {
+      return true;
+    }
+    node = node.parentNode;
+  }
+  return false;
+}
+
+function parseInlineFontSizePx(styleValue) {
+  const raw = String(styleValue || "")
+    .trim()
+    .toLowerCase();
+  const match = raw.match(/^(\d+(?:\.\d+)?)px$/);
+  if (!match) {
+    return "";
+  }
+  return String(Math.round(Number(match[1])));
+}
+
+function detectFontSizePxAtSelection(body) {
+  const selection = getEditorSelection(body);
+  if (!body || !selection?.rangeCount) {
+    return "";
+  }
+  const range = selection.getRangeAt(0);
+  if (!rangeInEditorBody(body, range)) {
+    return "";
+  }
+  let node = selection.anchorNode;
+  if (!node) {
+    return "";
+  }
+  if (node.nodeType === Node.TEXT_NODE) {
+    node = node.parentNode;
+  }
+  while (node && node !== body) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const inline = parseInlineFontSizePx(node.style.fontSize);
+      if (inline && FONT_SIZE_PX_SET.has(inline)) {
+        return inline;
+      }
+    }
+    node = node.parentNode;
+  }
+  return "";
+}
+
+function pickFormattingRange(body, savedRange) {
+  const selection = getEditorSelection(body);
+  let range = null;
+  if (selection?.rangeCount) {
+    const live = selection.getRangeAt(0);
+    if (rangeInEditorBody(body, live)) {
+      range = live.cloneRange();
+    }
+  }
+  if (
+    (!range || range.collapsed) &&
+    savedRange &&
+    !savedRange.collapsed &&
+    rangeInEditorBody(body, savedRange)
+  ) {
+    range = savedRange.cloneRange();
+  }
+  return range;
+}
+
+function FontSizeMenu({ value, onPick, onReset, disabled }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    const close = (event) => {
+      if (rootRef.current?.contains(event.target)) {
+        return;
+      }
+      setOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open]);
+
+  const label = value === "pick" ? "Size" : `${value}px`;
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        title="Font size"
+        aria-label="Font size"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={`rounded border border-border bg-card px-1.5 py-0.5 text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-40 ${
+          value !== "pick" ? "text-primary" : ""
+        }`}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => setOpen((wasOpen) => !wasOpen)}
+      >
+        {label}
+      </button>
+      {open ? (
+        <ul
+          className="absolute left-0 top-full z-30 mt-0.5 max-h-48 min-w-[5rem] overflow-y-auto rounded border border-border bg-card py-0.5 shadow-md"
+          role="listbox"
+          aria-label="Font size options"
+        >
+          {FONT_SIZE_PX_OPTIONS.map((px) => (
+            <li key={px}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={value === px}
+                className={`block w-full px-2 py-0.5 text-left text-xs hover:bg-muted ${
+                  value === px
+                    ? "bg-muted font-semibold text-foreground"
+                    : "text-foreground"
+                }`}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  onPick(px);
+                  setOpen(false);
+                }}
+              >
+                {px}px
+              </button>
+            </li>
+          ))}
+          <li>
+            <button
+              type="button"
+              className="block w-full border-t border-border px-2 py-0.5 text-left text-xs text-muted-foreground hover:bg-muted"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onReset();
+                setOpen(false);
+              }}
+            >
+              Reset
+            </button>
+          </li>
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 function ToolbarButton({ title, onClick, children, disabled }) {
   return (
     <button
@@ -62,6 +235,9 @@ export default function RichTextEditor({
   form: formId,
   /** Registers a flush function that syncs the DOM and returns stored HTML. */
   onBindFlush = null,
+  /** Use viewport-based min/max height (Notes) instead of the default 50vh cap. */
+  tall = false,
+  tallMinHeight = "calc(100dvh - 14rem)",
 }) {
   const autoId = useId();
   const inputId = idProp || (name ? `rte-${name}` : `rte-${autoId}`);
@@ -75,6 +251,22 @@ export default function RichTextEditor({
   const [editorGeneration, setEditorGeneration] = useState(0);
   const lastResetKeyRef = useRef(resetKey);
   const maxRowsRef = useRef(maxRows);
+  const savedRangeRef = useRef(null);
+  const fontSizeLabelRef = useRef("pick");
+  const [fontSizeSelectValue, setFontSizeSelectValue] = useState("pick");
+
+  const saveSelection = useCallback(() => {
+    const body = bodyRef.current;
+    const selection = getEditorSelection(body);
+    if (!body || !selection?.rangeCount) {
+      return;
+    }
+    const range = selection.getRangeAt(0);
+    if (!rangeInEditorBody(body, range)) {
+      return;
+    }
+    savedRangeRef.current = range.cloneRange();
+  }, []);
 
   const syncHidden = useCallback(
     (html) => {
@@ -142,6 +334,107 @@ export default function RichTextEditor({
     [disabled, readOnly, syncHidden],
   );
 
+  const setFontSizeLabel = useCallback((next) => {
+    const label = next || "pick";
+    if (fontSizeLabelRef.current === label) {
+      return;
+    }
+    fontSizeLabelRef.current = label;
+    setFontSizeSelectValue(label);
+  }, []);
+
+  const commitBodyHtml = useCallback(
+    (html) => {
+      syncingRef.current = true;
+      syncHidden(html);
+      syncingRef.current = false;
+    },
+    [syncHidden],
+  );
+
+  const applyFontSize = useCallback(
+    (sizePx) => {
+      const body = bodyRef.current;
+      if (!body || disabled || readOnly) {
+        return;
+      }
+      const range = pickFormattingRange(body, savedRangeRef.current);
+      if (!range) {
+        return;
+      }
+      const doc = body.ownerDocument;
+      const selection = getEditorSelection(body);
+      body.focus();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      if (!sizePx) {
+        try {
+          doc.execCommand("removeFormat", false);
+        } catch {
+          // ignore
+        }
+        commitBodyHtml(body.innerHTML);
+        setFontSizeLabel("pick");
+        return;
+      }
+      const span = doc.createElement("span");
+      span.style.fontSize = `${sizePx}px`;
+      if (range.collapsed) {
+        range.insertNode(span);
+        const cursor = doc.createRange();
+        cursor.setStart(span, 0);
+        cursor.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(cursor);
+      } else {
+        try {
+          range.surroundContents(span);
+        } catch {
+          span.appendChild(range.extractContents());
+          range.insertNode(span);
+        }
+        const wrapped = doc.createRange();
+        wrapped.selectNodeContents(span);
+        selection?.removeAllRanges();
+        selection?.addRange(wrapped);
+        savedRangeRef.current = wrapped.cloneRange();
+      }
+      commitBodyHtml(body.innerHTML);
+      setFontSizeLabel(String(sizePx));
+    },
+    [commitBodyHtml, disabled, readOnly, setFontSizeLabel],
+  );
+
+  const refreshFontSizeSelect = useCallback(() => {
+    const body = bodyRef.current;
+    if (!body) {
+      return;
+    }
+    setFontSizeLabel(detectFontSizePxAtSelection(body));
+  }, [setFontSizeLabel]);
+
+  const applyEditorBodyLayout = useCallback(() => {
+    const body = bodyRef.current;
+    if (!body) {
+      return;
+    }
+    const lineRem = 1.5;
+    const rowCount = Math.max(3, rows);
+    const scrollRows = maxRowsRef.current ?? Math.max(rowCount * 3, 10);
+    if (tall) {
+      body.setAttribute("data-tall", "true");
+      body.style.setProperty("--rte-min-height", tallMinHeight);
+      body.style.setProperty("--rte-max-height", tallMinHeight);
+    } else {
+      body.removeAttribute("data-tall");
+      body.style.setProperty("--rte-min-height", `${rowCount * lineRem}rem`);
+      body.style.setProperty(
+        "--rte-max-height",
+        `${Math.min(scrollRows * lineRem, 28)}rem`,
+      );
+    }
+  }, [rows, tall, tallMinHeight]);
+
   useEffect(() => {
     const host = hostRef.current;
     if (!host) {
@@ -189,11 +482,20 @@ export default function RichTextEditor({
     };
     const onBlur = () => flushEditor();
 
+    const onSelectionActivity = () => refreshFontSizeSelect();
+
     body.addEventListener("input", onInput);
     body.addEventListener("blur", onBlur);
+    body.addEventListener("mouseup", onSelectionActivity);
+    body.addEventListener("keyup", onSelectionActivity);
+
+    applyEditorBodyLayout();
+
     return () => {
       body.removeEventListener("input", onInput);
       body.removeEventListener("blur", onBlur);
+      body.removeEventListener("mouseup", onSelectionActivity);
+      body.removeEventListener("keyup", onSelectionActivity);
       bodyRef.current = null;
       styleRef.current = null;
     };
@@ -206,6 +508,8 @@ export default function RichTextEditor({
     isControlled,
     placeholder,
     readOnly,
+    applyEditorBodyLayout,
+    refreshFontSizeSelect,
     syncHidden,
     value,
   ]);
@@ -228,14 +532,7 @@ export default function RichTextEditor({
       ].join("\n");
     };
     applyTheme();
-    const lineRem = 1.5;
-    const rowCount = Math.max(3, rows);
-    const scrollRows = maxRowsRef.current ?? Math.max(rowCount * 3, 10);
-    body.style.setProperty("--rte-min-height", `${rowCount * lineRem}rem`);
-    body.style.setProperty(
-      "--rte-max-height",
-      `${Math.min(scrollRows * lineRem, 28)}rem`,
-    );
+    applyEditorBodyLayout();
     body.contentEditable = String(!disabled && !readOnly);
     body.setAttribute("data-placeholder", placeholder);
     const observer = new MutationObserver(applyTheme);
@@ -244,10 +541,10 @@ export default function RichTextEditor({
       attributeFilter: ["class"],
     });
     return () => observer.disconnect();
-  }, [disabled, editorGeneration, placeholder, readOnly, rows]);
+  }, [applyEditorBodyLayout, disabled, editorGeneration, placeholder, readOnly]);
 
   useEffect(() => {
-    if (!isControlled || !bodyRef.current) {
+    if (!isControlled || !bodyRef.current || syncingRef.current) {
       return undefined;
     }
     const current = prepareRichTextForStorage(bodyRef.current.innerHTML);
@@ -304,16 +601,17 @@ export default function RichTextEditor({
   return (
     <div
       ref={wrapperRef}
-      className={`overflow-hidden rounded-md border border-border bg-input focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40 ${disabled ? "opacity-50" : ""} ${className}`.trim()}
+      className={`rounded-md border border-border bg-input focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40 ${disabled ? "opacity-50" : ""} ${className}`.trim()}
     >
       <span id={inputId} className="sr-only">
         {name || "Rich text"}
       </span>
       {!toolbarDisabled ? (
         <div
-          className="flex flex-wrap items-center gap-0.5 border-b border-border bg-muted/40 px-1 py-0.5"
+          className="relative z-10 flex flex-wrap items-center gap-0.5 overflow-visible border-b border-border bg-muted/40 px-1 py-0.5"
           role="toolbar"
           aria-label="Formatting"
+          onMouseDownCapture={() => saveSelection()}
         >
           <ToolbarButton title="Bold" onClick={() => exec("bold")}>
             B
@@ -334,6 +632,11 @@ export default function RichTextEditor({
           <ToolbarButton title="Heading 3" onClick={() => exec("formatBlock", "h3")}>
             H3
           </ToolbarButton>
+          <FontSizeMenu
+            value={fontSizeSelectValue}
+            onPick={applyFontSize}
+            onReset={() => applyFontSize("")}
+          />
           <span className="mx-0.5 text-muted-foreground">|</span>
           <ToolbarButton
             title="Bullet list"
@@ -362,7 +665,8 @@ export default function RichTextEditor({
       <div
         key={editorGeneration}
         ref={hostRef}
-        className="min-h-0"
+        className="min-h-0 w-full overflow-hidden"
+        style={tall ? { minHeight: tallMinHeight } : undefined}
         onFocus={() => bodyRef.current?.focus()}
       />
       <input
