@@ -12,6 +12,8 @@ import FloatingToolsWidget from "@/components/tools/floating-tools-widget";
 import { ShellSidebar } from "@/components/layout/shell-sidebar";
 import RightSidebarUtilities from "@/components/nav/right-sidebar-utilities";
 import ConnectivityIndicator from "@/components/nav/connectivity-indicator";
+import WeatherTopBar from "@/components/weather/weather-top-bar";
+import NavClock from "@/components/nav/nav-clock";
 import { NAV_LINK_ICONS, NavAdminIcon } from "@/components/nav/nav-link-icons";
 import { useShellNav } from "@/hooks/use-shell-nav";
 import DeskSidebarSection from "@/components/desk/desk-sidebar-section";
@@ -125,6 +127,8 @@ export default function AppShell({ children }) {
           </p>
         </div>
         <div className="flex-1" />
+        <NavClock />
+        <WeatherTopBar />
         <ConnectivityIndicator />
         <Button
           type="button"

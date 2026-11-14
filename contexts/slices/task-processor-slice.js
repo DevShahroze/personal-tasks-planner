@@ -160,7 +160,8 @@ export function useTaskProcessorSlice() {
           );
         }
         let guard = 0;
-        while (guard < 500) {
+        const maxSteps = 2500;
+        while (guard < maxSteps) {
           refreshProcessorDriverLock();
           if (current.locked && isAnotherTabDrivingProcessor()) {
             await sleep(800);
@@ -264,35 +265,41 @@ export function useTaskProcessorSlice() {
     });
   }, [refreshStatus]);
 
+  const processorIdle = Boolean(
+    status && !status.locked && !status.shouldRun && status.completedToday,
+  );
+
   useEffect(() => {
-    if (!clientTodayYmd || !status?.calendarDateYmd) {
+    if (!clientTodayYmd || !status?.calendarDateYmd || document.visibilityState !== "visible") {
       return undefined;
     }
     const win = typeof window !== "undefined" ? window : null;
-    if (win?.[AUTO_DRIVE_YMD_KEY] === status.calendarDateYmd) {
-      return undefined;
-    }
-    if (win) {
+    if (processorIdle && win) {
       win[AUTO_DRIVE_YMD_KEY] = status.calendarDateYmd;
     }
-    if (status.shouldRun && !driveRef.current && !isAnotherTabDrivingProcessor()) {
+    if (win?.[AUTO_DRIVE_YMD_KEY] === status.calendarDateYmd && processorIdle) {
+      return undefined;
+    }
+    const needsAutomaticDrive = Boolean(status.shouldRun || status.locked);
+    if (needsAutomaticDrive && !driveRef.current && !isAnotherTabDrivingProcessor()) {
       void driveProcessor({ trigger: "automatic" });
     }
     return undefined;
-  }, [clientTodayYmd, driveProcessor, status]);
+  }, [clientTodayYmd, driveProcessor, processorIdle, status]);
 
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.visibilityState !== "visible") {
         return;
       }
-      if (status?.shouldRun && !driveRef.current && !isAnotherTabDrivingProcessor()) {
+      const needsAutomaticDrive = Boolean(status?.shouldRun || status?.locked);
+      if (needsAutomaticDrive && !driveRef.current && !isAnotherTabDrivingProcessor()) {
         void driveProcessor({ trigger: "automatic" });
       }
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [driveProcessor, status?.shouldRun]);
+  }, [driveProcessor, status?.locked, status?.shouldRun]);
 
   useEffect(() => {
     if (!status?.locked) {

@@ -9,6 +9,7 @@ import { PinLockProvider } from "@/contexts/pin-lock-context";
 import { SessionIdleLogoutProvider } from "@/contexts/session-idle-logout-context";
 import { WorkspaceProvider } from "@/contexts/workspace-context";
 import { DeskNotesProvider } from "@/contexts/desk-notes-context";
+import { WeatherProvider } from "@/contexts/weather-context";
 
 export default function ProtectedLayout({ children }) {
   return (
@@ -24,7 +25,9 @@ export default function ProtectedLayout({ children }) {
                 <SessionIdleLogoutProvider>
                   <WorkspaceProvider>
                     <DeskNotesProvider>
-                      <AppShell>{children}</AppShell>
+                      <WeatherProvider>
+                        <AppShell>{children}</AppShell>
+                      </WeatherProvider>
                     </DeskNotesProvider>
                   </WorkspaceProvider>
                 </SessionIdleLogoutProvider>

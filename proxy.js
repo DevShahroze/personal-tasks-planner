@@ -40,7 +40,7 @@ function applySecurityHeaders(response) {
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=()",
+    "camera=(), microphone=(), geolocation=(self)",
   );
   response.headers.set("Content-Security-Policy", buildContentSecurityPolicy());
   if (getRuntimeConfig().isProduction) {
