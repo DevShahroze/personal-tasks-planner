@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
-function formatClockParts(date) {
+function formatClockParts(timestampMs) {
+  const date = new Date(timestampMs);
   const time = new Intl.DateTimeFormat(undefined, {
     hour: "2-digit",
     minute: "2-digit",
@@ -17,18 +18,21 @@ function formatClockParts(date) {
   return { time, dateLabel, tz };
 }
 
+function subscribeClockTick(onStoreChange) {
+  const id = window.setInterval(onStoreChange, 1000);
+  return () => window.clearInterval(id);
+}
+
+function readClockMs() {
+  return Date.now();
+}
+
 export default function NavClock() {
-  const [now, setNow] = useState(null);
+  const nowMs = useSyncExternalStore(subscribeClockTick, readClockMs, () => 0);
 
-  useEffect(() => {
-    setNow(new Date());
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const { time, dateLabel, tz } = now
-    ? formatClockParts(now)
-    : { time: "--:--:--", dateLabel: "", tz: "" };
+  const { time, dateLabel, tz } =
+    nowMs > 0 ? formatClockParts(nowMs) : { time: "--:--:--", dateLabel: "", tz: "" };
+  const now = nowMs > 0 ? new Date(nowMs) : null;
 
   return (
     <div

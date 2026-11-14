@@ -93,7 +93,10 @@ export function WeatherProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    resolveFromGeolocation();
+    const timer = window.setTimeout(() => {
+      resolveFromGeolocation();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [resolveFromGeolocation]);
 
   const forecastQuery = useQuery({
