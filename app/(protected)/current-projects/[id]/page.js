@@ -117,6 +117,10 @@ export default function CurrentProjectDetailPage() {
           await update.mutateAsync({ id, body: { achieveMilestone } });
           toastSuccess("Milestone achieved");
         }}
+        onUpdateMilestone={async (updateMilestone) => {
+          await update.mutateAsync({ id, body: { updateMilestone } });
+          toastSuccess("Milestone updated");
+        }}
       />
 
       {showReadOnlyFooter ? (

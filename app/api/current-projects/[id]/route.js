@@ -85,6 +85,19 @@ export async function PATCH(request, { params }) {
     milestone.achievedAt = achievedAt;
   }
 
+  if (validated.updateMilestone) {
+    const { milestoneId, text, addedAt } = validated.updateMilestone;
+    if (!isValidObjectId(milestoneId)) {
+      return jsonError("Invalid milestone id", 400);
+    }
+    const milestone = doc.milestones.id(milestoneId);
+    if (!milestone) {
+      return jsonError("Milestone not found", 404);
+    }
+    milestone.text = text;
+    milestone.addedAt = addedAt;
+  }
+
   if (Object.keys(validated.patch).length) {
     Object.assign(doc, validated.patch);
   }
