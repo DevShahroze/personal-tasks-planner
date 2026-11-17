@@ -34,7 +34,7 @@
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.9",
     "mongoose": "^9.11.4",
-    "next": "16.4.3",
+    "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "recharts": "^3.10.1"
@@ -42,7 +42,7 @@
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "eslint": "^9",
-    "eslint-config-next": "16.4.3",
+    "eslint-config-next": "16.4.6",
     "husky": "^9.1.7",
     "prettier": "^3.6.2",
     "tailwindcss": "^4"
