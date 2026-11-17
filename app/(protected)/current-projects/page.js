@@ -43,7 +43,7 @@ export default function CurrentProjectsPage() {
           </p>
         </div>
         <Link href="/current-projects/new">
-          <Button>New project</Button>
+          <Button>Add project</Button>
         </Link>
       </div>
 
@@ -117,7 +117,7 @@ export default function CurrentProjectsPage() {
           description="Add a current project to track active work."
           action={
             <Link href="/current-projects/new">
-              <Button>New project</Button>
+              <Button>Add project</Button>
             </Link>
           }
         />

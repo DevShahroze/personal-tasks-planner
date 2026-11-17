@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { readJsonBody } from "@/lib/security/request";
 import { jsonError, jsonOk, isValidObjectId } from "@/lib/api-response";
 import { validateCurrentProjectUpdate } from "@/lib/current-projects/validate";
+import { canAddMilestone } from "@/lib/current-projects/milestones";
 import CurrentProject from "@/models/CurrentProject";
 
 export async function GET(request, { params }) {
@@ -47,16 +48,49 @@ export async function PATCH(request, { params }) {
   }
 
   await connectDB();
-  const record = await CurrentProject.findByIdAndUpdate(id, validated.patch, {
-    new: true,
-    runValidators: true,
-  }).lean();
-
-  if (!record) {
+  const doc = await CurrentProject.findById(id);
+  if (!doc) {
     return jsonError("Project not found", 404);
   }
 
-  return jsonOk(record);
+  if (validated.addMilestone) {
+    if (!canAddMilestone(doc.milestones)) {
+      return jsonError(
+        "Mark the current milestone achieved before adding another",
+        422,
+      );
+    }
+    doc.milestones.push(validated.addMilestone);
+  }
+
+  if (validated.achieveMilestone) {
+    const { milestoneId, achievedAt } = validated.achieveMilestone;
+    if (!isValidObjectId(milestoneId)) {
+      return jsonError("Invalid milestone id", 400);
+    }
+    const milestone = doc.milestones.id(milestoneId);
+    if (!milestone) {
+      return jsonError("Milestone not found", 404);
+    }
+    if (milestone.achievedAt) {
+      return jsonError("Milestone is already achieved", 422);
+    }
+    const openIndex = doc.milestones.findIndex((item) => !item.achievedAt);
+    const targetIndex = doc.milestones.findIndex(
+      (item) => String(item._id) === milestoneId,
+    );
+    if (openIndex !== targetIndex) {
+      return jsonError("Only the active milestone can be marked achieved", 422);
+    }
+    milestone.achievedAt = achievedAt;
+  }
+
+  if (Object.keys(validated.patch).length) {
+    Object.assign(doc, validated.patch);
+  }
+
+  await doc.save();
+  return jsonOk(doc.toObject());
 }
 
 export async function DELETE(request, { params }) {
