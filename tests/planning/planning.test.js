@@ -23,6 +23,7 @@ import {
   validateInstallmentUpdate,
   validateInstallmentPaymentLog,
   validateInsuranceCreate,
+  validateSubscriptionCreate,
 } from "../../lib/planning/validate.js";
 import {
   computeNextFixedAnnualDueYmd,
@@ -212,6 +213,20 @@ test("subscription calendar shows future billing on scheduled day", () => {
   );
   assert.equal(entries.length, 1);
   assert.equal(entries[0].ymd, "2026-11-20");
+});
+
+test("validateSubscriptionCreate stores optional code and notes", () => {
+  const result = validateSubscriptionCreate({
+    serviceName: "Cloud",
+    subscriptionCode: "id-88#A/B",
+    notes: "<p>Shared login</p>",
+    amount: 1200,
+    billingFrequency: "monthly",
+    startDate: "2026-01-01",
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.value.subscriptionCode, "id-88#A/B");
+  assert.match(result.value.notes, /Shared login/);
 });
 
 test("buildPrepaidPaymentRecords creates monthly history from start date", () => {

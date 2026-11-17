@@ -26,6 +26,7 @@ const mainNavItems = [
   { href: "/tasks", label: "Tasks" },
   { href: "/thoughts", label: "Thoughts" },
   { href: "/notes", label: "Notes" },
+  { href: "/current-projects", label: "Current projects" },
   { href: "/plans", label: "Plans" },
   { href: "/workspace", label: "Workspace" },
   { href: "/important-info", label: "Important info" },

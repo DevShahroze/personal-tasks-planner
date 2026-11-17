@@ -7,6 +7,8 @@ const TOP_LEVEL_PATHS = new Set([
   "/dashboard",
   "/tasks",
   "/thoughts",
+  "/notes",
+  "/current-projects",
   "/plans",
   "/workspace",
   "/important-info",

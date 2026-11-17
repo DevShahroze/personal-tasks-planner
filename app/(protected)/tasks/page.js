@@ -35,7 +35,8 @@ export default function TasksPage() {
   const [sortOrder, setSortOrder] = useState("desc");
   const [page, setPage] = useState(1);
 
-  const debouncedSearch = useDebounce(search, 350);
+  const debouncedSearch = useDebounce(search, 2000);
+  const waitingForSearchDebounce = search !== debouncedSearch;
   const categoriesQuery = useCategories();
 
   const filters = useMemo(
@@ -54,8 +55,30 @@ export default function TasksPage() {
   );
 
   const tasksQuery = useTasks(filters);
+  const searchListLoading =
+    waitingForSearchDebounce || (Boolean(debouncedSearch) && tasksQuery.isFetching);
   const updateTask = useUpdateTaskMutation();
   const [pendingStatusTaskId, setPendingStatusTaskId] = useState(null);
+
+  const hasActiveFilters =
+    Boolean(search) ||
+    Boolean(status) ||
+    Boolean(priority) ||
+    Boolean(category) ||
+    Boolean(taskDate) ||
+    sortBy !== "updatedAt" ||
+    sortOrder !== "desc";
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setStatus("");
+    setPriority("");
+    setCategory("");
+    setTaskDate("");
+    setSortBy("updatedAt");
+    setSortOrder("desc");
+    setPage(1);
+  };
 
   const onTaskStatusChange = async (task, status) => {
     setPendingStatusTaskId(task._id);
@@ -84,7 +107,18 @@ export default function TasksPage() {
       </div>
 
       <div className="dashboard-panel">
-        <div className="dashboard-panel-header">Filters</div>
+        <div className="dashboard-panel-header flex flex-wrap items-center justify-between gap-2">
+          <span>Filters</span>
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-8 text-xs"
+            disabled={!hasActiveFilters}
+            onClick={clearAllFilters}
+          >
+            Clear all filters
+          </Button>
+        </div>
         <div className="dashboard-panel-body grid gap-2 md:grid-cols-3 xl:grid-cols-6">
           <FilterField>
             <Input
@@ -94,6 +128,7 @@ export default function TasksPage() {
                 setPage(1);
                 setSearch(e.target.value);
               }}
+              aria-busy={searchListLoading}
             />
           </FilterField>
           <FilterField>
@@ -174,7 +209,10 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {tasksQuery.isLoading ? <Spinner label="Loading tasks…" /> : null}
+      {tasksQuery.isLoading && !searchListLoading ? (
+        <Spinner label="Loading tasks…" />
+      ) : null}
+      {searchListLoading ? <Spinner label="Searching…" /> : null}
       {tasksQuery.isError ? (
         <EmptyState
           title="Failed to load tasks"
@@ -182,7 +220,7 @@ export default function TasksPage() {
         />
       ) : null}
 
-      {tasksQuery.data?.items?.length ? (
+      {!searchListLoading && tasksQuery.data?.items?.length ? (
         <div className="overflow-x-auto rounded-lg border border-border bg-card">
           <table className="min-w-full text-sm">
             <thead className="bg-muted text-left">
@@ -232,7 +270,9 @@ export default function TasksPage() {
         </div>
       ) : null}
 
-      {!tasksQuery.isLoading && !tasksQuery.data?.items?.length ? (
+      {!searchListLoading &&
+      !tasksQuery.isLoading &&
+      !tasksQuery.data?.items?.length ? (
         <EmptyState
           title="No tasks found"
           description="Create a task or adjust your filters."

@@ -33,6 +33,16 @@ test("buildTaskListFilter ignores invalid status injection", () => {
   assert.equal(filter.$and[0].priority, "Urgent");
 });
 
+test("buildTaskListFilter uses case-insensitive substring match on title and description", () => {
+  const filter = buildTaskListFilter(new URLSearchParams({ search: "gym" }));
+  const clause = filter.$and[0];
+  assert.ok(Array.isArray(clause.$or));
+  assert.equal(clause.$or.length, 2);
+  assert.equal(clause.$or[0].title.$regex, "gym");
+  assert.equal(clause.$or[0].title.$options, "i");
+  assert.equal(clause.$or[1].description.$regex, "gym");
+});
+
 test("sanitizeTextSearch strips dollar characters and limits length", () => {
   const value = sanitizeTextSearch("$ne test " + "a".repeat(300));
   assert.equal(value.includes("$"), false);

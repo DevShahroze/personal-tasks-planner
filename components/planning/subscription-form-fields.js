@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Input from "@/components/ui/input";
 import Select from "@/components/ui/select";
 import FieldLabel from "@/components/ui/field-label";
+import RichTextEditor from "@/components/ui/rich-text/rich-text-editor";
 import { PAYMENT_FREQUENCIES } from "@/lib/schedules/frequency";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -158,6 +159,21 @@ export default function SubscriptionFormFields({
             required
             defaultValue={defaults?.serviceName || ""}
             placeholder="e.g. Streaming plan"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <FieldLabel
+            htmlFor={`${idPrefix}-subscription-code`}
+            label="Subscription code (optional)"
+            info="Account ID, member number, or login reference from the provider. Special characters are allowed."
+          />
+          <Input
+            id={`${idPrefix}-subscription-code`}
+            name="subscriptionCode"
+            defaultValue={defaults?.subscriptionCode || ""}
+            placeholder="e.g. SUB-8842#A"
+            autoComplete="off"
           />
         </div>
 
@@ -338,6 +354,21 @@ export default function SubscriptionFormFields({
         </label>
       ) : null}
 
+      <div className="space-y-1">
+        <FieldLabel
+          htmlFor={`${idPrefix}-notes`}
+          label="Notes"
+          info="Optional: login email, plan tier, cancellation steps, or anything else you want to remember."
+        />
+        <RichTextEditor
+          id={`${idPrefix}-notes`}
+          name="notes"
+          rows={4}
+          resetKey={defaults?.updatedAt || defaults?._id || "new"}
+          defaultValue={defaults?.notes || ""}
+        />
+      </div>
+
       <div className="rounded-md border border-border bg-muted/30 p-3">
         <SubscriptionSchedulePreview
           amount={amount}
@@ -365,6 +396,8 @@ export function subscriptionPayloadFromFormData(
 ) {
   const payload = {
     serviceName: formData.get("serviceName"),
+    subscriptionCode: formData.get("subscriptionCode") || "",
+    notes: formData.get("notes") || "",
     amount: formData.get("amount"),
     billingFrequency: formData.get("billingFrequency") || "monthly",
     startDate: formData.get("startDate"),

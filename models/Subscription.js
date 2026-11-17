@@ -4,11 +4,14 @@ import {
   SUBSCRIPTION_STATUSES,
   DEFAULT_PLANNING_CURRENCY,
 } from "@/lib/planning/constants";
+import { MAX_DESCRIPTION_LENGTH } from "@/lib/security/constants";
 import { createPaymentSubschema } from "@/lib/payments/mongoose";
 
 const subscriptionSchema = new mongoose.Schema(
   {
     serviceName: { type: String, required: true, trim: true },
+    subscriptionCode: { type: String, default: "", trim: true, maxlength: 100 },
+    notes: { type: String, default: "", maxlength: MAX_DESCRIPTION_LENGTH },
     amount: { type: Number, required: true, min: 0.01 },
     currency: { type: String, default: DEFAULT_PLANNING_CURRENCY },
     billingFrequency: { type: String, enum: PAYMENT_FREQUENCIES, default: "monthly" },

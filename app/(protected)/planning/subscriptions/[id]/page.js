@@ -20,6 +20,7 @@ import { toastFormError, toastValidationErrors } from "@/lib/planning/form-error
 import { useConfirm } from "@/contexts/confirm-context";
 import PauseResumeButton from "@/components/planning/pause-resume-button";
 import PlanningExportMenu from "@/components/planning/planning-export-menu";
+import RichTextContent from "@/components/ui/rich-text/rich-text-content";
 
 export default function SubscriptionDetailPage() {
   const { id } = useParams();
@@ -99,6 +100,12 @@ export default function SubscriptionDetailPage() {
           </p>
           <h1 className="page-title">{item.serviceName}</h1>
           <p className="page-lead">
+            {item.subscriptionCode ? (
+              <>
+                Code <span className="font-mono text-sm">{item.subscriptionCode}</span>
+                {" · "}
+              </>
+            ) : null}
             {item.manualBilling ? "Manual billing · " : ""}
             {formatCurrency(item.amount, item.currency)}
             {!item.manualBilling ? (
@@ -166,6 +173,13 @@ export default function SubscriptionDetailPage() {
           {update.isPending ? "Saving…" : "Save changes"}
         </Button>
       </form>
+
+      {item.notes ? (
+        <div className="surface-card space-y-2">
+          <h2 className="text-sm font-semibold">Notes</h2>
+          <RichTextContent html={item.notes} className="text-sm" />
+        </div>
+      ) : null}
 
       <div className="surface-card space-y-3">
         <h2 className="text-sm font-semibold">Payment history</h2>

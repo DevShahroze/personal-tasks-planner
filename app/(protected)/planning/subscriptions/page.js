@@ -24,7 +24,9 @@ export default function SubscriptionsPage() {
               href={`/planning/subscriptions/${item._id}`}
               className="hover:underline"
             >
-              {item.serviceName} · {formatCurrency(item.amount, item.currency)} · Next{" "}
+              {item.serviceName}
+              {item.subscriptionCode ? ` (${item.subscriptionCode})` : ""} ·{" "}
+              {formatCurrency(item.amount, item.currency)} · Next{" "}
               {formatDate(item.nextBillingDate)}
             </Link>
           </li>
