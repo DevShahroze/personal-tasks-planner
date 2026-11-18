@@ -229,7 +229,13 @@ export default function TaskDetailView({ task }) {
                 label: "Amount spent",
                 value:
                   task.amountSpent != null
-                    ? formatCurrency(task.amountSpent, task.currency)
+                    ? `${formatCurrency(task.amountSpent, task.currency)}${
+                        task.orderPayments?.length
+                          ? ` (${task.orderPayments.length} payment${
+                              task.orderPayments.length === 1 ? "" : "s"
+                            })`
+                          : ""
+                      }`
                     : null,
               },
               {

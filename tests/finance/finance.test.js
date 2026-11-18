@@ -7,6 +7,10 @@ import {
   isFinancialOverdue,
   sumPayments,
 } from "../../lib/finance/balance.js";
+import {
+  paymentAmountFromOutstandingPercent,
+  paymentPercentFromAmount,
+} from "../../lib/finance/payment-percent.js";
 import { validateTaskNoteCreate } from "../../lib/task-notes/validate.js";
 import { buildCalendarEntriesForFinancialRecord } from "../../lib/calendar/financial-entries.js";
 
@@ -27,6 +31,13 @@ test("deriveFinancialStatus reflects balance", () => {
 test("validatePaymentAmount rejects overpayment", () => {
   const result = validatePaymentAmount(50, 40);
   assert.equal(result.ok, false);
+});
+
+test("payment percent converts against outstanding balance", () => {
+  assert.equal(paymentAmountFromOutstandingPercent(25, 10000), 2500);
+  assert.equal(paymentAmountFromOutstandingPercent(150, 10000), 10000);
+  assert.equal(paymentPercentFromAmount(2500, 10000), 25);
+  assert.equal(paymentPercentFromAmount(10000, 10000), 100);
 });
 
 test("isFinancialOverdue detects past expected dates", () => {

@@ -23,6 +23,7 @@ import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import TaskNotesPanel from "@/components/tasks/task-notes-panel";
 import TaskVisitsPanel from "@/components/tasks/task-visits-panel";
+import TaskCommercePaymentsPanel from "@/components/tasks/task-commerce-payments-panel";
 import { mergeSchedulePatch, validateSchedule } from "@/lib/scheduling/validate";
 import { defaultSchedule } from "@/lib/scheduling/defaults";
 import { useConfirm } from "@/contexts/confirm-context";
@@ -210,6 +211,8 @@ function TaskDetailPageBody({ taskId }) {
       {!task.parentTaskId ? <TaskSubtasksPanel parentTaskId={taskId} /> : null}
 
       <TaskVisitsPanel task={task} />
+
+      <TaskCommercePaymentsPanel task={task} />
 
       <TaskNotesPanel taskId={taskId} />
 

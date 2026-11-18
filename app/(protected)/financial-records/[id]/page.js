@@ -12,6 +12,9 @@ import { FINANCIAL_STATUS_LABEL, FINANCIAL_TYPE_LABEL } from "@/lib/finance/cons
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import Button from "@/components/ui/button";
 import Input from "@/components/ui/input";
+import PaymentAmountPercentFields, {
+  usePaymentAmountPercent,
+} from "@/components/finance/payment-amount-percent-fields";
 import Spinner from "@/components/ui/spinner";
 import Alert from "@/components/ui/alert";
 import FinancialRecordForm from "@/components/finance/financial-record-form";
@@ -31,9 +34,11 @@ export default function FinancialRecordDetailPage() {
   const recordId = params.id;
   const recordQuery = useFinancialRecord(recordId, todayYmd, Boolean(todayYmd));
   const { remove, addPayment, update } = useFinancialRecordMutations();
+  const paymentFields = usePaymentAmountPercent(
+    recordQuery.data?.outstandingBalance ?? 0,
+  );
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
 
@@ -149,7 +154,7 @@ export default function FinancialRecordDetailPage() {
 
             {record.status !== "settled" ? (
               <form
-                className="mt-4 grid gap-2 md:grid-cols-3"
+                className="mt-4 grid gap-2 sm:grid-cols-2 md:grid-cols-4"
                 onSubmit={async (event) => {
                   event.preventDefault();
                   setError("");
@@ -157,12 +162,12 @@ export default function FinancialRecordDetailPage() {
                     await addPayment.mutateAsync({
                       id: recordId,
                       body: {
-                        amount: Number(paymentAmount),
+                        amount: Number(paymentFields.amount),
                         paidAt: paymentDate || undefined,
                         note: paymentNote,
                       },
                     });
-                    setPaymentAmount("");
+                    paymentFields.reset();
                     setPaymentDate("");
                     setPaymentNote("");
                     toastSuccess("Payment recorded");
@@ -175,28 +180,33 @@ export default function FinancialRecordDetailPage() {
                   }
                 }}
               >
-                <Input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  placeholder="Amount"
-                  value={paymentAmount}
-                  onChange={(event) => setPaymentAmount(event.target.value)}
-                  required
+                <PaymentAmountPercentFields
+                  outstandingBalance={record.outstandingBalance}
+                  amount={paymentFields.amount}
+                  percent={paymentFields.percent}
+                  onAmountChange={paymentFields.onAmountChange}
+                  onPercentChange={paymentFields.onPercentChange}
+                  disabled={addPayment.isPending}
                 />
-                <Input
-                  type="date"
-                  value={paymentDate}
-                  onChange={(event) => setPaymentDate(event.target.value)}
-                />
-                <Input
-                  placeholder="Payment note"
-                  value={paymentNote}
-                  onChange={(event) => setPaymentNote(event.target.value)}
-                />
+                <label className="block space-y-1 text-sm">
+                  <span className="text-xs text-muted-foreground">Paid on</span>
+                  <Input
+                    type="date"
+                    value={paymentDate}
+                    onChange={(event) => setPaymentDate(event.target.value)}
+                  />
+                </label>
+                <label className="block space-y-1 text-sm sm:col-span-2 md:col-span-4">
+                  <span className="text-xs text-muted-foreground">Note</span>
+                  <Input
+                    placeholder="Payment note"
+                    value={paymentNote}
+                    onChange={(event) => setPaymentNote(event.target.value)}
+                  />
+                </label>
                 <Button
                   type="submit"
-                  className="md:col-span-3 md:ml-auto md:w-auto"
+                  className="sm:col-span-2 md:col-span-4 md:ml-auto md:w-auto"
                   disabled={addPayment.isPending}
                 >
                   {addPayment.isPending ? "Saving…" : "Record payment"}

@@ -9,6 +9,7 @@ import {
   TASK_INTENTS,
   DEFAULT_TASK_CURRENCY,
 } from "@/lib/task-commerce/constants";
+import { createPaymentSubschema } from "@/lib/payments/mongoose";
 
 const optionSchema = new mongoose.Schema(
   {
@@ -168,6 +169,7 @@ const taskSchema = new mongoose.Schema(
     estimatedValue: { type: Number, default: null },
     actualValue: { type: Number, default: null },
     amountSpent: { type: Number, default: null },
+    orderPayments: { type: [createPaymentSubschema()], default: [] },
     currency: { type: String, default: DEFAULT_TASK_CURRENCY },
     orderPlacedDate: { type: Date, default: null },
     expectedReceiveDate: { type: Date, default: null, index: true },

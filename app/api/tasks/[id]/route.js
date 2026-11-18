@@ -188,6 +188,19 @@ export async function PATCH(request, { params }) {
     return jsonError("Parent task cannot be changed from this endpoint", 400);
   }
 
+  if (patch.amountSpent !== undefined && existing.orderPayments?.length) {
+    return jsonError("Validation failed", 422, [
+      "Amount spent is calculated from recorded payments",
+    ]);
+  }
+
+  if (patch.intent === "none") {
+    existing.orderPayments = [];
+    if (patch.amountSpent === undefined) {
+      patch.amountSpent = null;
+    }
+  }
+
   const previousStatus = existing.status;
 
   const occurrenceStatusCompleted =
@@ -233,6 +246,9 @@ export async function PATCH(request, { params }) {
   if (patch.contentBlocks !== undefined) {
     existing.contentBlocks = patch.contentBlocks;
     existing.markModified("contentBlocks");
+  }
+  if (patch.intent === "none") {
+    existing.markModified("orderPayments");
   }
   try {
     await existing.save();

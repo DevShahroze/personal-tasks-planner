@@ -187,7 +187,17 @@ export default function TaskCommerceFields({ initialValues }) {
                 inputMode="decimal"
                 placeholder="Optional"
                 defaultValue={moneyInputValue(initialValues?.amountSpent)}
+                disabled={Boolean(initialValues?.orderPayments?.length)}
               />
+              {initialValues?.orderPayments?.length ? (
+                <span className="text-xs text-muted-foreground">
+                  Calculated from recorded payments on the task page.
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Or record partial payments below the task (no edit needed).
+                </span>
+              )}
             </label>
             <label className="block space-y-1 text-sm">
               <span>Actual value</span>

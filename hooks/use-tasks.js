@@ -121,6 +121,19 @@ export function useDeleteTaskMutation() {
   });
 }
 
+export function useTaskCommercePaymentMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }) => tasksApi.addCommercePayment(id, body),
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.task(data._id), data);
+      invalidateTaskQueries(queryClient, data._id, data.parentTaskId || undefined, {
+        skipTaskDetail: true,
+      });
+    },
+  });
+}
+
 export function useTaskLinkMutations(taskId) {
   const queryClient = useQueryClient();
   const invalidate = () => {

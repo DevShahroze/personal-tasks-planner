@@ -5,6 +5,11 @@ import {
   indexEntriesByYmd,
 } from "../../lib/calendar/task-entries.js";
 import { applyTaskCommerceToCreate } from "../../lib/task-commerce/validate.js";
+import {
+  commercePaymentHeadroom,
+  syncTaskAmountSpentFromPayments,
+  validateTaskCommercePaymentAmount,
+} from "../../lib/task-commerce/order-payment-math.js";
 
 const TZ = "Asia/Karachi";
 
@@ -118,4 +123,23 @@ test("order placed after expected receive is rejected", () => {
     errors,
   );
   assert.ok(errors.some((message) => message.includes("Order placed date")));
+});
+
+test("commerce payment accepts amount when no order estimate", () => {
+  const ok = validateTaskCommercePaymentAmount(5000, null, []);
+  assert.equal(ok.ok, true);
+  assert.equal(ok.value, 5000);
+});
+
+test("commerce payment headroom and amount spent sync", () => {
+  const payments = [
+    { amount: 10000, paidAt: new Date("2026-01-01") },
+    { amount: 15000, paidAt: new Date("2026-02-01") },
+  ];
+  assert.equal(syncTaskAmountSpentFromPayments(payments), 25000);
+  assert.equal(commercePaymentHeadroom(50000, payments), 25000);
+  const ok = validateTaskCommercePaymentAmount(25000, 50000, payments);
+  assert.equal(ok.ok, true);
+  const over = validateTaskCommercePaymentAmount(25001, 50000, payments);
+  assert.equal(over.ok, false);
 });
