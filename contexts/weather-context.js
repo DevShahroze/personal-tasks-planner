@@ -112,7 +112,9 @@ export function WeatherProvider({ children }) {
       : ["weather", "pending"],
     queryFn: () => weatherApi.forecast(coords.latitude, coords.longitude),
     enabled: Boolean(coords),
-    ...weatherQueryOptions(),
+    ...weatherQueryOptions({
+      refetchOnMount: false,
+    }),
   });
 
   const value = useMemo(

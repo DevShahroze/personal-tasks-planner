@@ -13,6 +13,7 @@ import { ShellSidebar } from "@/components/layout/shell-sidebar";
 import RightSidebarUtilities from "@/components/nav/right-sidebar-utilities";
 import ConnectivityIndicator from "@/components/nav/connectivity-indicator";
 import WeatherTopBar from "@/components/weather/weather-top-bar";
+import NavUpcomingHoliday from "@/components/nav/nav-upcoming-holiday";
 import NavClock from "@/components/nav/nav-clock";
 import { NAV_LINK_ICONS, NavAdminIcon } from "@/components/nav/nav-link-icons";
 import { useShellNav } from "@/hooks/use-shell-nav";
@@ -130,6 +131,7 @@ export default function AppShell({ children }) {
         <div className="flex-1" />
         <NavClock />
         <WeatherTopBar />
+        <NavUpcomingHoliday />
         <ConnectivityIndicator />
         <Button
           type="button"

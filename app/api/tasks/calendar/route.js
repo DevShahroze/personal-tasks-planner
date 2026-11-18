@@ -128,6 +128,7 @@ export async function GET(request) {
 
   const subscriptionCalendarOr = [
     { nextBillingDate: { $gte: rangeStart, $lte: rangeEnd } },
+    { manualBilling: true, renewalDate: { $gte: rangeStart, $lte: rangeEnd } },
   ];
   if (todayStart && todayStart >= rangeStart && todayStart <= rangeEnd) {
     subscriptionCalendarOr.push({

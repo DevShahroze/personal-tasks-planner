@@ -24,8 +24,8 @@ export default function CurrentProjectsPage() {
       limit: "20",
       search: debouncedSearch || undefined,
       status: status || undefined,
-      sortBy: "updatedAt",
-      sortOrder: "desc",
+      sortBy: "title",
+      sortOrder: "asc",
     }),
     [page, debouncedSearch, status],
   );

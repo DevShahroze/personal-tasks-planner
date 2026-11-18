@@ -43,7 +43,7 @@ test("calculateNextDueDate adds six months from last procedure date", () => {
   assert.equal(result.needsStartingDate, false);
 });
 
-test("applyRecurrenceCompletion preserves last procedure date when omitted", () => {
+test("applyRecurrenceCompletion advances from completion when procedure date omitted", () => {
   const recurrence = {
     ...defaultRecurrence(),
     enabled: true,
@@ -61,7 +61,7 @@ test("applyRecurrenceCompletion preserves last procedure date when omitted", () 
     applied.recurrence.lastProcedureDate.toISOString(),
     recurrence.lastProcedureDate.toISOString(),
   );
-  assert.ok(applied.recurrence.nextDueDate);
+  assert.equal(applied.recurrence.nextDueDate.toISOString().slice(0, 10), "2027-01-09");
 });
 
 test("recurrence end date stops future due dates", () => {

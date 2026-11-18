@@ -73,7 +73,7 @@ export async function PATCH(request, { params }) {
       return jsonError("Milestone not found", 404);
     }
     if (milestone.achievedAt) {
-      return jsonError("Milestone is already achieved", 422);
+      return jsonError("Achieved milestones cannot be edited", 422);
     }
     const openIndex = doc.milestones.findIndex((item) => !item.achievedAt);
     const targetIndex = doc.milestones.findIndex(

@@ -24,6 +24,7 @@ import EmptyState from "@/components/ui/empty-state";
 import { useChartTheme } from "@/hooks/use-chart-theme";
 import { formatDate, formatDateTime } from "@/lib/format";
 import DashboardTaskCalendar from "@/components/dashboard/dashboard-task-calendar";
+import DashboardUpcomingHolidays from "@/components/dashboard/dashboard-upcoming-holidays";
 import ErrorBoundary from "@/components/error-boundary";
 import {
   fillForTaskCategory,
@@ -148,6 +149,13 @@ export default function DashboardPage() {
         description="The calendar could not be displayed. Charts and lists below may still work."
       >
         <DashboardTaskCalendar />
+      </ErrorBoundary>
+
+      <ErrorBoundary
+        title="Upcoming holidays unavailable"
+        description="Holiday data could not be loaded. Other dashboard sections may still work."
+      >
+        <DashboardUpcomingHolidays />
       </ErrorBoundary>
 
       <div className="grid gap-3 lg:grid-cols-2">

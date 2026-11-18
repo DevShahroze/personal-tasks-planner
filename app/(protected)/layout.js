@@ -10,6 +10,7 @@ import { SessionIdleLogoutProvider } from "@/contexts/session-idle-logout-contex
 import { WorkspaceProvider } from "@/contexts/workspace-context";
 import { DeskNotesProvider } from "@/contexts/desk-notes-context";
 import { WeatherProvider } from "@/contexts/weather-context";
+import { HolidaysProvider } from "@/contexts/holidays-context";
 
 export default function ProtectedLayout({ children }) {
   return (
@@ -26,7 +27,9 @@ export default function ProtectedLayout({ children }) {
                   <WorkspaceProvider>
                     <DeskNotesProvider>
                       <WeatherProvider>
-                        <AppShell>{children}</AppShell>
+                        <HolidaysProvider>
+                          <AppShell>{children}</AppShell>
+                        </HolidaysProvider>
                       </WeatherProvider>
                     </DeskNotesProvider>
                   </WorkspaceProvider>

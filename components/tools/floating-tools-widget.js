@@ -5,6 +5,7 @@ import Button from "@/components/ui/button";
 import CalculatorModal from "@/components/tools/calculator-modal";
 import TaskCalendarModal from "@/components/tools/task-calendar-modal";
 import WeatherModal from "@/components/tools/weather-modal";
+import HolidaysModal from "@/components/tools/holidays-modal";
 import { SHELL_FLOATING_RIGHT_CLASS } from "@/lib/layout/shell-nav";
 
 export default function FloatingToolsWidget() {
@@ -12,6 +13,7 @@ export default function FloatingToolsWidget() {
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [weatherOpen, setWeatherOpen] = useState(false);
+  const [holidaysOpen, setHolidaysOpen] = useState(false);
   const rootRef = useRef(null);
 
   useEffect(() => {
@@ -43,6 +45,11 @@ export default function FloatingToolsWidget() {
     setWeatherOpen(true);
   };
 
+  const openHolidays = () => {
+    setMenuOpen(false);
+    setHolidaysOpen(true);
+  };
+
   return (
     <>
       <div
@@ -60,6 +67,14 @@ export default function FloatingToolsWidget() {
         </button>
         {menuOpen ? (
           <div className="flex flex-col items-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="shadow-md"
+              onClick={openHolidays}
+            >
+              Holidays
+            </Button>
             <Button
               type="button"
               variant="secondary"
@@ -91,6 +106,7 @@ export default function FloatingToolsWidget() {
       <CalculatorModal open={calculatorOpen} onClose={() => setCalculatorOpen(false)} />
       <TaskCalendarModal open={calendarOpen} onClose={() => setCalendarOpen(false)} />
       <WeatherModal open={weatherOpen} onClose={() => setWeatherOpen(false)} />
+      <HolidaysModal open={holidaysOpen} onClose={() => setHolidaysOpen(false)} />
     </>
   );
 }

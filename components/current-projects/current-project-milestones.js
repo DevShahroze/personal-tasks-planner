@@ -214,18 +214,20 @@ function MilestoneItem({
         <>
           <p className="mt-2 whitespace-pre-wrap text-sm">{milestone.text}</p>
           <div className="mt-3 flex flex-wrap justify-end gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={pending}
-              onClick={() => {
-                setEditText(milestone.text);
-                setEditAddedAt(dateInputValue(milestone.addedAt));
-                onStartEdit();
-              }}
-            >
-              Edit
-            </Button>
+            {isOpen ? (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={pending}
+                onClick={() => {
+                  setEditText(milestone.text);
+                  setEditAddedAt(dateInputValue(milestone.addedAt));
+                  onStartEdit();
+                }}
+              >
+                Edit
+              </Button>
+            ) : null}
             {isOpen ? (
               <Button
                 type="button"

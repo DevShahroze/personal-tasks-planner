@@ -4,6 +4,11 @@ import Link from "next/link";
 
 const modules = [
   {
+    href: "/admin/platform-health",
+    title: "Platform health",
+    description: "MongoDB, Vercel, and Firebase health and free-tier usage links.",
+  },
+  {
     href: "/admin/task-processor",
     title: "Task processor",
     description: "Daily rollover and which task statuses roll forward.",

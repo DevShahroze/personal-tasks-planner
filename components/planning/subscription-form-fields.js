@@ -122,6 +122,7 @@ export default function SubscriptionFormFields({
   const [nextPayDate, setNextPayDate] = useState(
     dateInputValue(defaults?.nextBillingDate),
   );
+  const [expiryDate, setExpiryDate] = useState(dateInputValue(defaults?.renewalDate));
   const [manualBilling, setManualBilling] = useState(Boolean(defaults?.manualBilling));
 
   const secondRowCols = showStatus ? "md:grid-cols-3" : "md:grid-cols-2";
@@ -227,6 +228,20 @@ export default function SubscriptionFormFields({
                 type="date"
                 value={nextPayDate}
                 onChange={(event) => setNextPayDate(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1 md:col-span-2">
+              <FieldLabel
+                htmlFor={`${idPrefix}-expiry-date`}
+                label="Expiry date (optional)"
+                info="Shows on the calendar when this manual subscription ends or must be renewed."
+              />
+              <Input
+                id={`${idPrefix}-expiry-date`}
+                name="renewalDate"
+                type="date"
+                value={expiryDate}
+                onChange={(event) => setExpiryDate(event.target.value)}
               />
             </div>
           </>
@@ -406,6 +421,10 @@ export function subscriptionPayloadFromFormData(
   const nextBillingDate = formData.get("nextBillingDate");
   if (nextBillingDate) {
     payload.nextBillingDate = nextBillingDate;
+  }
+  const renewalDate = formData.get("renewalDate");
+  if (renewalDate) {
+    payload.renewalDate = renewalDate;
   }
   const customDays = formData.get("customIntervalDays");
   if (payload.billingFrequency === "custom" && customDays) {

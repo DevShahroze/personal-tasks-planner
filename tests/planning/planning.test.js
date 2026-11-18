@@ -215,6 +215,50 @@ test("subscription calendar shows future billing on scheduled day", () => {
   assert.equal(entries[0].ymd, "2026-11-20");
 });
 
+test("manual subscription expiry appears on calendar", () => {
+  const entries = buildSubscriptionCalendarEntries(
+    {
+      _id: "507f1f77bcf86cd799439011",
+      serviceName: "VPN",
+      manualBilling: true,
+      nextBillingDate: new Date("2026-11-05T12:00:00.000Z"),
+      renewalDate: new Date("2026-11-25T12:00:00.000Z"),
+      status: "active",
+    },
+    {
+      todayYmd: "2026-11-10",
+      monthFirstYmd: "2026-11-01",
+      monthLastYmd: "2026-11-30",
+      timeZone: "Asia/Karachi",
+    },
+  );
+  const kinds = entries.map((entry) => entry.kind).sort();
+  assert.deepEqual(kinds, ["subscriptionBilling", "subscriptionExpiry"]);
+  assert.equal(entries.find((e) => e.kind === "subscriptionExpiry").ymd, "2026-11-25");
+});
+
+test("manual subscription expiry shows without next billing date", () => {
+  const entries = buildSubscriptionCalendarEntries(
+    {
+      _id: "507f1f77bcf86cd799439011",
+      serviceName: "VPN",
+      manualBilling: true,
+      nextBillingDate: null,
+      renewalDate: new Date("2026-12-15T12:00:00.000Z"),
+      status: "active",
+    },
+    {
+      todayYmd: "2026-11-10",
+      monthFirstYmd: "2026-12-01",
+      monthLastYmd: "2026-12-31",
+      timeZone: "Asia/Karachi",
+    },
+  );
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].kind, "subscriptionExpiry");
+  assert.equal(entries[0].ymd, "2026-12-15");
+});
+
 test("validateSubscriptionCreate stores optional code and notes", () => {
   const result = validateSubscriptionCreate({
     serviceName: "Cloud",
