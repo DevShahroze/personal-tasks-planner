@@ -80,51 +80,38 @@ export function SessionIdleLogoutProvider({ children }) {
     };
   }, [active, idleMs, pinLocked]);
 
-  useEffect(() => {
-    let expiryTimer;
-    let syncInterval;
+  const sessionTimersEnabled = !pinLocked && !isPinLockScreenActive();
+  const sessionQuery = useQuery({
+    queryKey: queryKeys.auth.session,
+    queryFn: () => authApi.session(),
+    enabled: sessionTimersEnabled,
+    staleTime: 55_000,
+    gcTime: 30 * 60 * 1000,
+    refetchInterval: sessionTimersEnabled ? 60_000 : false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+  });
 
-    const armExpiryTimer = async () => {
-      if (expiryTimer) {
-        window.clearTimeout(expiryTimer);
-        expiryTimer = undefined;
-      }
-      if (pinLocked || isPinLockScreenActive()) {
+  useEffect(() => {
+    const expiresAt = sessionQuery.data?.expiresAt;
+    if (!expiresAt || pinLocked || isPinLockScreenActive()) {
+      return undefined;
+    }
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    if (ms <= 0) {
+      void performSessionIdleLogout();
+      return undefined;
+    }
+    const expiryTimer = window.setTimeout(() => {
+      if (isPinLockScreenActive()) {
         return;
       }
-      try {
-        const data = await authApi.session();
-        if (!data?.expiresAt) {
-          return;
-        }
-        const ms = new Date(data.expiresAt).getTime() - Date.now();
-        if (ms <= 0) {
-          void performSessionIdleLogout();
-          return;
-        }
-        expiryTimer = window.setTimeout(() => {
-          if (isPinLockScreenActive()) {
-            return;
-          }
-          void performSessionIdleLogout();
-        }, ms);
-      } catch {
-        // Session already invalid
-      }
-    };
-
-    void armExpiryTimer();
-    syncInterval = window.setInterval(() => {
-      void armExpiryTimer();
-    }, 60_000);
-
+      void performSessionIdleLogout();
+    }, ms);
     return () => {
-      if (expiryTimer) {
-        window.clearTimeout(expiryTimer);
-      }
-      window.clearInterval(syncInterval);
+      window.clearTimeout(expiryTimer);
     };
-  }, [pinLocked]);
+  }, [sessionQuery.data?.expiresAt, pinLocked]);
 
   return (
     <SessionIdleLogoutContext.Provider value={{ invalidateSettings }}>

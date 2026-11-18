@@ -21,18 +21,15 @@ export function useCurrentProject(id, enabled = true) {
   });
 }
 
-function invalidateCurrentProjectQueries(queryClient, id) {
-  queryClient.invalidateQueries({ queryKey: ["current-projects"] });
-  if (id) {
-    queryClient.invalidateQueries({ queryKey: queryKeys.currentProject(id) });
-  }
+function invalidateCurrentProjectListQueries(queryClient) {
+  queryClient.invalidateQueries({ queryKey: ["current-projects", "list"] });
 }
 
 export function useCreateCurrentProjectMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: currentProjectsApi.create,
-    onSuccess: () => invalidateCurrentProjectQueries(queryClient),
+    onSuccess: () => invalidateCurrentProjectListQueries(queryClient),
   });
 }
 
@@ -42,7 +39,7 @@ export function useUpdateCurrentProjectMutation() {
     mutationFn: ({ id, body }) => currentProjectsApi.update(id, body),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.currentProject(data._id), data);
-      invalidateCurrentProjectQueries(queryClient, data._id);
+      invalidateCurrentProjectListQueries(queryClient);
     },
   });
 }
@@ -51,6 +48,11 @@ export function useDeleteCurrentProjectMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: currentProjectsApi.remove,
-    onSuccess: () => invalidateCurrentProjectQueries(queryClient),
+    onSuccess: (_, id) => {
+      invalidateCurrentProjectListQueries(queryClient);
+      if (id) {
+        queryClient.removeQueries({ queryKey: queryKeys.currentProject(id) });
+      }
+    },
   });
 }
